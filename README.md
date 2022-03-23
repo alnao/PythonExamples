@@ -70,3 +70,10 @@ Python Examples
   ```
   $ python3 Simple/conto4.py 
   ```
+### exception.py
+- esempi di exception in Py
+- to run 
+  ```
+  $ python3 Simple/exception.py 
+  ```
+
