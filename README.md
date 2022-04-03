@@ -77,3 +77,17 @@ Python Examples
   $ python3 Simple/exception.py 
   ```
 
+### modules.py
+- esempi di modulo in Py
+- to run 
+  ```
+  $ python3 Simple/modules.py 
+  ```
+
+### scriptWithModules.py
+- esempi di script che importa un modulo (modules.py) in Py
+- to run 
+  ```
+  $ python3 Simple/scriptWithModules.py 
+  ```
+
