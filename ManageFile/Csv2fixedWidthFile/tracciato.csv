@@ -1,3 +1,4 @@
+campo;tipo;lunghezza;valore;descrizione
 campo0;val;5;03365;abi
 campo0b;val;1;0;fisso
 campo1;str;20;campoA;campo uno
