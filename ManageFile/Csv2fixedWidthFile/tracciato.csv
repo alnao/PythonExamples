@@ -1,0 +1,8 @@
+campo0;val;5;03365;abi
+campo0b;val;1;0;fisso
+campo1;str;20;campoA;campo uno
+campo2;str;5;campoB
+campo2b;val;1;0;fisso a zero
+campo3;int;7;campoC
+campo4;str;16;campoD
+campo1;dateIta2YYYYMMDD;8;campoE

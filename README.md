@@ -1,5 +1,24 @@
 # PythonExamples
-Python Examples
+Python Examples by AlNao
+
+## ManagerFile
+
+### Marge2txtFile
+- esempio di script py che esegue marge di due file
+	
+    un file di testo txt (chiamato BAN) e un file csv (chiamato rapporti)
+	
+    genera un file di testotxt (chiamato OUT.txt) e un file csv di report con quali righe sono state modificate (OUT.log)
+
+### Csv2fixedWidthFile
+- esempio di script py che prende un file csv e lo trasforma in un file txt posizionale
+
+    tracciato.csv necessario con i campi del file posizionale con le informazioni: nome, tipo, lunghezza, valore e descrizione
+
+    input.csv file di input coni campi 
+
+    l'ouput viene scritto in un file OUT.txt
+
 
 ## FromOthersSite
 - Coffe.py
@@ -10,6 +29,7 @@ Python Examples
   ```
   $ python3 FromOthersSite/Coffe.py 
   ```
+
 
 
 ## Simple
@@ -90,4 +110,3 @@ Python Examples
   ```
   $ python3 Simple/scriptWithModules.py 
   ```
-
