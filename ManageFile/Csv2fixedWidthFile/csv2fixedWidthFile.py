@@ -45,12 +45,12 @@ def loadCsvInList(dataFile):
 
 #csv2fixedWithFile
 def csv2fixedWithFile(dataFileInput, dataFileTracciato):
-    fileOutput="";
+    fileOutput=""
     #per ogni riga del dataFileTracciato creo una lista con l'elenco dei campi
     listaCampi=loadCsvInList(dataFileInput) # campi arrivano campo0;val;5;03365;abi
     dati=loadCsvInList(dataFileTracciato) #print("Riga: " + json.dumps(dati) )     
     for row in dati: #for row in csv.DictReader(codecs.getreader('utf-8')(dataFileInput), delimiter=';'):
-        stringaRiga="";
+        stringaRiga=""
         #per ogni campo lo aggiungo prendendolo
         for campo in listaCampi:
             stringaRiga+=aggiungiCampoARiga(row,campo)

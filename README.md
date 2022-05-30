@@ -1,6 +1,23 @@
 # PythonExamples
 Python Examples by AlNao
 
+## RabbitMQ
+
+### BASIC example
+- esempio basic di script per scrivere una stringa su una coda RabbitMQ e leggerla. Prerequisito aver installato pika con pip3 e aver installato RabbitMQ nel proprio sistema (potrebbe essere diversa dalla 5672)
+
+
+per avviare il producer 
+```
+$ python3 basic_producer.py
+```
+per lanciare uno o più consumer (su console differenti dal producer)
+```
+python3 basic_consumer.py
+```
+notare che si avvia si produce tanta CPU perchè ci sono i print, ogni consumer riceve un terzo perchè RabbitMQ configurato di default con RoundRobin che divide equamente: il promo messaggio al primo, il secondo al secondo
+
+
 ## ManagerFile
 
 ### Marge2txtFile
