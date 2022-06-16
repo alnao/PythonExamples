@@ -4,18 +4,19 @@ Python Examples by AlNao
 ## RabbitMQ
 
 ### BASIC example
-- esempio basic di script per scrivere una stringa su una coda RabbitMQ e leggerla. Prerequisito aver installato pika con pip3 e aver installato RabbitMQ nel proprio sistema (potrebbe essere diversa dalla 5672)
+- esempio basic di script per scrivere una stringa su una coda RabbitMQ e leggerla. Prerequisito aver installato pika con pip3 e aver installato RabbitMQ nel proprio sistema (la porta potrebbe essere diversa dalla dell'esempio a seconda del sistema operativo)
 
 
-per avviare il producer 
-```
-$ python3 basic_producer.py
-```
-per lanciare uno o più consumer (su console differenti dal producer)
-```
-python3 basic_consumer.py
-```
-notare che si avvia si produce tanta CPU perchè ci sono i print, ogni consumer riceve un terzo perchè RabbitMQ configurato di default con RoundRobin che divide equamente: il promo messaggio al primo, il secondo al secondo
+- to run
+    per avviare il producer 
+    ```
+    $ python3 basic_producer.py
+    ```
+    per lanciare uno o più consumer (su console differenti dal producer)
+    ```
+    python3 basic_consumer.py
+    ```
+- notare che quando si avvia il producer viene consumata tanta CPU perchè ci sono i print, ogni consumer riceve un terzo perchè RabbitMQ configurato di default con RoundRobin che divide equamente: il promo messaggio al primo, il secondo al secondo, il terzo a terzo e il quarto al primo se sono 3 consumer.
 
 
 ## ManagerFile
@@ -47,7 +48,17 @@ notare che si avvia si produce tanta CPU perchè ci sono i print, ogni consumer 
   $ python3 FromOthersSite/Coffe.py 
   ```
 
+## TkinterExample
+Esempi semplici con la libreria Tkinter, prendendo spunto dal canale youtube "Python Simplified"
 
+
+### example1
+- semplice finestra con immagine, un testo e un bottone che esegue una print
+
+- to run 
+  ```
+  $ python3 TkinterExample/example1.py 
+  ```
 
 ## Simple
 
