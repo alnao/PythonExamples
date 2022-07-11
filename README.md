@@ -1,6 +1,20 @@
 # PythonExamples
 Python Examples by AlNao
 
+
+## Mongo
+- esempi per iteragire con una base dati Mongo che deve essere installata e disponibile sulla porta di default , la libreria si installa con il comando
+```
+$ pip install pymongo
+```
+- to run
+    ```
+    $ python3 example1create.py
+    $ python3 example2access.py
+    $ python3 example3edit.py
+
+    ```
+
 ## RabbitMQ
 
 ### BASIC example
