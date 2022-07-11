@@ -22,7 +22,7 @@ frame1.grid(row=0,column=0)
 frame1.pack_propagate(False)
 
 # logo image
-logo_img=ImageTk.PhotoImage(file="/mnt/Dati/Foto.JPG")
+logo_img=ImageTk.PhotoImage(file="/mnt/Dati/Dropbox/Foto/KirkEalNao.JPG")
 logo_widget=tk.Label(frame1,image=logo_img)
 logo_widget.image=logo_img
 logo_widget.pack()
