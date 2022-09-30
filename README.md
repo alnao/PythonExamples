@@ -51,6 +51,9 @@ $ pip install pymongo
 
     l'ouput viene scritto in un file OUT.txt
 
+### UnzipFile
+- semplice esempio che usa "zipfile" di Py per estrarre il contenuto di un pacchetto zip
+
 
 ## FromOthersSite
 - Coffe.py
