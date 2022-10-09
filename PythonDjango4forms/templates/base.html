@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="it">
+  <head>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+    <title>AlNao Py Forum {% block title %}{% endblock title %}</title>
+  </head>
+  <body>
+     <nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-4">
+         <div class="container">
+            <a class="navbar-brand" href="/">AlNao Py Forum</a>
+            <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNavAltMarkup" aria-controls="navbarNavAltMarkup" aria-expanded="false" aria-label="Toggle navigation">
+              <span class="navbar-toggler-icon"></span>
+            </button>
+            {% if request.user.is_authenticated %}
+                <div class="collapse navbar-collapse" id="navbarNavAltMarkup">
+                  <div class="navbar-nav">
+                    <a class="nav-item nav-link" href="#">Argomenti<span class="sr-only">(current)</span></a>
+                    <a class="nav-item nav-link" href="{% url 'user_profile' username=request.user.username %}">Profilo</a>
+                    <a class="nav-item nav-link" href="{% url 'user_list' %}">Utenti</a>
+                    <a class="nav-item nav-link" href="{% url 'password_change' %}">Cambia password</a>
+                    <a class="nav-item nav-link" href="{% url 'logout' %}">Logout</a>
+                    <span>{{ request.user.username }}</span>
+                  </div>
+                </div>
+            {% else %}
+                <div class="collapse navbar-collapse" id="navbarNavAltMarkup">
+                  <div class="navbar-nav">
+                      <a class="nav-item nav-link" href="{% url 'registration_view' %}">Registrazione</a>
+                      <a class="nav-item nav-link" href="{% url 'login' %}">Login</a>
+                  </div>
+                </div>
+            {% endif %}
+
+
+            {% if request.user.is_authenticated %}
+            <form class="form-inline">
+              <input class="form-control mr-sm-2" type="search" placeholder="Ricerca" aria-label="Search">
+              <button class="btn btn-outline-info my-2 my-sm-0" type="submit">Cerca</button>
+            </form>
+            {% endif %}
+        </div>
+    </nav>
+
+    <div class="container">
+        <h3>{% block titolo %}{% endblock titolo %}</h3>
+        {% block content %}
+        {% endblock content %}
+    </div>
+    <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>
+  </body>
+</html>

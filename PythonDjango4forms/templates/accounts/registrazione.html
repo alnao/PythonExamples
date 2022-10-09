@@ -1,0 +1,13 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+{% block content %}
+    <div class="row justify-content-center">
+        <div class="col-6 text-center">
+            <h2>Registrazione del forum</h2>
+            <form class="" method="POST" novalidate>{% csrf_token %}
+                {{form|crispy}}
+                <input type="submit" class="btn btn-info" value="Registrati" />
+            </form>
+        </div>
+    </div>
+{% endblock content %}

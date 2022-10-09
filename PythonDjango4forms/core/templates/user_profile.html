@@ -1,0 +1,5 @@
+{% extends 'base.html' %}
+{% block content%}
+    {% if request.user == user %}Il tuo {% endif %}profilo utente
+    <h1>User {{user}}</h1>
+{% endblock content%}
