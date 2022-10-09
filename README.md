@@ -77,6 +77,13 @@ Esempi semplici con la libreria Tkinter, prendendo spunto dal canale youtube "Py
   $ python3 TkinterExample/example1.py 
   ```
 
+## PythonDjango
+Tre esempi di progetti Django sviluppati dal corso 
+- PythonDjango1example
+- PythonDjango2news
+- PythonDjango3forms
+
+
 ## Simple
 
 ### conto1.py

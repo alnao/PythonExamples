@@ -1,0 +1,16 @@
+{% extends 'base.html' %}
+{% block titolo %}Contattati{% endblock titolo %}
+{% block content %}
+    <h5>Inviaci i tuoi dati</h5>
+    <form action="" method="post" novalidate>
+        {% for field in form %}
+    		<div class="form-group">
+    			{{field.errors}}
+    			{{field.label_tag}}
+    			{{field}}
+    		</div>
+    	{% endfor %}
+        <input type="submit" class="btn btn-info" value="Invia" />
+        {% csrf_token %}
+    </form>
+{% endblock content %}

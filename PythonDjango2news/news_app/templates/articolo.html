@@ -1,0 +1,7 @@
+{% extends 'base.html' %}
+{% block titolo %}Articolo{% endblock titolo %}
+{% block content %}
+<h1>Articolo {{articolo.titolo}}</h1>
+<p>{{articolo.testo}}</p>
+<i>{{articolo.autore}}</i>
+{% endblock content %}

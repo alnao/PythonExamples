@@ -1,0 +1,16 @@
+{% extends 'base.html' %}
+{% block titolo %}Home blocco{% endblock titolo %}
+{% block content %}
+<h4>Giornalisti</h4>
+<ul>
+{% for giornalista in giornalisti %}
+    <li><b>{{giornalista.nome}} {{giornalista.cognome}}</b>
+    {% for articolo in giornalista.articoli.all %}
+        <p><a href="{{articolo.get_absolute_url }}">{{articolo.titolo}}</a></p>
+    {% empty %}<p>Nessun articolo</p>{% endfor %}
+    </li>
+{% endfor %}
+</ul>
+<hr />
+<a href="../articoli/">Articoli</a>
+{% endblock content %}
