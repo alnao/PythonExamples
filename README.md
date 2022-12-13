@@ -1,9 +1,16 @@
 # PythonExamples
 Python Examples by AlNao
 
+## Glue
+Esempi di codice Python con Spark e Pandas per la manipolazione dati con il servizio AWS Glue
+
+
+### Glue01console
+Semplice esempio creato da console manualmente che elabora un file csv con una struttura ben definita (numero,lettera,lungo,gruppo), filtra gli elementi che hanno gruppo = 'A' e salva un nuovo file con la stessa struttura. Non è possibile eseguirlo in locale.
+
 
 ## Mongo
-- esempi per iteragire con una base dati Mongo che deve essere installata e disponibile sulla porta di default , la libreria si installa con il comando
+Esempi per iteragire con una base dati Mongo che deve essere installata e disponibile sulla porta di default , la libreria si installa con il comando
 ```
 $ pip install pymongo
 ```
@@ -18,10 +25,10 @@ $ pip install pymongo
 ## RabbitMQ
 
 ### BASIC example
-- esempio basic di script per scrivere una stringa su una coda RabbitMQ e leggerla. Prerequisito aver installato pika con pip3 e aver installato RabbitMQ nel proprio sistema (la porta potrebbe essere diversa dalla dell'esempio a seconda del sistema operativo)
+Esempio basic di script per scrivere una stringa su una coda RabbitMQ e leggerla. Prerequisito aver installato pika con pip3 e aver installato RabbitMQ nel proprio sistema (la porta potrebbe essere diversa dalla dell'esempio a seconda del sistema operativo)
 
 
-- to run
+To run
     per avviare il producer 
     ```
     $ python3 basic_producer.py
@@ -30,20 +37,20 @@ $ pip install pymongo
     ```
     python3 basic_consumer.py
     ```
-- notare che quando si avvia il producer viene consumata tanta CPU perchè ci sono i print, ogni consumer riceve un terzo perchè RabbitMQ configurato di default con RoundRobin che divide equamente: il promo messaggio al primo, il secondo al secondo, il terzo a terzo e il quarto al primo se sono 3 consumer.
+Notare che quando si avvia il producer viene consumata tanta CPU perchè ci sono i print, ogni consumer riceve un terzo perchè RabbitMQ configurato di default con RoundRobin che divide equamente: il promo messaggio al primo, il secondo al secondo, il terzo a terzo e il quarto al primo se sono 3 consumer.
 
 
 ## ManagerFile
 
 ### Marge2txtFile
-- esempio di script py che esegue marge di due file
+Esempio di script py che esegue marge di due file
 	
     un file di testo txt (chiamato BAN) e un file csv (chiamato rapporti)
 	
     genera un file di testotxt (chiamato OUT.txt) e un file csv di report con quali righe sono state modificate (OUT.log)
 
 ### Csv2fixedWidthFile
-- esempio di script py che prende un file csv e lo trasforma in un file txt posizionale
+Esempio di script py che prende un file csv e lo trasforma in un file txt posizionale
 
     tracciato.csv necessario con i campi del file posizionale con le informazioni: nome, tipo, lunghezza, valore e descrizione
 
@@ -52,7 +59,7 @@ $ pip install pymongo
     l'ouput viene scritto in un file OUT.txt
 
 ### UnzipFile
-- semplice esempio che usa "zipfile" di Py per estrarre il contenuto di un pacchetto zip
+Semplice esempio che usa "zipfile" di Py per estrarre il contenuto di un pacchetto zip
 
 
 ## FromOthersSite
@@ -70,9 +77,9 @@ Esempi semplici con la libreria Tkinter, prendendo spunto dal canale youtube "Py
 
 
 ### example1
-- semplice finestra con immagine, un testo e un bottone che esegue una print
+Semplice finestra con immagine, un testo e un bottone che esegue una print
 
-- to run 
+To run 
   ```
   $ python3 TkinterExample/example1.py 
   ```
@@ -87,7 +94,7 @@ Tre esempi di progetti Django sviluppati dal corso
 ## Simple
 
 ### conto1.py
-- esercitazione classe ContoCorrente 
+Esercitazione classe ContoCorrente 
 	
     inizializzatore con 3 parametri (nome titolare, numero conto e saldo) 
 	
@@ -103,13 +110,13 @@ Tre esempi di progetti Django sviluppati dal corso
 	
     codice per testare la classe: 2 conti
 
-- to run 
+To run 
   ```
   $ python3 Simple/conto1.py 
   ```
 
 ### conto2.py
-- esercitazione classe ContoCorrente 
+Esercitazione classe ContoCorrente 
 	
     prendere spunto dal conto1.py ma nascondere il saldo come proprietà semplice
     
@@ -117,14 +124,14 @@ Tre esempi di progetti Django sviluppati dal corso
     
     nascondere attributo saldo, getter e setter
 
-- to run 
+To run 
   ```
   $ python3 Simple/conto2.py 
   ```
 
 
 ### conto3.py
-- esercitazione classe Conto come padre di ContoCorrente
+Esercitazione classe Conto come padre di ContoCorrente
 	
     in conto ci devono essere nome e numero conto
     
@@ -134,7 +141,7 @@ Tre esempi di progetti Django sviluppati dal corso
   ```
 
 ### conto4.py
-- esercitazione classe Gestore Conto corrente
+Esercitazione classe Gestore Conto corrente
 
     crea metodo bonifico per prelevare da un conto e fare un deposito ad un altro
 
@@ -143,22 +150,22 @@ Tre esempi di progetti Django sviluppati dal corso
   $ python3 Simple/conto4.py 
   ```
 ### exception.py
-- esempi di exception in Py
-- to run 
+Esempi di exception in Py
+To run 
   ```
   $ python3 Simple/exception.py 
   ```
 
 ### modules.py
-- esempi di modulo in Py
-- to run 
+Esempi di modulo in Py
+To run 
   ```
   $ python3 Simple/modules.py 
   ```
 
 ### scriptWithModules.py
-- esempi di script che importa un modulo (modules.py) in Py
-- to run 
+Eempi di script che importa un modulo (modules.py) in Py
+To run 
   ```
   $ python3 Simple/scriptWithModules.py 
   ```
