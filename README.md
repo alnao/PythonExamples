@@ -1,6 +1,13 @@
 # PythonExamples
 Python Examples by AlNao
 
+## DataScientists
+Esempi di codice Python con Pandas e altre librerie per la manipolazione dati.
+See https://khuyentran1401.github.io/Efficient_Python_tricks_and_tools_for_data_scientists/README.html
+- "01collections_itertools" esempi di metodi per la manipolazione di collezioni e uso di itertools
+
+
+
 ## Glue
 Esempi di codice Python con Spark e Pandas per la manipolazione dati con il servizio AWS Glue
 
@@ -9,18 +16,29 @@ Esempi di codice Python con Spark e Pandas per la manipolazione dati con il serv
 Semplice esempio creato da console manualmente che elabora un file csv con una struttura ben definita (numero,lettera,lungo,gruppo), filtra gli elementi che hanno gruppo = 'A' e salva un nuovo file con la stessa struttura. Non è possibile eseguirlo in locale.
 
 
+
+## YouTube downloader
+Semplice esempio di come costruire un miniprogramma per scaricare in PY
+
+```
+$ pip install pytube
+```
+
+see https://www.youtube.com/watch?v=EMlM6QTzJo0
+
 ## Mongo
 Esempi per iteragire con una base dati Mongo che deve essere installata e disponibile sulla porta di default , la libreria si installa con il comando
+
 ```
 $ pip install pymongo
 ```
-- to run
-    ```
-    $ python3 example1create.py
-    $ python3 example2access.py
-    $ python3 example3edit.py
 
-    ```
+To run
+```
+$ python3 example1create.py
+$ python3 example2access.py
+$ python3 example3edit.py
+```
 
 ## RabbitMQ
 
