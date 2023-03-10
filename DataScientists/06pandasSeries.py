@@ -47,3 +47,8 @@ print ("---- Series cummax ---- ")
 nums = pd.Series([4, 2, 5, 1, 6])
 print ( nums.cummax() )
 
+#4.4.11. Turn a pandas Series into a pandas DataFrame
+print ("---- get_dummies Series2DataFrame ---- ")
+s = pd.Series(["a", "b", "a,b", "a,c"])
+df2 = s.str.get_dummies(sep=",")
+print ( df2 )
