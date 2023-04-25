@@ -6,15 +6,16 @@ Esempi di codice Python con Pandas e altre librerie per la manipolazione dati.
 See https://khuyentran1401.github.io/Efficient_Python_tricks_and_tools_for_data_scientists/README.html
 - "01collections_itertools" esempi di metodi per la manipolazione di collezioni e uso di itertools
 
+## AWS CodeWhisperer
+Esempi di codice Python generati con AWS CodeWhisperer
 
 
-## Glue
+## AWS Glue
 Esempi di codice Python con Spark e Pandas per la manipolazione dati con il servizio AWS Glue
 
 
-### Glue01console
+### 01console
 Semplice esempio creato da console manualmente che elabora un file csv con una struttura ben definita (numero,lettera,lungo,gruppo), filtra gli elementi che hanno gruppo = 'A' e salva un nuovo file con la stessa struttura. Non è possibile eseguirlo in locale.
-
 
 
 ## YouTube downloader
