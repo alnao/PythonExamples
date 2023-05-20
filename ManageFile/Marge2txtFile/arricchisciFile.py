@@ -71,7 +71,8 @@ def arrischiFile():
   #print ( "Rapporti trovati :" )
   #print (listaNplSistemati)
 
-arrischiFile()
+if __name__ == '__main__':
+  arrischiFile()
 
 # Vari riferimenti
 #https://stackoverflow.com/questions/24662571/python-import-csv-to-list

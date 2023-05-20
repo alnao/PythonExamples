@@ -41,11 +41,11 @@ if __name__ == '__main__':
 
     host = '34.251.28.90'
     port = 22
-    username = 'bitnami'
+    username = 'utente'
     password = ''
     localpath = 'C:\\Temp\\a.txt'
     remotepath = 'prova.txt' #\\home\\bitnami\\
-    pkey="C:\\Transito\\000_FILES\\Keys\\20211009_Chiavi\\AlbertoNao_privata.pem"
+    pkey="AlbertoNao_privata.pem"
     command="ls -la"
     
 #SFTP connect, put file and get file

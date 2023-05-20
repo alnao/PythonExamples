@@ -57,11 +57,10 @@ def csv2fixedWithFile(dataFileInput, dataFileTracciato):
         fileOutput+=stringaRiga+"\n"
     return fileOutput
 
-print(__name__)
-
-with open("tracciato.csv","rt") as dataFileInput:
-    with open("input.csv","rt") as dataFileTracciato:
-        output=csv2fixedWithFile( dataFileInput.readlines() , dataFileTracciato.readlines() ) 
-print(output)
-with open('OUT.txt', 'w') as the_file:
-  the_file.write(output)
+if __name__ == '__main__':
+    with open("tracciato.csv","rt") as dataFileInput:
+        with open("input.csv","rt") as dataFileTracciato:
+            output=csv2fixedWithFile( dataFileInput.readlines() , dataFileTracciato.readlines() ) 
+    #print(output)
+    with open('OUT.txt', 'w') as the_file:
+        the_file.write(output)
