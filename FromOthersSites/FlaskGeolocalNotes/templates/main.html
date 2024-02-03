@@ -1,0 +1,28 @@
+<!DOCTYPE html><!-- see https://www.youtube.com/watch?v=w-rti-5KHME -->
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+        crossorigin=""/>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+        crossorigin=""></script>
+    <style>
+        #map { height: 480px; }
+    </style>
+</head>
+<body>
+    <div id="map"></div>  
+    <div id="selectedPlace"></div>
+    <form action="api/notes" method="POST">
+        <input type="text" id="content" name="content" />
+        <input type="hidden" id="lat" name="lat" />
+        <input type="hidden" id="lng" name="lng" />
+        <input type="submit" id="btnSubmit" name="btnSubmit" value="invio" />
+    </form>
+    <script src="{{url_for('static',filename='app.js')}}"></script>
+</body>
+</html>
