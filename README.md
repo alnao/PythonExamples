@@ -1,6 +1,34 @@
 # PythonExamples
 Python Examples by AlNao
 
+
+## FromOthersSite
+- Coffe.py
+
+
+  from https://github.com/uxai/100daysofcode/blob/main/Day%2015/coffee_machine.py
+  to run
+  ```
+  $ python3 FromOthersSite/Coffe.py 
+  ```
+- ChatGPT
+- FlaskGeolocalNotes
+  
+  
+  see https://www.youtube.com/watch?v=w-rti-5KHME
+- TkinterExample
+  
+  
+  Esempi semplici con la libreria Tkinter, prendendo spunto dal canale youtube "Python Simplified". 
+  Semplice finestra con immagine, un testo e un bottone che esegue una print
+
+  
+  To run :
+    ```
+    $ python3 TkinterExample/example1.py 
+    ```
+
+
 ## DataScientists
 Esempi di codice Python con Pandas e altre librerie per la manipolazione dati.
 See https://khuyentran1401.github.io/Efficient_Python_tricks_and_tools_for_data_scientists/README.html
@@ -81,27 +109,6 @@ Esempio di script py che prende un file csv e lo trasforma in un file txt posizi
 Semplice esempio che usa "zipfile" di Py per estrarre il contenuto di un pacchetto zip
 
 
-## FromOthersSite
-- Coffe.py
-
-  from https://github.com/uxai/100daysofcode/blob/main/Day%2015/coffee_machine.py
-
-  to run
-  ```
-  $ python3 FromOthersSite/Coffe.py 
-  ```
-
-## TkinterExample
-Esempi semplici con la libreria Tkinter, prendendo spunto dal canale youtube "Python Simplified"
-
-
-### example1
-Semplice finestra con immagine, un testo e un bottone che esegue una print
-
-To run 
-  ```
-  $ python3 TkinterExample/example1.py 
-  ```
 
 ## PythonDjango
 Tre esempi di progetti Django sviluppati dal corso 
