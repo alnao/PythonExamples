@@ -27,12 +27,15 @@ See https://khuyentran1401.github.io/Efficient_Python_tricks_and_tools_for_data_
 - "01collections_itertools" esempi di metodi per la manipolazione di collezioni e uso di itertools
 
 ## Docker
-- 01 simple Pandas see https://medium.com/codex/run-a-python-code-on-aws-batch-part-1-creation-of-python-script-and-docker-container-1b01dc89eaed
+- 01 simple Pandas, see https://medium.com/codex/run-a-python-code-on-aws-batch-part-1-creation-of-python-script-and-docker-container-1b01dc89eaed
+- 02 Flask Login: esempio di docker con dentro una piccola applicazione web creata con Flask e db (sqlite), see https://www.youtube.com/watch?v=ud_nq9lapF4
+
 
 ## From Others Sites
 - ChatGPT
 - FaceDetector see https://www.youtube.com/watch?v=i3sLv1sus0I
 - FlaskGeolocalNotes  see https://www.youtube.com/watch?v=w-rti-5KHME
+- FlaskLogin see https://www.youtube.com/watch?v=ud_nq9lapF4
 - TkinterExample see  https://www.youtube.com/watch?v=5qOnzF7RsNA (Tkinter e "Python Simplified")
 - Youtube Downloader see https://www.youtube.com/watch?v=EMlM6QTzJo0 
 - Coffe.py see https://github.com/uxai/100daysofcode/blob/main/Day%2015/coffee_machine.py
