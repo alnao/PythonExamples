@@ -1,0 +1,24 @@
+{
+    "containerDefinitions": [
+        {
+            "name": "api-persone-nodb",
+            "image": "740456629644.dkr.ecr.eu-west-1.amazonaws.com/formazione-ecs-repo-uno:latest",
+            "cpu": 1,
+            "memory": 300,
+            
+            "portMappings": [
+                {
+                    "containerPort": 5001,
+                    "hostPort": 5001, 
+                    "protocol": "tcp" 
+                }
+            ],
+            "command": [
+                "python",
+                "/usr/src/app/app.py"
+            ],
+            "essential": true
+        }
+    ],
+    "family": "api-persone-nodb"
+}
