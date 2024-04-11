@@ -1,0 +1,4 @@
+MarkupSafe==2.0.0
+ldap3
+Flask-Login
+Flask
