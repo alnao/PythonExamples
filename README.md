@@ -1,11 +1,11 @@
-# PythonExamples
-PythonExamples Examples by [AlNao](https://www.alnao.it)
+# Python Examples
+Esempi by [AlNao](https://www.alnao.it)
 
 ## AWS CDK
 Esempio di codice Python usando la AWS-CDK boto3. Per l'installazione e la configurazione vedere il [sito ufficiale](https://docs.aws.amazon.com/cdk/v2/guide/getting_started.html) (`npm install -g aws-cdk`).
 
 Lista degli esempi disponibili:
-- 01 **bucket S3**: primo rilascio usando i comandi base CDK per la creazione di un bucket tramite libreria AWS-CDK
+- Cdk01 **bucket S3**: primo rilascio usando i comandi base CDK per la creazione di un bucket tramite libreria AWS-CDK
 
 
 ## AWS Code Whisperer
@@ -16,10 +16,20 @@ Esempi di codice Python generati con AWS CodeWhisperer
 Esempi di codice Python con Spark e Pandas per la manipolazione dati con il servizio AWS Glue
 - 01 **console**: Semplice esempio creato da console manualmente che elabora un file csv con una struttura ben definita (numero,lettera,lungo,gruppo), filtra gli elementi che hanno gruppo = 'A' e salva un nuovo file con la stessa struttura. Non è possibile eseguirlo in locale.
 
+## Blockchain
+Esempio di scipt per l'implementazione dell'algoritmo "proof of work" con un unico nodo e un secondo esempio multi-nodo con metodo per la sincronia
+
 
 ## Data Scientists
 Esempi di codice Python con Pandas e altre librerie per la manipolazione dati.
 See https://khuyentran1401.github.io/Efficient_Python_tricks_and_tools_for_data_scientists/README.html
+
+
+## Django
+Tre esempi di progetti Django sviluppati dal corso 
+- PythonDjango1example
+- PythonDjango2news
+- PythonDjango3forms
 
 
 ## Docker
@@ -51,51 +61,11 @@ See https://khuyentran1401.github.io/Efficient_Python_tricks_and_tools_for_data_
   - l'ouput viene scritto in un file OUT.txt
 - UnzipFile: Semplice esempio che usa "zipfile" di Py per estrarre il contenuto di un pacchetto zip
 
-
-## Mongo
-Esempi per iteragire con una base dati Mongo che deve essere installata e disponibile sulla porta di default , la libreria si installa con il comando
-
-```
-$ pip install pymongo
-```
-
-To run
-```
-$ python3 example1create.py
-$ python3 example2access.py
-$ python3 example3edit.py
-```
-
-
-## PythonDjango
-Tre esempi di progetti Django sviluppati dal corso 
-- PythonDjango1example
-- PythonDjango2news
-- PythonDjango3forms
-
-
-## RabbitMq
-Esempio basic di script per scrivere una stringa su una coda RabbitMQ e leggerla. Prerequisito aver installato pika con pip3 e aver installato RabbitMQ nel proprio sistema (la porta potrebbe essere diversa dalla dell'esempio a seconda del sistema operativo)
-
-
-To run
-    per avviare il producer 
-    ```
-    $ python3 basic_producer.py
-    ```
-    per lanciare uno o più consumer (su console differenti dal producer)
-    ```
-    python3 basic_consumer.py
-    ```
-Notare che quando si avvia il producer viene consumata tanta CPU perchè ci sono i print, ogni consumer riceve un terzo perchè RabbitMQ configurato di default con RoundRobin che divide equamente: il promo messaggio al primo, il secondo al secondo, il terzo a terzo e il quarto al primo se sono 3 consumer.
-
-
 ## Simple
+- **mongo**: script per la gestione di una base dati NoSql Mongo
+- **rabbitMq**: script la gestione di una coda RabbitMq
 - conto1.py: Esercitazione classe ContoCorrente, inizializzatore con 3 parametri (nome titolare, numero conto e saldo) con tre attributi (nome, conto e saldo)
-	- metodo preleva con un parametro importo
-	- metodo deposita con un parametro importo
-	- metodo descrizione senza paraemtri e visualizza : nome, conto e saldo
-- conto2.py: Esercitazione classe ContoCorrente, prendere spunto dal conto1.py ma nascondere il saldo come proprietà semplice con una property ''privata'' , modificando il saldo in __saldo e nascondere attributo saldo, getter e setter
+- conto2.py: Esercitazione classe ContoCorrente, prendere spunto dal conto1.py ma nascondere il saldo come proprietà semplice con una property ''privata'' , 
 - conto3.py: Esercitazione classe Conto come padre di ContoCorrente, in conto ci devono essere nome e numero conto
 - conto4.py: Esercitazione classe Gestore Conto corrente, crea metodo bonifico per prelevare da un conto e fare un deposito ad un altro
 - exception.py: Esempi di exception in Py
