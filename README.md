@@ -1,16 +1,11 @@
-
-<p align="center">
-    <a href="https://www.alnao.it/">
-      <img src="https://img.shields.io/badge/alnao-.it-blue?logo=amazoncloudwatch&logoColor=A6C9E2" height="50px;"  />
-    </a>
-</p>
-
 # PythonExamples
 PythonExamples Examples by [AlNao](https://www.alnao.it)
 
 ## AWS CDK
-Esempio di codice Python usando la AWS-CDK boto3
-- 01 first deploy: primo rilascio usando i comandi base CDK per la creazione di un bucket tramite libreria CDK
+Esempio di codice Python usando la AWS-CDK boto3. Per l'installazione e la configurazione vedere il [sito ufficiale](https://docs.aws.amazon.com/cdk/v2/guide/getting_started.html) (`npm install -g aws-cdk`).
+
+Lista degli esempi disponibili:
+- 01 **bucket S3**: primo rilascio usando i comandi base CDK per la creazione di un bucket tramite libreria AWS-CDK
 
 
 ## AWS Code Whisperer
@@ -19,19 +14,19 @@ Esempi di codice Python generati con AWS CodeWhisperer
 
 ## AWS Glue
 Esempi di codice Python con Spark e Pandas per la manipolazione dati con il servizio AWS Glue
-- 01console: Semplice esempio creato da console manualmente che elabora un file csv con una struttura ben definita (numero,lettera,lungo,gruppo), filtra gli elementi che hanno gruppo = 'A' e salva un nuovo file con la stessa struttura. Non è possibile eseguirlo in locale.
+- 01 **console**: Semplice esempio creato da console manualmente che elabora un file csv con una struttura ben definita (numero,lettera,lungo,gruppo), filtra gli elementi che hanno gruppo = 'A' e salva un nuovo file con la stessa struttura. Non è possibile eseguirlo in locale.
 
 
 ## Data Scientists
 Esempi di codice Python con Pandas e altre librerie per la manipolazione dati.
 See https://khuyentran1401.github.io/Efficient_Python_tricks_and_tools_for_data_scientists/README.html
-- "01collections_itertools" esempi di metodi per la manipolazione di collezioni e uso di itertools
 
 
 ## Docker
-- 01 simple Pandas, see https://medium.com/codex/run-a-python-code-on-aws-batch-part-1-creation-of-python-script-and-docker-container-1b01dc89eaed
-- 02 Flask Login: esempio di docker con dentro una piccola applicazione web creata con Flask e db (sqlite), see https://www.youtube.com/watch?v=ud_nq9lapF4
-
+- 01 **simple Pandas**, see https://medium.com/codex/run-a-python-code-on-aws-batch-part-1-creation-of-python-script-and-docker-container-1b01dc89eaed
+- 02 **Flask Login**: esempio di docker con dentro una piccola applicazione web creata con Flask e db (sqlite), see https://www.youtube.com/watch?v=ud_nq9lapF4
+- 03 **Api Persone NODB**: esempio di applicazione per l'esposizione di API, non previsto DB e non prevista concorrenza
+- 04 **Flask login Ldap**: esempio di piccola applicazione Flask che si collega ad un server AD tramite protocollo LDAP
 
 ## From Others Sites
 - Blockchain (python simple example of blockchain with multiple nodes)

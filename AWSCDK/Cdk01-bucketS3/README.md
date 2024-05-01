@@ -1,30 +1,37 @@
-# Cdk01-FirstDeploy
+# 01-BucketS3
 Esempio base per la creazione di un bucket
 
-Comandi usati per la creazione del progetto
+## Comandi per la creazione del progetto
 ```
+mkdir Cdk01-bucketS3
+cd Cdk01-bucketS3
 cdk init app --language python
-python -m pip install -r requirements.txt
-python -m venv .venv
+python3 -m pip install -r requirements.txt
+python3 -m venv .venv
+cdk bootstrap
 ```
 
-Comandi usati per il rilascio 
+## Comandi usati per il rilascio 
 ```
 cdk ls
-cdk synth
-    > Cdk01FirstDeployStack.template.json
-cdk bootstrap   Run the below command to deploy the CDK Toolkit to CloudFormation.
-    > Environment aws://xxxx/eu-west-1 bootstrapped.
+cdk synth > BucketS3-template.yaml
 cdk deploy      
-    > Creation Initiated
 ```
 
-Comando per confronto tra sviluppo e ambiente 
+## Comando verifica bucket 
+```
+aws s3 ls
+aws s3 ls cdk-01-bucket-s3
+aws cloudformation list-stack-resources --stack-name Cdk01BucketS3Stack --output text
+
+```
+
+## Comando per confronto tra sviluppo e ambiente 
 ```
 cdk diff 
 ```
 
-Comando per la distruzione
+## Comando per la distruzione
 ```    
 cdk destroy
 ```
@@ -37,6 +44,8 @@ Nessun contenuto in questo repository è stato creato con IA o automaticamente, 
 Public projects 
 <a href="https://it.wikipedia.org/wiki/GNU_General_Public_License"  valign="middle"><img src="https://img.shields.io/badge/License-GNU-blue" style="height:22px;"  valign="middle"></a> 
 *Free Software!*
+
+
 
 # Welcome to your CDK Python project!
 
@@ -54,7 +63,7 @@ you can create the virtualenv manually.
 To manually create a virtualenv on MacOS and Linux:
 
 ```
-$ python -m venv .venv
+$ python3 -m venv .venv
 ```
 
 After the init process completes and the virtualenv is created, you can use the following
@@ -93,5 +102,5 @@ command.
  * `cdk deploy`      deploy this stack to your default AWS account/region
  * `cdk diff`        compare deployed stack with current state
  * `cdk docs`        open CDK documentation
- * `cdk destroy`
+
 Enjoy!

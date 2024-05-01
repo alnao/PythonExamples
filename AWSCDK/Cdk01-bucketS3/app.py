@@ -3,11 +3,11 @@ import os
 
 import aws_cdk as cdk
 
-from cdk01_first_deploy.cdk01_first_deploy_stack import Cdk01FirstDeployStack
+from cdk01_bucket_s3.cdk01_bucket_s3_stack import Cdk01BucketS3Stack
 
 
 app = cdk.App()
-Cdk01FirstDeployStack(app, "Cdk01FirstDeployStack",
+Cdk01BucketS3Stack(app, "Cdk01BucketS3Stack",
     # If you don't specify 'env', this stack will be environment-agnostic.
     # Account/Region-dependent features and context lookups will not work,
     # but a single synthesized template can be deployed anywhere.
