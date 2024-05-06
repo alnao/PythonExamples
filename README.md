@@ -41,15 +41,17 @@ Tre esempi di progetti Django sviluppati dal corso
 ## From Others Sites
 - Blockchain (python simple example of blockchain with multiple nodes)
 - ChatGPT
-- FaceDetector see https://www.youtube.com/watch?v=i3sLv1sus0I
-- FlaskGeolocalNotes  see https://www.youtube.com/watch?v=w-rti-5KHME
-- FlaskLogin see https://www.youtube.com/watch?v=ud_nq9lapF4
-- TkinterExample see  https://www.youtube.com/watch?v=5qOnzF7RsNA (Tkinter e "Python Simplified")
-- Youtube Downloader see https://www.youtube.com/watch?v=EMlM6QTzJo0 
-- Coffe.py see https://github.com/uxai/100daysofcode/blob/main/Day%2015/coffee_machine.py
-- NotificationCron.py see https://www.youtube.com/watch?v=7ahUnBhdI5o
-- SimpleIa.py see https://www.youtube.com/watch?v=CkkjXTER2KE
-
+- FaceDetector: https://www.youtube.com/watch?v=i3sLv1sus0I
+- FlaskGeolocalNotes: https://www.youtube.com/watch?v=w-rti-5KHME
+- FlaskLogin: https://www.youtube.com/watch?v=ud_nq9lapF4
+- TkinterExample:  https://www.youtube.com/watch?v=5qOnzF7RsNA (Tkinter e "Python Simplified")
+- Youtube Downloader: https://www.youtube.com/watch?v=EMlM6QTzJo0 
+- NotificationCron: https://www.youtube.com/watch?v=7ahUnBhdI5o
+- SimpleIa: https://www.youtube.com/watch?v=CkkjXTER2KE
+- SimpleGames
+  - Coffe: https://github.com/uxai/100daysofcode/blob/main/Day%2015/coffee_machine.py
+  - Vital_messages & shootout: https://www.youtube.com/watch?v=3kdM9wyglnw
+  - Rogue Like tutorial see https://rogueliketutorials.com/tutorials/tcod/v2/part-1/
 
 ## Manage File
 - Marge2txtFile: Esempio di script py che esegue marge di due file

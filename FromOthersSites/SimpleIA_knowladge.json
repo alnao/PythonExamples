@@ -7,6 +7,10 @@
     {
       "question": "Come stai?",
       "answer": "Na merda"
+    },
+    {
+      "question": "/bin/python3 /mnt/Dati/Workspace/PythonExamples/FromOthersSites/SimpleIa.py",
+      "answer": "how are you?"
     }
   ]
 }

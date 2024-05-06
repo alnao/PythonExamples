@@ -3,6 +3,8 @@
 
 import json
 from difflib import get_close_matches
+import os
+dirname=os.path.dirname(__file__)
 
 def print_hi(name):
     print(f'Hi, {name}!')
@@ -30,7 +32,7 @@ def get_answer_for_question(question:str,knowladge_base :dict):
     return None
 
 def chat_bot():
-    file_path="/mnt/Dati/Workspace/PythonExamples/FromOthersSite/SimpleIA_knowladge.json"
+    file_path=dirname + "/SimpleIA_knowladge.json"
     know = load_knowledge(file_path)
     while True:
         user_input : str = input("Enter your question: ")
