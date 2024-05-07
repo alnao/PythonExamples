@@ -1,4 +1,4 @@
-# 01-BucketS3
+# CDK01 BucketS3
 Esempio base per la creazione di un bucket
 
 ## Comandi per la creazione del progetto
@@ -18,11 +18,25 @@ cdk synth > BucketS3-template.yaml
 cdk deploy      
 ```
 
+
+Log:
+```
+Cdk01BucketS3Stack | 0/4 | 14:53:23 | UPDATE_IN_PROGRESS   | AWS::CloudFormation::Stack | Cdk01BucketS3Stack User Initiated
+Cdk01BucketS3Stack | 0/4 | 14:53:26 | CREATE_IN_PROGRESS   | AWS::S3::Bucket    | 01BucketS3 (01BucketS3FB71414A) 
+Cdk01BucketS3Stack | 0/4 | 14:53:26 | UPDATE_IN_PROGRESS   | AWS::CDK::Metadata | CDKMetadata/Default (CDKMetadata)
+Cdk01BucketS3Stack | 1/4 | 14:53:27 | UPDATE_COMPLETE      | AWS::CDK::Metadata | CDKMetadata/Default (CDKMetadata)
+Cdk01BucketS3Stack | 1/4 | 14:53:27 | CREATE_IN_PROGRESS   | AWS::S3::Bucket    | 01BucketS3 (01BucketS3FB71414A) Resource creation Initiated
+Cdk01BucketS3Stack | 2/4 | 14:53:50 | CREATE_COMPLETE      | AWS::S3::Bucket    | 01BucketS3 (01BucketS3FB71414A) 
+Cdk01BucketS3Stack | 3/4 | 14:53:51 | UPDATE_COMPLETE_CLEA | AWS::CloudFormation::Stack | Cdk01BucketS3Stack 
+Cdk01BucketS3Stack | 4/4 | 14:53:51 | UPDATE_COMPLETE      | AWS::CloudFormation::Stack | Cdk01BucketS3Stack 
+```
+
 ## Comando verifica bucket 
 ```
 aws s3 ls
 aws s3 ls cdk-01-bucket-s3
 aws cloudformation list-stack-resources --stack-name Cdk01BucketS3Stack --output text
+aws cloudformation get-template --stack-name Cdk01BucketS3Stack
 
 ```
 
@@ -47,6 +61,7 @@ Public projects
 
 
 
+
 # Welcome to your CDK Python project!
 
 This is a blank project for CDK development with Python.
@@ -63,7 +78,7 @@ you can create the virtualenv manually.
 To manually create a virtualenv on MacOS and Linux:
 
 ```
-$ python3 -m venv .venv
+$ python -m venv .venv
 ```
 
 After the init process completes and the virtualenv is created, you can use the following

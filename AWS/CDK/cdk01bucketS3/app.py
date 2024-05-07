@@ -3,7 +3,7 @@ import os
 
 import aws_cdk as cdk
 
-from cdk01_bucket_s3.cdk01_bucket_s3_stack import Cdk01BucketS3Stack
+from cdk01bucket_s3.cdk01bucket_s3_stack import Cdk01BucketS3Stack
 
 
 app = cdk.App()

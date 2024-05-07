@@ -12,7 +12,7 @@ Resources:
   CDKMetadata:
     Type: AWS::CDK::Metadata
     Properties:
-      Analytics: v2:deflate64:H4sIAAAAAAAA/yXIQQ5AMBBA0bPYtyPVlS0XEA4gVRWjTBOdRkTcHbH6L78ApUtQmTmitKOXKw5wdWysF+/qo4arStY7FvVEv+6PrYsh7dZ9rgONyBjoFs3Jc6Bcg1JQZEtElHsixs1B+/cBLd/Nr3EAAAA=
+      Analytics: v2:deflate64:H4sIAAAAAAAA/yXITQ5AMBBA4bPYt6N+FtZcQDiAUBWjTBOdRkTcHbF6X14KSa5ARf3hpR6tXHGAq+VeW/GuzmdwlUFbw6Ka6Nf9sTHehV2bz5WjERkd3aI+eXYUZ1BAoqLFI8o9EONmoPn7AKE+qE9xAAAA
     Metadata:
       aws:cdk:path: Cdk01BucketS3Stack/CDKMetadata/Default
     Condition: CDKMetadataAvailable
