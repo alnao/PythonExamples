@@ -1,0 +1,190 @@
+Parameters:
+  vpcid:
+    Type: String
+    Default: vpc_id
+  keypairname:
+    Type: String
+    Default: ""
+  publicsubnetid:
+    Type: String
+    Default: public_subnet_id
+  SsmParameterValueawsserviceamiamazonlinuxlatestal2023amikernel61x8664C96584B6F00A464EAD1953AFF4B05118Parameter:
+    Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
+    Default: /aws/service/ami-amazon-linux-latest/al2023-ami-kernel-6.1-x86_64
+  BootstrapVersion:
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: /cdk-bootstrap/hnb659fds/version
+    Description: Version of the CDK Bootstrap resources in this environment, automatically retrieved from SSM Parameter Store. [cdk:skip]
+Resources:
+  CdkSecurityGroup998008F9:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Cdk02Ec2Stack/CdkSecurityGroup
+      SecurityGroupEgress:
+        - CidrIp: 0.0.0.0/0
+          Description: Allow all outbound traffic by default
+          IpProtocol: "-1"
+      SecurityGroupIngress:
+        - CidrIp: 0.0.0.0/0
+          Description: allow SSH access
+          FromPort: 22
+          IpProtocol: tcp
+          ToPort: 22
+      VpcId:
+        Ref: vpcid
+    Metadata:
+      aws:cdk:path: Cdk02Ec2Stack/CdkSecurityGroup/Resource
+  MyInstanceInstanceRole1C4D4747:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action: sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service: ec2.amazonaws.com
+        Version: "2012-10-17"
+      Tags:
+        - Key: Name
+          Value: Cdk02Ec2Stack/MyInstance
+    Metadata:
+      aws:cdk:path: Cdk02Ec2Stack/MyInstance/InstanceRole/Resource
+  MyInstanceInstanceProfile2784C631:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Roles:
+        - Ref: MyInstanceInstanceRole1C4D4747
+    Metadata:
+      aws:cdk:path: Cdk02Ec2Stack/MyInstance/InstanceProfile
+  MyInstanceA12EC128:
+    Type: AWS::EC2::Instance
+    Properties:
+      AvailabilityZone: eu-west-1b
+      IamInstanceProfile:
+        Ref: MyInstanceInstanceProfile2784C631
+      ImageId:
+        Ref: SsmParameterValueawsserviceamiamazonlinuxlatestal2023amikernel61x8664C96584B6F00A464EAD1953AFF4B05118Parameter
+      InstanceType: t2.micro
+      KeyName:
+        Ref: keypairname
+      NetworkInterfaces:
+        - AssociatePublicIpAddress: true
+          DeviceIndex: "0"
+          GroupSet:
+            - Fn::GetAtt:
+                - CdkSecurityGroup998008F9
+                - GroupId
+          SubnetId:
+            Ref: publicsubnetid
+      Tags:
+        - Key: Name
+          Value: Cdk02Ec2Stack/MyInstance
+      UserData:
+        Fn::Base64: "#!/bin/bash"
+    DependsOn:
+      - MyInstanceInstanceRole1C4D4747
+    Metadata:
+      aws:cdk:path: Cdk02Ec2Stack/MyInstance/Resource
+  CDKMetadata:
+    Type: AWS::CDK::Metadata
+    Properties:
+      Analytics: v2:deflate64:H4sIAAAAAAAA/1WNQQ6CMBBFz8K+VEAX7lkYVxI8gKlliCPQIe00hpDe3YLpwtX/ef9NppLlqZBFpj4u192Qj/iU652VHkTdm0ZZNQGDFS048laDiOJjBV1FC7S3yMvFkp83+x9cjWNl4kVcUg8C1STXlsYdp0xzY6nHEULY4M3z7HnX0u/YazIdMpIJoln4ReZwlGdZFtnbIebWG8YJZPvLL7aTUVbdAAAA
+    Metadata:
+      aws:cdk:path: Cdk02Ec2Stack/CDKMetadata/Default
+    Condition: CDKMetadataAvailable
+Outputs:
+  InstanceId:
+    Value:
+      Ref: MyInstanceA12EC128
+Conditions:
+  CDKMetadataAvailable:
+    Fn::Or:
+      - Fn::Or:
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - af-south-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - ap-east-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - ap-northeast-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - ap-northeast-2
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - ap-south-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - ap-southeast-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - ap-southeast-2
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - ca-central-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - cn-north-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - cn-northwest-1
+      - Fn::Or:
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - eu-central-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - eu-north-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - eu-south-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - eu-west-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - eu-west-2
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - eu-west-3
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - il-central-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - me-central-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - me-south-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - sa-east-1
+      - Fn::Or:
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - us-east-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - us-east-2
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - us-west-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - us-west-2
+Rules:
+  CheckBootstrapVersion:
+    Assertions:
+      - Assert:
+          Fn::Not:
+            - Fn::Contains:
+                - - "1"
+                  - "2"
+                  - "3"
+                  - "4"
+                  - "5"
+                - Ref: BootstrapVersion
+        AssertDescription: CDK bootstrap stack version 6 required. Please run 'cdk bootstrap' with a recent version of the CDK CLI.
+

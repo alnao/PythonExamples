@@ -8,9 +8,11 @@ from tkinter import ttk
 
 from SDK.sdk00profiles import AwsProfiles as AwsProfilesSdk
 from SDK.sdk01bucketS3 import AwsBucketS3 as AwsBucketS3Sdk
+from SDK.sdk02ec2 import AwsEc2 as AwsEc2Sdk
 
-from Console.menu import ConsoleMenu
-from Console.bucketS3 import ConsoleBucketS3
+from ManagerTk.Services.bucketS3 import ConsoleBucketS3
+from ManagerTk.Services.ec2 import ConsoleEc2
+from ManagerTk.menu import ConsoleMenu
 
 #see example tk https://realpython.com/python-gui-tkinter/
 class StatusBar(tk.Frame):
@@ -106,16 +108,34 @@ class AwsPyConsole:
             ,s3.content_object_presigned
             ,s3.write_file #write_test_file
             ,self.reload_s3_instance_window , "","")
-
     def reload_s3_instance_window(self,frame):#print ("reload_s3_instance_window")
         for widget in frame.winfo_children():
             widget.destroy()
         self.load_s3_instance_window(frame)
-
+#EC2
+    def load_ec2_instance(self,frame):   
+        frame.pack_propagate(False)
+        Button(frame, text = "Load", command= lambda: self.reload_ec2_instance_window(frame)).pack()
+    def load_ec2_instance_window(self,frame):   
+        frame.pack_propagate(False)
+        ec2 = AwsEc2Sdk(self.profilo)
+        ConsoleEc2(frame,self.profilo
+            ,ec2.get_lista_istanze() #(self.profilo)
+            ,ec2.set_tag
+            ,ec2.stop_instance
+            ,ec2.start_instance
+            ,self.reload_ec2_instance_window )
+    def reload_ec2_instance_window(self,frame):#print ("reload_ec2_instance_window")
+        for widget in frame.winfo_children():
+            widget.destroy()
+        self.load_ec2_instance_window(frame)
+        
 # lista_funzionalita
     lista_funzionalita=[ 
-            {'title':'S3','desc':'Lista bucket S3 del profilo','metodo':load_s3_instance_window}
+            {'title':'S3','desc':'Lista bucket S3','metodo':load_s3_instance_window},
+            {'title':'EC2','desc':'Lista istanze Ec2','metodo':load_ec2_instance},
         ]
+
 
 if __name__ == '__main__':
     configuration={}

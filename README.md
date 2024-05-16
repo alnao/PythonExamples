@@ -7,14 +7,16 @@ Prerequisito l'installazione e la configurazione di AWS-CLI, vedere il [sito uff
 Esempi di codice Python usando la AWS-CDK & la AWS-SDK:
 - **CDK**: Per la libreria CDK, l'installazione e la configurazione vedere il [sito ufficiale](https://docs.aws.amazon.com/cdk/v2/guide/getting_started.html) e il comando `npm install -g aws-cdk`. Per ogni progetto c'è un README dedicato:
   - 01 **bucketS3**: progetto per la creazione di un bucket
+  - 02 **ec2**: progetto per la creazione di una istanza EC2
 - **CodeWhisperer**
   - 01 **basic**: semplice esempio usato come prima prova
-- **Console**: Componenti per la *applicazione* python con la libreria tkinter (menu, gestione finestre ed elenchi)
 - **Glue**
   - 01 **console**: Semplice esempio creato da console manualmente che elabora un file csv con una struttura ben definita (numero,lettera,lungo,gruppo), filtra gli elementi che hanno gruppo = 'A' e salva un nuovo file con la stessa struttura. Non è possibile eseguirlo in locale.
+- **ManagerTk**: Componenti per la *applicazione* python con la libreria tkinter (menu, gestione finestre ed elenchi)
 - **SDK**: Per la libreria SDK, l'installazione e la configurazione vedere il [sito ufficiale](https://boto3.amazonaws.com/v1/documentation/api/latest/guide/quickstart.html) e il comando `pip install boto3`.
   - 00 **profiles**: classe per la gestione dei profili AWS-CLI
   - 01 **bucketS3**: classe per la getsione dei bucket S3
+  - 02 **ec2**: classe per la getsione delle istanze EC2
 
 ## Data Scientists
 Esempi di codice Python con Pandas e altre librerie per la manipolazione dati. See [khuyentran1401 website](https://khuyentran1401.github.io/Efficient_Python_tricks_and_tools_for_data_scientists/README.html).
@@ -30,7 +32,8 @@ Quattro esempi di progetti Django sviluppati:
 - 01 **simple Pandas**: see [run a python code on aws batch](https://medium.com/codex/run-a-python-code-on-aws-batch-part-1-creation-of-python-script-and-docker-container-1b01dc89eaed)
 - 02 **Flask Login**: [esempio di docker](https://www.youtube.com/watch?v=ud_nq9lapF4) con dentro una piccola applicazione web creata con Flask e db (sqlite), 
 - 03 **Api Persone NODB**: esempio di applicazione per l'esposizione di API, non previsto DB e non prevista concorrenza
-- 04 **Flask login Ldap**: esempio di piccola applicazione Flask che si collega ad un server AD tramite protocollo LDAP
+- 04 **Flask login Ldap**: esempio di piccola applicazione Flask con la gestione delle credenziali tramite un server AD e protocollo LDAP
+- 05 **Flask login Saml2-SSO**: esempio di piccola applicazione Flask con la gestione delle credenziali tramite un server AD e protocollo Saml2-SSO
 
 ## From Others Sites
 - Blockchain: esempi di implementazione dell'algoritmo "proof of work" con un unico nodo e un secondo esempio multi-nodo con metodo per la sincronia
