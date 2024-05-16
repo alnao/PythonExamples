@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+{% if paint_logout %}
+  <h1>Application page</h1>
+  <p>Congratulation, you're in application</p>
+  <a href="/servlet/saml/auth?slo" class="btn btn-danger">Logout</a>
+{% else %}
+  <a href="/servlet/saml/auth?sso2" class="btn btn-primary">Login and access again to application page</a>
+{% endif %}
+
+{% endblock %}
