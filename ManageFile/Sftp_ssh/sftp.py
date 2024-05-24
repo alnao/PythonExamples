@@ -35,11 +35,11 @@ def openSSHconnection(host,username,pkey):
     ssh.connect(host, username=username, password='', pkey=private_key)
     return ssh
 
-if __name__ == '__main__':
+def run():
     print("__main__ del sftp.py")
     paramiko.util.log_to_file("C:\\Temp\\paramiko.log")
 
-    host = '34.251.28.90'
+    host = 'xxx.xxx.xxx.xxx'
     port = 22
     username = 'utente'
     password = ''
@@ -63,3 +63,6 @@ if __name__ == '__main__':
     ssh_stdin, ssh_stdout, ssh_stderr = connection_ssh.exec_command(command)
     stdout=ssh_stdout.readlines()
     print("SSH finito" , stdout )
+
+if __name__ == '__main__':
+    run()

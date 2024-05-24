@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block content %}
+
+
+<div class="container">
+    <div class="row align-items-start">
+        <div class="col">
+            <ul class="list-group">
+                <li class="list-group-item list-group-item-success">
+                    Lista profili - Profilo attivo: <b>{{profile}}</b>
+                </li>
+                <li class="list-group-item p-1 overflow-hidden ">
+                    {% for p in list %}
+                        <a href="/profili/{{p}}"  class="badge {% if profile==p %} badge-primary {% else %} badge-info  {% endif %}">
+                            {{p}}</a>
+                    {% endfor %}
+                </li>
+            </ul>
+        </div>
+    </div>
+</div>
+  
+{% endblock %}

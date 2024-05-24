@@ -1,14 +1,17 @@
 from tkinter import *
 import tkinter as tk
 from  tkinter import ttk
-#import window.ec2_instances as ec2_instances
 
+#import window.ec2_instances as ec2_instances
 #see https://www.pythontutorial.net/tkinter/tkinter-menu/
 #see https://pythonguides.com/python-tkinter-table-tutorial/
 # https://stackoverflow.com/questions/3794268/command-for-clicking-on-the-items-of-a-tkinter-treeview-widget
 
+if __name__ == '__main__':
+    print("Error")
+
 class ConsoleEc2:
-    def __init__(self,frame,profilo,lista_istanze,set_tag_method,stop_method,start_method,reload_method): #def crea_lista_istanze(frame,profilo,lista_istanze):#,load_profile_function
+    def __init__(self,frame,profilo,lista_istanze,set_tag_method,stop_method,start_method,list_to_clipboard,reload_method): #def crea_lista_istanze(frame,profilo,lista_istanze):#,load_profile_function
         self.lista_istanze=lista_istanze
         self.profilo=profilo
         self.frame=frame
@@ -19,6 +22,7 @@ class ConsoleEc2:
         self.start_method=start_method
         self.reload_method=reload_method
         self.crea_window()
+        self.list_to_clipboard=list_to_clipboard
 
     def crea_window(self):
         #grid # https://www.geeksforgeeks.org/python-grid-method-in-tkinter/
@@ -56,6 +60,7 @@ class ConsoleEc2:
                     values=(nome,istanza['InstanceId'],istanza['InstanceType'], istanza['State']['Name']))
                 i=i+1
         self.tree.bind("<Double-1>", self.open_detail)
+        self.tree.bind("<Button-3>", func = lambda event :self.list_to_clipboard(self.tree,0) )
         self.tree.pack(side=LEFT, expand = 1)
         self.free2_loaded=False
         #return tab
@@ -78,7 +83,9 @@ class ConsoleEc2:
         if self.free2_loaded==True:
             self.frame2.pack_forget()# or frm.grid_forget() depending on whether the frame was packed or grided. #self.frame2.Destroy()
             self.frame2 = ttk.Frame(self.frame)
-        Label(self.frame2, text="Istanza: " + id_istanza ).pack()
+        l=Label(self.frame2, text="Istanza: " + id_istanza )
+        l.bind("<Button-1>", func = lambda event :self.list_to_clipboard(self.tree,0) )
+        l.pack()
         Label(self.frame2, text="Stato: " + istanza['State']['Name'] ).pack()
         if istanza['State']['Name']=='running':
             Button(self.frame2, text = "Stop", command=self.send_stop).pack()
@@ -102,6 +109,7 @@ class ConsoleEc2:
             self.tree2.insert(parent='',index='end',iid=i,text='',
                     values=(key,istanza[key]) )
             i=i+1
+        self.tree2.bind("<Button-3>", func = lambda event :self.list_to_clipboard(self.tree2,1) )
         self.tree2.pack()
         self.frame2b = ttk.Frame(self.frame2)
         l_name= Label(self.frame2b, text="Tag (click per inserire) " + nome )
@@ -123,6 +131,7 @@ class ConsoleEc2:
                     values=(tag['Key'],tag['Value']) )
             i=i+1
         self.tree3.bind("<Double-1>", self.open_detail_tag)
+        self.tree3.bind("<Button-3>", func = lambda event :self.list_to_clipboard(self.tree3,1) )
         self.tree3.pack()
         self.frame2a.pack()
         self.frame2b.pack()
@@ -170,14 +179,3 @@ class ConsoleEc2:
         self.start_method(self.istanza['InstanceId'])
         self.reload_method( self.frame )
 
-if __name__ == '__main__':
-    root = tk.Tk()
-    root.title('Aws Py Console - only ec2_instances')
-    root.geometry ('950x680') #WIDTHxHEIGHT+TOP+LEFT
-    frame2 = ttk.Frame(root)
-    frame2.pack_propagate(False)
-    Ec2InstanceWindow(frame2,"default",
-        {'Reservations':[{'Instances':[{'InstanceId':'i1','InstanceType':'t2','State':{'Name':'main'} } ] }] } 
-    ,print,print,print,print)
-    frame2.pack()
-    root.mainloop()

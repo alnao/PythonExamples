@@ -12,11 +12,12 @@ Esempi di codice Python usando la AWS-CDK & la AWS-SDK:
   - 01 **basic**: semplice esempio usato come prima prova
 - **Glue**
   - 01 **console**: Semplice esempio creato da console manualmente che elabora un file csv con una struttura ben definita (numero,lettera,lungo,gruppo), filtra gli elementi che hanno gruppo = 'A' e salva un nuovo file con la stessa struttura. Non è possibile eseguirlo in locale.
-- **ManagerTk**: Componenti per la *applicazione* python con la libreria tkinter (menu, gestione finestre ed elenchi)
+- **ManagerTk**: *Applicazione* sviluppata con la libreria tkinter (menu, gestione finestre ed elenchi)
+- **ManagerFlask**: *Applicazione* web sviluppata con Flask
 - **SDK**: Per la libreria SDK, l'installazione e la configurazione vedere il [sito ufficiale](https://boto3.amazonaws.com/v1/documentation/api/latest/guide/quickstart.html) e il comando `pip install boto3`.
   - 00 **profiles**: classe per la gestione dei profili AWS-CLI
   - 01 **bucketS3**: classe per la getsione dei bucket S3
-  - 02 **ec2**: classe per la getsione delle istanze EC2
+  - 02 **ec2**: classe per la getsione delle istanze EC2 e classe per la gestione dei security groups
 
 ## Data Scientists
 Esempi di codice Python con Pandas e altre librerie per la manipolazione dati. See [khuyentran1401 website](https://khuyentran1401.github.io/Efficient_Python_tricks_and_tools_for_data_scientists/README.html).
@@ -40,6 +41,7 @@ Quattro esempi di progetti Django sviluppati:
 - FaceDetector: https://www.youtube.com/watch?v=i3sLv1sus0I
 - FlaskGeolocalNotes: https://www.youtube.com/watch?v=w-rti-5KHME
 - FlaskLogin: https://www.youtube.com/watch?v=ud_nq9lapF4
+- FlaskLoginGoogle: https://realpython.com/flask-google-login/
 - TkinterExample:  https://www.youtube.com/watch?v=5qOnzF7RsNA (Tkinter e "Python Simplified")
 - Youtube Downloader: https://www.youtube.com/watch?v=EMlM6QTzJo0 
 - NotificationCron: https://www.youtube.com/watch?v=7ahUnBhdI5o
@@ -50,16 +52,19 @@ Quattro esempi di progetti Django sviluppati:
   - Rogue Like tutorial see https://rogueliketutorials.com/tutorials/tcod/v2/part-1/
 
 ## Manage File
-- Marge2txtFile: Esempio di script py che esegue marge di due file
-  -  un file di testo txt (chiamato BAN) e un file csv (chiamato rapporti)
-  -  genera un file di testotxt (chiamato OUT.txt) e un file csv di report con quali righe sono state modificate (OUT.log)
-- Csv2fixedWidthFile: Esempio di script py che prende un file csv e lo trasforma in un file txt posizionale
+- Csv2fixedWidthFile: esempio di script py che prende un file csv e lo trasforma in un file txt posizionale
   - tracciato.csv necessario con i campi del file posizionale con le informazioni: nome, tipo, lunghezza, valore e descrizione
   - input.csv file di input coni campi 
   - l'ouput viene scritto in un file OUT.txt
-- UnzipFile: Semplice esempio che usa "zipfile" di Py per estrarre il contenuto di un pacchetto zip
+- Marge2txtFile: esempio di script py che esegue marge di due file
+  -  un file di testo txt (chiamato BAN) e un file csv (chiamato rapporti)
+  -  genera un file di testotxt (chiamato OUT.txt) e un file csv di report con quali righe sono state modificate (OUT.log)
+- Sftp_ssh: metodi per la gestione di un server sftp (invio e ricezione dati), esecuzione comando in remoto con ssh
+- UnzipFile: esempio che usa "zipfile" di Py per estrarre il contenuto di un pacchetto zip
+- UploadFileToRestAPI: esempio per l'invio di un file locale ad una API Rest 
 
 ## Simple
+- **gui**: esempi vari di librerie GUI per Python
 - **mongo**: script per la gestione di una base dati NoSql Mongo
 - **rabbitMq**: script la gestione di una coda RabbitMq
 - conto1.py: Esercitazione classe ContoCorrente, inizializzatore con 3 parametri (nome titolare, numero conto e saldo) con tre attributi (nome, conto e saldo)

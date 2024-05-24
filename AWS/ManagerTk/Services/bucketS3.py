@@ -6,6 +6,9 @@ from tkinter.filedialog import asksaveasfile #https://www.geeksforgeeks.org/pyth
 from tkinter.filedialog import askopenfilename
 from functools import partial
 
+if __name__ == '__main__':
+    print("Error")
+
 class ConsoleBucketS3:
     larghezza_blocco=450
     altezza=600
@@ -13,8 +16,8 @@ class ConsoleBucketS3:
     mol2=12/3
     mol3=12/2
 
-    def __init__(self,frame,profilo,configuration,lista_bucket,get_objects_method,get_txt_object,get_presigned_object,upload_file,reload_method
-                 ,bucketDefault,pathDefault):
+    def __init__(self,frame,profilo,configuration,lista_bucket,get_objects_method,get_txt_object,get_presigned_object,upload_file,list_to_clipboard 
+                 ,bucketDefault,pathDefault,reload_method):
         for widget in frame.winfo_children():
             widget.destroy()
         self.configuration=configuration
@@ -30,7 +33,7 @@ class ConsoleBucketS3:
         self.pathDefault=pathDefault
         self.crea_window(bucketDefault,pathDefault)
         self.lista_o1=[]
-
+        self.list_to_clipboard=list_to_clipboard
 
     def crea_window(self,bucketDefault,pathDefault):
         #grid # https://www.geeksforgeeks.org/python-grid-method-in-tkinter/
@@ -58,6 +61,7 @@ class ConsoleBucketS3:
             self.tree.insert(parent='',index='end',iid=i,text='',values=(b["Name"]))
             i=i+1
         self.tree.bind("<Double-1>", self.open_detail_bucket)
+        self.tree.bind("<Button-3>", func = lambda event :self.list_to_clipboard(self.tree,0) )
         self.tree.pack()
         self.free2_loaded=False
         self.free3_loaded=False
@@ -139,7 +143,9 @@ class ConsoleBucketS3:
             self.frame3.pack_forget()# or frm.grid_forget() depending on whether the frame was packed or grided. #self.frame2.Destroy()
             self.frame3 = ttk.Frame(self.frame, width=self.larghezza_blocco-10, height=self.altezza-10)
             self.frame3.grid(row = 1, column = 3, sticky = tk.NW, padx = 2) 
-        Label(self.frame2, text="Bucket: " + self.bucket_name ).pack()
+        lb=Label(self.frame2, text="Bucket: " + self.bucket_name + " (click to copy)" )
+        lb.bind("<Button-1>", func = lambda event :self.list_to_clipboard(self.tree,0) )
+        lb.pack()
         self.frame2a = ttk.Frame(self.frame2,height=100)
         self.scroll2 = Scrollbar(self.frame2a)
         self.scroll2.pack(side=RIGHT, fill=Y)
@@ -155,6 +161,7 @@ class ConsoleBucketS3:
             self.tree2.insert(parent='',index='end',iid=i,text='',values=(f) )
             i=i+1
         self.tree2.bind("<Double-1>", self.open_detail_folder_from_level1)
+        self.tree2.bind("<Button-3>", func = lambda event :self.list_to_clipboard(self.tree2,0) )
         self.tree2.pack()
         self.frame2b = ttk.Frame(self.frame2)
         l_name= Label(self.frame2b, text="Files (double-click to upload)"  )
@@ -179,6 +186,7 @@ class ConsoleBucketS3:
                     values=(f['Key'],str(f['LastModified']),f['Size']) )
             i=i+1
         self.tree2b.bind("<Double-1>", self.download_file_level1)
+        self.tree2b.bind("<Button-3>", func = lambda event :self.list_to_clipboard(self.tree2b,0) )
         self.tree2b.pack()
         self.frame2a.pack(side=TOP)
         self.frame2b.pack(side=BOTTOM)
@@ -224,7 +232,7 @@ class ConsoleBucketS3:
         if self.free3_loaded==True:
             self.frame3.pack_forget()# or frm.grid_forget() depending on whether the frame was packed or grided. #self.frame2.Destroy()
             self.frame3 = ttk.Frame(self.frame, width=self.larghezza_blocco, height=self.altezza-10)
-        l=Label(self.frame3, text="Path: " + path )# (click to ../)
+        l=Label(self.frame3, text="Path: " + path + " (click to .. )")# (click to ../)
         l.bind("<Double-1>", self.open_parent_folder_from_level2)
         l.pack()
         self.frame3a = ttk.Frame(self.frame3,height=100)
@@ -242,6 +250,7 @@ class ConsoleBucketS3:
             self.tree3.insert(parent='',index='end',iid=i,text='',values=(f.replace(path,"")) )
             i=i+1
         self.tree3.bind("<Double-1>", self.open_detail_folder_from_level2)
+        self.tree3.bind("<Button-3>", func = lambda event :self.list_to_clipboard(self.tree3,0) )
         self.tree3.pack()
         self.frame3b = ttk.Frame(self.frame3)
         l_name= Label(self.frame3b,text="Files (double-click to upload)") # + path  )
@@ -267,6 +276,7 @@ class ConsoleBucketS3:
                     values=(f['Key'].replace(path,""),str(f['LastModified']),f['Size']) )
             i=i+1
         self.tree3b.bind("<Double-1>", self.download_file_level2 )
+        self.tree3b.bind("<Button-3>", func = lambda event :self.list_to_clipboard(self.tree3b,0) )
         self.tree3b.pack()
         self.frame3a.pack(side=TOP)
         self.frame3b.pack(side=BOTTOM)
@@ -329,5 +339,3 @@ class ConsoleBucketS3:
         #        shutil.copyfileobj(r.raw, f)
         return request.urlretrieve(url, file_dest.name)
     
-if __name__ == '__main__':
-    print("Error")

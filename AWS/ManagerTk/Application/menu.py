@@ -72,6 +72,18 @@ class ConsoleMenu():
         l1.grid(row=1,column=2) 
         my_str1.set("Aws Py Console - see www.alnao.it")
 
+class StatusBar(tk.Frame):
+    def __init__(self, master,profilo):
+        tk.Frame.__init__(self, master)
+        self.label = tk.Label(self)
+        self.label.pack(side=tk.LEFT)
+        self.pack(side=tk.BOTTOM, fill=tk.X)
+        self.profilo=profilo
+        self.label.config(text="Profilo " + self.profilo )
+    def set(self, newText):
+        self.label.config(text="Profilo " + self.profilo + " - " + newText)
+
+
 if __name__ == '__main__':
     root = tk.Tk()
     root.title('Aws Py Console - only menu')

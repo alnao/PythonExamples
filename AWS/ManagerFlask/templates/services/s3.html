@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+{% block content %}
+<!--
+<h1 class="text-primary">
+    S3
+</h1>     -->
+
+<div class="containerW100">
+    <div class="row align-items-start">
+        <div class="col">
+            <ul class="list-group">
+                <li class="list-group-item list-group-item-success">
+                    Lista bucket - Profilo attivo: <b>{{profile}}</b>
+                </li>
+                <li class="list-group-item p-1 overflow-hidden ">
+                    {% for b in list_s3 %}
+                        <a href="/s3_level2/{{b.Name}}"  class="badge {% if bucket==b.Name %} badge-primary {% else %} badge-info  {% endif %}">
+                            {{b.Name}}</a>
+                    {% endfor %}
+                </li>
+            </ul>
+        </div>
+        <div class="col">
+            {% if load_l2==True %}
+                <ul class="list-group">
+                    <li class="list-group-item list-group-item-success">
+                        {{bucket}}
+                    </li>
+                    <li class="list-group-item _d-flex _justify-content-between _align-items-center p-1 overflow-hidden">
+                        {% for obj in list_object2.folders %}
+                            <a href="/s3_level3/{{bucket}}/{{obj.Prefix | replace("/", "ç") }}"  title="{{obj.Prefix}}"
+                                class="badge {% if path==obj.Prefix %} badge-primary {% else %} badge-info {% endif %}" 
+                            >{{obj.Prefix}}</a>
+                        {% endfor %}
+                    </li>
+                    <li class="list-group-item p-1 overflow-hidden ">
+                        {% for obj in list_object2.objects %}
+                            <a href="/s3_download/{{bucket}}/ç/{{obj.Key | replace("/", "ç") }}" download
+                                class="badge badge-secondary"  title="{{obj.Key}}" 
+                            >{{obj.Key}}</a>
+                        {% endfor %}
+                    </li>
+                    <li class="list-group-item p-1 list-group-item-secondary">
+                        <form action = "/s3_upload" method = "post" enctype="multipart/form-data" class="">   
+                            <input type="file" name="file" />   
+                            <input type="hidden" name="bucket" value="{{bucket}}"/>   
+                            <input type="hidden" name="path" value="ç"/>   
+                            <input type = "submit" value="Upload">   
+                        </form> 
+                    </li>
+                </ul>
+            {% else %}
+            {% endif %}
+        </div>
+        <div class="col">
+            {% if load_l3==True %}
+                <ul class="list-group">
+                    <li class="list-group-item list-group-item-success">
+                        {{path}}
+                    </li>
+                    <li class="list-group-item p-1 overflow-hidden ">
+                        {% for obj in list_object3.folders %}
+                            <a href="/s3_level3/{{bucket}}/{{obj.Prefix | replace("/", "ç") }}" 
+                                class="badge {% if path==obj.Prefix %} badge-primary {% else %} badge-info {% endif %}"  >
+                                {{obj.Prefix  | replace(path, "")}}
+                            </a>
+                        {% endfor %}
+                    </li>
+                    <li class="list-group-item p-1 overflow-hidden ">
+                        {% for obj in list_object3.objects %}
+                            <a href="/s3_download/{{bucket}}/{{path | replace("/", "ç") }}/{{obj.Key | replace("/", "ç") }}" download 
+                                    class="badge badge-secondary"  title="{{obj.Key}}" 
+                                >{{obj.Key   | replace(path, "") }}
+                            </a>
+                        {% endfor %}
+                    </li>
+                    <li class="list-group-item  p-1 list-group-item-secondary">
+                        <form action = "/s3_upload" method = "post" enctype="multipart/form-data" class="">   
+                            <input type="file" name="file" />   
+                            <input type="hidden" name="bucket" value="{{bucket}}"/>   
+                            <input type="hidden" name="path" value="{{path  | replace("/", "ç")}}"/>   
+                            <input type = "submit" value="Upload">   
+                        </form> 
+                    </li>
+                </ul>
+            {% else %}
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+  
+{% endblock %}

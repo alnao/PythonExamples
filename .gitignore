@@ -1,6 +1,9 @@
 OUT.txt
 OUT.log
 .vscode
+flask_session/
+
+*sqlite_db*
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

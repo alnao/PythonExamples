@@ -3,6 +3,8 @@
 # > pip install PyInstaller 
 # > pyInstaller  --onefile upload.py
 
+# note: "pip install PyJWT"   &&&  "pip uninstall JWT"
+
 import requests
 import json
 from pathlib import Path
@@ -11,7 +13,7 @@ import tkinter as tk
 from tkinter import filedialog
 from tkinter import messagebox
 from datetime import datetime, timedelta, timezone
-import jwt
+import jwt # note: "pip install PyJWT"   &&&  "pip uninstall JWT"
 
 C_jwt_signature='password'
 C_api_endpoint="https://aaaaaaaaaaaaaa.execute-api.eu-west-1.amazonaws.com/dev"
@@ -70,7 +72,7 @@ def check_response(resp,window_title):
     else:
         print ("Failure")
         if "User: anonymous is not authorized to perform: execute-api" in resp.text :
-            messagebox.showwarning(title=window_title, message="Impossibile collegarsi al server, verificare che la VPN sia attiva",)
+            messagebox.showwarning(title=window_title, message="Impossibile collegarsi al server, verificare che la connessione sia attiva",)
         #elseif '{"message":"Unauthorized"}' in rest.txt:
         #    messagebox.showwarning(title=window_title, message="Impossibile caricare il file",)
         else:
