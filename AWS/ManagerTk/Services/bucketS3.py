@@ -6,9 +6,6 @@ from tkinter.filedialog import asksaveasfile #https://www.geeksforgeeks.org/pyth
 from tkinter.filedialog import askopenfilename
 from functools import partial
 
-if __name__ == '__main__':
-    print("Error")
-
 class ConsoleBucketS3:
     larghezza_blocco=450
     altezza=600
@@ -16,24 +13,31 @@ class ConsoleBucketS3:
     mol2=12/3
     mol3=12/2
 
-    def __init__(self,frame,profilo,configuration,lista_bucket,get_objects_method,get_txt_object,get_presigned_object,upload_file,list_to_clipboard 
-                 ,bucketDefault,pathDefault,reload_method):
+    def __init__(self,frame,profilo,configuration,classe_sdk,list_to_clipboard):
         for widget in frame.winfo_children():
             widget.destroy()
         self.configuration=configuration
-        self.lista_bucket=lista_bucket
         self.profilo=profilo
         self.frame=frame
-        self.get_objects_method=get_objects_method
-        self.get_txt_object=get_txt_object
-        self.get_presigned_object=get_presigned_object
-        self.upload_file=upload_file
-        self.reload_method=reload_method
-        self.bucketDefault=bucketDefault
-        self.pathDefault=pathDefault
-        self.crea_window(bucketDefault,pathDefault)
-        self.lista_o1=[]
+        self.classe_sdk=classe_sdk
         self.list_to_clipboard=list_to_clipboard
+        self.lista_o1=[]
+        self.bucketDefault=""
+        self.pathDefault=""
+        self.reload_method=self.load_frame
+        self.load_frame()
+        
+    def load_frame(self):
+        for widget in self.frame.winfo_children():
+            widget.destroy()
+        service=self.classe_sdk(self.profilo)
+        self.object=service
+        self.lista_bucket=service.bucket_list() #(self.profilo)
+        self.get_objects_method=service.object_list_paginator
+        self.get_txt_object=service.content_object_text
+        self.get_presigned_object=service.content_object_presigned
+        self.upload_file=service.write_file #write_test_file
+        self.crea_window(self.bucketDefault,self.pathDefault)
 
     def crea_window(self,bucketDefault,pathDefault):
         #grid # https://www.geeksforgeeks.org/python-grid-method-in-tkinter/
@@ -339,3 +343,5 @@ class ConsoleBucketS3:
         #        shutil.copyfileobj(r.raw, f)
         return request.urlretrieve(url, file_dest.name)
     
+if __name__ == '__main__':
+    print("Error")

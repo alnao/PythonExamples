@@ -62,7 +62,8 @@ class AwsPyConsole:
             self.tabs.add(e_frame , text=e['title'] ) 
             self.add_text_to_frame(e_frame,e['desc']+ " del profilo " + self.profilo) 
             if e['automatic']==True:
-                e['metodo'](frame=e_frame) 
+                method=self.lambda_tab_loader(e,e_frame) #e['metodo'](frame=e_frame) 
+                method(e)
             else:
                 b=Button(e_frame, text = "Load service " + e['desc'] )# ,bd=5,fg="blue",font="calibre 18 bold", pady=15 )
                 #function= lambda method=e['metodo']: lambda frame=e_frame: method(frame)
@@ -77,7 +78,15 @@ class AwsPyConsole:
         def method():
             for widget in frame.winfo_children():
                 widget.destroy()
-            funzionalita['metodo'](frame)
+            if 'classe' in funzionalita: #sostotuisce il vecchio sistema con i metodi specifici nel service.py
+                frame.pack_propagate(False)
+                funzionalita['classe'](frame,self.profilo,self.configuration,funzionalita['sdk'],self.list_to_clipboard ) #frame,profilo,configuration,classe,list_to_clipboard
+            else:
+                if 'metodo' in funzionalita:
+                    funzionalita['metodo'](frame)
+                else:
+                    print("ERRORE caricamento funzionalita")
+                    print(funzionalita)
         return lambda ev:method()
 
     #PROFILEs

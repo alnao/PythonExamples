@@ -7,22 +7,28 @@ from  tkinter import ttk
 #see https://pythonguides.com/python-tkinter-table-tutorial/
 # https://stackoverflow.com/questions/3794268/command-for-clicking-on-the-items-of-a-tkinter-treeview-widget
 
-if __name__ == '__main__':
-    print("Error")
-
 class ConsoleEc2:
-    def __init__(self,frame,profilo,lista_istanze,set_tag_method,stop_method,start_method,list_to_clipboard,reload_method): #def crea_lista_istanze(frame,profilo,lista_istanze):#,load_profile_function
-        self.lista_istanze=lista_istanze
+    def __init__(self,frame,profilo,configuration,classe_sdk,list_to_clipboard):
+        for widget in frame.winfo_children():
+            widget.destroy()
+        self.configuration=configuration
         self.profilo=profilo
         self.frame=frame
-        self.istanza={}
-        self.nome=''
-        self.set_tag_method=set_tag_method
-        self.stop_method=stop_method
-        self.start_method=start_method
-        self.reload_method=reload_method
-        self.crea_window()
+        self.classe_sdk=classe_sdk
         self.list_to_clipboard=list_to_clipboard
+        self.lista_o1=[]
+        self.load_frame()
+        self.reload_method=self.load_frame
+        
+    def load_frame(self):
+        for widget in self.frame.winfo_children():
+            widget.destroy()
+        service=self.classe_sdk(self.profilo)
+        self.lista_istanze=service.get_lista_istanze() #(self.profilo)
+        self.set_tag_method=service.set_tag
+        self.stop_method=service.stop_instance
+        self.start_method=service.start_instance
+        self.crea_window()
 
     def crea_window(self):
         #grid # https://www.geeksforgeeks.org/python-grid-method-in-tkinter/
@@ -171,11 +177,13 @@ class ConsoleEc2:
         
     def send_set_tag(self):        #https://stackhowto.com/how-to-get-value-from-entry-on-button-click-in-tkinter/
         self.set_tag_method(self.istanza['InstanceId'], self.e1.get(), self.e2.get() )
-        self.reload_method( self.frame )
+        self.reload_method(  )
     def send_stop(self):
         self.stop_method(self.istanza['InstanceId'])
-        self.reload_method( self.frame )
+        self.reload_method(  )
     def send_start(self):
         self.start_method(self.istanza['InstanceId'])
-        self.reload_method( self.frame )
+        self.reload_method(  )
 
+if __name__ == '__main__':
+    print("Error")

@@ -9,6 +9,7 @@ from werkzeug.utils import secure_filename
 sys.path.append( os.path.dirname( os.path.dirname( os.path.abspath(__file__) ) ) )
 from SDK.sdk01bucketS3 import AwsBucketS3
 from SDK.sdk00profiles import AwsProfiles
+from SDK.sdk04cloudFront import AwsCloudFront
 
 app = Flask(__name__) 
 app.config["SESSION_PERMANENT"] = False
@@ -101,6 +102,26 @@ def service_s3_upload():    #see https://www.geeksforgeeks.org/how-to-upload-fil
             return service_s3_level3(bucket,path)
     flash('Nothing to do')
     return index()
+
+@app.route('/cloudFront') 
+def service_cloudFront(): 
+    cf=AwsCloudFront( session.get("profile") ) 
+    session["list_cf"]=cf.list_distributions() #print(e['Id'] + "|" + e['Status'] + "|" + e['Origins']['Items'][0]['DomainName'])
+    return render_template("services/cloudFront.html", profile=session.get("profile"), list_cf=session["list_cf"] , list_invalidaz=[] , load_l2=False)
+
+@app.route('/cloufFront_level2/<dist>') 
+def service_cloudFront_level2(dist): 
+    cf=AwsCloudFront( session.get("profile") ) 
+    dettaglio=cf.get_distribution(dist)
+    invalidaz=cf.get_invalidations(dist)
+    return render_template("services/cloudFront.html", profile=session.get("profile"), sfsel=dist, list_cf=session["list_cf"], dettaglio=dettaglio, list_invalidaz=invalidaz , load_l2=True)
+
+@app.route('/cloufFront_invalid/<dist>') 
+def service_cloufFront_invalid(dist): 
+    cf=AwsCloudFront( session.get("profile") ) 
+    cf.invalid_distribuzion(dist)
+    session["list_cf"]=cf.list_distributions()
+    return service_cloudFront_level2(dist)
 
 if __name__ == '__main__': 
     #app.run() 
