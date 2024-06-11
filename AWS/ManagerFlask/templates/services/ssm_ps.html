@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="containerW100">
+    <div class="row align-items-start">
+        <div class="col">
+            <ul class="list-group">
+                <li class="list-group-item list-group-item-success">
+                    Lista SMM parameter store - Profilo attivo: <b>{{profile}}</b>
+                </li>
+                <li class="list-group-item p-1 overflow-hidden ">
+                    {% for b in list %}
+                        <a href="/ssm_parameter_store/{{b.Name | replace("/", "ç")}}"  class="badge {% if parametro==b.Name %} badge-primary {% else %} badge-info  {% endif %}">
+                            {{b.Name}}</a>
+                    {% endfor %}
+                </li>
+            </ul>
+        </div>
+        <div class="col">
+            {% if load_l2==True %}
+                <table class="table table-bordered small ">
+                    <thead><tr><th colspan="2" class="table-success">
+                        <form action = "/ssm_parameter_store_update" method = "post" enctype="multipart/form-data" class="margin:0px;">   
+                            {{parametro}} 
+                            <input type="text" name="text" value="{{dettaglio['Value']}}" style="margin-left:20px;"/>   
+                            <input type="hidden" name="parametro" value="{{parametro}}"/>   
+                            <input type = "submit" value="Aggiorna valore">   
+                        </form> 
+                    </th></tr></thead>
+                    <tbody>
+                        {% for obj in dettaglio %}
+                            <tr><td>{{obj}}</td><td class="">{{dettaglio[obj] }}</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% else %}
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

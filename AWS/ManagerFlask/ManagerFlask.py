@@ -10,6 +10,7 @@ sys.path.append( os.path.dirname( os.path.dirname( os.path.abspath(__file__) ) )
 from SDK.sdk01bucketS3 import AwsBucketS3
 from SDK.sdk00profiles import AwsProfiles
 from SDK.sdk04cloudFront import AwsCloudFront
+from SDK.sdk00ssmParameter  import AwsSSMparameterStore
 
 app = Flask(__name__) 
 app.config["SESSION_PERMANENT"] = False
@@ -103,6 +104,7 @@ def service_s3_upload():    #see https://www.geeksforgeeks.org/how-to-upload-fil
     flash('Nothing to do')
     return index()
 
+# cloufFront_invalid
 @app.route('/cloudFront') 
 def service_cloudFront(): 
     cf=AwsCloudFront( session.get("profile") ) 
@@ -122,6 +124,35 @@ def service_cloufFront_invalid(dist):
     cf.invalid_distribuzion(dist)
     session["list_cf"]=cf.list_distributions()
     return service_cloudFront_level2(dist)
+
+# ssm_parameter_store
+@app.route('/ssm_parameter_store') 
+def ssm_parameter_store(): 
+    ssmps=AwsSSMparameterStore( session.get("profile") ) 
+    session["list_ssmps"]=ssmps.get_parameters_by_path("/")
+    return render_template("services/ssm_ps.html", profile=session.get("profile"), list=session["list_ssmps"] , load_l2=False)
+
+@app.route('/ssm_parameter_store/<parametro>') 
+def ssm_parameter_store_level2(parametro): 
+    parametro=parametro.replace("ç","/")
+    dettaglio=[]
+    for l in session["list_ssmps"]:
+        if l["Name"]==parametro:
+            dettaglio=l
+    return render_template("services/ssm_ps.html", profile=session.get("profile"), list=session["list_ssmps"] ,dettaglio=dettaglio , parametro=parametro, load_l2=True)
+
+@app.route('/ssm_parameter_store_update', methods = ['POST'])   
+def ssm_parameter_store_update():    #see https://www.geeksforgeeks.org/how-to-upload-file-in-python-flask/
+    if request.method == 'POST':   
+        parametro  = request.form.get('parametro')
+        text  = request.form.get('text')
+        ssmps=AwsSSMparameterStore( session.get("profile") ) 
+        ssmps.put_parameter(parametro, text , "String" , parametro )
+        session["list_ssmps"]=ssmps.get_parameters_by_path("/")
+        return ssm_parameter_store_level2(parametro)
+    flash('Nothing to do')
+    return index()
+
 
 if __name__ == '__main__': 
     #app.run() 
