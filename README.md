@@ -16,6 +16,7 @@ Esempi di codice Python usando la AWS-CDK & la AWS-SDK:
 - **ManagerFlask**: *Applicazione* web sviluppata con Flask
 - **SDK**: Per la libreria SDK, l'installazione e la configurazione vedere il [sito ufficiale](https://boto3.amazonaws.com/v1/documentation/api/latest/guide/quickstart.html) e il comando `pip install boto3`.
   - 00 **profiles**: classe per la gestione dei profili AWS-CLI
+  - 00 **ssm parameter**: classe per la gestione del Parameter Store di SSM
   - 01 **bucketS3**: classe per la getsione dei bucket S3
   - 02 **ec2**: classe per la getsione delle istanze EC2 e classe per la gestione dei security groups
 
@@ -62,18 +63,21 @@ Quattro esempi di progetti Django sviluppati:
 - Sftp_ssh: metodi per la gestione di un server sftp (invio e ricezione dati), esecuzione comando in remoto con ssh
 - UnzipFile: esempio che usa "zipfile" di Py per estrarre il contenuto di un pacchetto zip
 - UploadFileToRestAPI: esempio per l'invio di un file locale ad una API Rest 
+- VideoConcat_ffmpeg: script per eseguire il concat di più video usando ffmpeg (solo su GNU Linux)
 
 ## Simple
 - **gui**: esempi vari di librerie GUI per Python
 - **mongo**: script per la gestione di una base dati NoSql Mongo
 - **rabbitMq**: script la gestione di una coda RabbitMq
+- classes.py: Esempio di classe Python
 - conto1.py: Esercitazione classe ContoCorrente, inizializzatore con 3 parametri (nome titolare, numero conto e saldo) con tre attributi (nome, conto e saldo)
 - conto2.py: Esercitazione classe ContoCorrente, prendere spunto dal conto1.py ma nascondere il saldo come proprietà semplice con una property ''privata'' , 
 - conto3.py: Esercitazione classe Conto come padre di ContoCorrente, in conto ci devono essere nome e numero conto
 - conto4.py: Esercitazione classe Gestore Conto corrente, crea metodo bonifico per prelevare da un conto e fare un deposito ad un altro
-- exception.py: Esempi di exception in Py
-- modules.py: Esempi di modulo in Py
-- scriptWithModules.py: Eempi di script che importa un modulo (modules.py) in Py
+- exception.py: Esempi di exception in Python
+- lambda.py: esempi di lambda in Python
+- modules.py: Esempi di modulo in Python
+- scriptWithModules.py: Eempi di script che importa un modulo (modules.py) in Python
 
 # AlNao.it
 Nessun contenuto in questo repository è stato creato con IA o automaticamente, tutto il codice è stato scritto con molta pazienza da Alberto Nao. Se il codice è stato preso da altri siti/progetti è sempre indicata la fonte. Per maggior informazioni visitare il sito [AlNao.it](https://www.alnao.it/).
