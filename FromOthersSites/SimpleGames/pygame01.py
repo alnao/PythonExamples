@@ -9,6 +9,7 @@ screen = pygame.display.set_mode((1280, 720))
 clock = pygame.time.Clock()
 running = True
 dt = 0
+dimension = 40
 
 player_pos = pygame.Vector2(screen.get_width() / 2, screen.get_height() / 2)
 
@@ -22,17 +23,27 @@ while running:
     # fill the screen with a color to wipe away anything from last frame
     screen.fill("purple")
 
-    pygame.draw.circle(screen, "red", player_pos, 40)
+    pygame.draw.circle(screen, "red", player_pos, dimension)
 
     keys = pygame.key.get_pressed()
     if keys[pygame.K_w]:
         player_pos.y -= 300 * dt
+        if player_pos.y < dimension :
+            running = False
     if keys[pygame.K_s]:
         player_pos.y += 300 * dt
+        if player_pos.y > screen.get_height() - dimension :
+            running = False
     if keys[pygame.K_a]:
         player_pos.x -= 300 * dt
+        if player_pos.x < dimension :
+            running = False
     if keys[pygame.K_d]:
         player_pos.x += 300 * dt
+        if player_pos.x > screen.get_width() - dimension :
+            running = False
+    if keys[pygame.K_q]:
+        running=False
 
     # flip() the display to put your work on screen
     pygame.display.flip()

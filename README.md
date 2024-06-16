@@ -40,17 +40,21 @@ Quattro esempi di progetti Django sviluppati:
 ## From Others Sites
 - Blockchain: esempi di implementazione dell'algoritmo "proof of work" con un unico nodo e un secondo esempio multi-nodo con metodo per la sincronia
 - FaceDetector: https://www.youtube.com/watch?v=i3sLv1sus0I
+- FastApi https://realpython.com/fastapi-python-web-apis/
 - FlaskGeolocalNotes: https://www.youtube.com/watch?v=w-rti-5KHME
 - FlaskLogin: https://www.youtube.com/watch?v=ud_nq9lapF4
 - FlaskLoginGoogle: https://realpython.com/flask-google-login/
+- Ia: https://www.youtube.com/watch?v=CkkjXTER2KE
+- SimpleGames
+  - Coffe: https://github.com/uxai/100daysofcode/blob/main/Day%2015/coffee_machine.py
+  - PyGame01: see https://www.pygame.org/docs/
+  - PyGame02 fly game: see https://realpython.com/pygame-a-primer/
+  - PyGame03 asteroid:  see https://realpython.com/asteroids-game-python/
+  - Rogue Like tutorial see https://rogueliketutorials.com/tutorials/tcod/v2/part-1/
+  - Vital_messages & shootout: https://www.youtube.com/watch?v=3kdM9wyglnw
 - TkinterExample:  https://www.youtube.com/watch?v=5qOnzF7RsNA (Tkinter e "Python Simplified")
 - Youtube Downloader: https://www.youtube.com/watch?v=EMlM6QTzJo0 
 - NotificationCron: https://www.youtube.com/watch?v=7ahUnBhdI5o
-- SimpleIa: https://www.youtube.com/watch?v=CkkjXTER2KE
-- SimpleGames
-  - Coffe: https://github.com/uxai/100daysofcode/blob/main/Day%2015/coffee_machine.py
-  - Vital_messages & shootout: https://www.youtube.com/watch?v=3kdM9wyglnw
-  - Rogue Like tutorial see https://rogueliketutorials.com/tutorials/tcod/v2/part-1/
 
 ## Manage File
 - Csv2fixedWidthFile: esempio di script py che prende un file csv e lo trasforma in un file txt posizionale
