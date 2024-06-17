@@ -6,6 +6,7 @@ from Services.ec2 import ConsoleEc2
 from Services.cloudFront import ConsoleCloudFront
 from Services.ec2_security_groups import ConsoleEc2sg
 from Services.ssm_parameter_store import ConsoleSSMparameterStore
+from Services.lambdaFunction import ConsoleLambda
 #nota indispensabile che il pacakge SDK sia caricato dopo con l'istruzione qua sotto
 #non sportare questa append sopra altrimenti andrebbe in un loop di import 
 sys.path.append( os.path.dirname( os.path.dirname( os.path.dirname( os.path.abspath(__file__) ) ) ) )
@@ -14,6 +15,7 @@ from SDK.sdk00ssmParameter import AwsSSMparameterStore
 from SDK.sdk01bucketS3 import AwsBucketS3 
 from SDK.sdk02ec2 import AwsEc2,AwsEc2SecurityGroup 
 from SDK.sdk04cloudFront import AwsCloudFront 
+from SDK.sdk05lambda import AwsLambda
 #non mettere nessun import dopo perchè os.path sarebbe in errore
 
 
@@ -30,6 +32,7 @@ class ServiceManager:
             ,{'title':'SG','desc':'Lista Security Groups','automatic':False,'classe':ConsoleEc2sg,'sdk':AwsEc2SecurityGroup}
             ,{'title':'CloudFront','desc':'Lista Cloud Front','automatic':False,'classe':ConsoleCloudFront,'sdk':AwsCloudFront}# 'metodo':self.load_cloudFront}
             ,{'title':'SSM','desc':'Lista SSM parameter store','automatic':False,'classe':ConsoleSSMparameterStore,'sdk':AwsSSMparameterStore}
+            ,{'title':'Lambda','desc':'Lista delle Lambda Function','automatic':False,'classe':ConsoleLambda,'sdk':AwsLambda}
         ]
     def get_lista_funzionalita(self):
         return self.lista_funzionalita

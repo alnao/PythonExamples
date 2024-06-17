@@ -19,6 +19,9 @@ Esempi di codice Python usando la AWS-CDK & la AWS-SDK:
   - 00 **ssm parameter**: classe per la gestione del Parameter Store di SSM
   - 01 **bucketS3**: classe per la getsione dei bucket S3
   - 02 **ec2**: classe per la getsione delle istanze EC2 e classe per la gestione dei security groups
+  - 03 **website**: TODO
+  - 04 **cloudFront**: classe per la gestione delle distribuzioni cloudFront
+  - 05 **lambda**: classe per la gestione delle lambda function 
 
 ## Data Scientists
 Esempi di codice Python con Pandas e altre librerie per la manipolazione dati. See [khuyentran1401 website](https://khuyentran1401.github.io/Efficient_Python_tricks_and_tools_for_data_scientists/README.html).

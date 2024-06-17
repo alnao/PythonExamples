@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block content %}
+<!--
+<h1 class="text-primary">
+    S3
+</h1>     -->
+
+<div class="containerW100">
+    <div class="row align-items-start">
+        <div class="col">
+            <ul class="list-group">
+                <li class="list-group-item list-group-item-success">
+                    Lista Lambda Function - Profilo attivo: <b>{{profile}}</b>
+                </li>
+                <li class="list-group-item p-1 overflow-hidden ">
+                    {% for l in list %}
+                        <a href="/lambda_level2/{{l.Name}}"  class="badge {% if lsel==l.Name %} badge-primary {% else %} badge-info  {% endif %}">
+                            {{l.Name}} ({{l.RunTime}})</a>
+                    {% endfor %}
+                </li>
+            </ul>
+        </div>
+        <div class="col table-responsive">
+            {% if load_l2==True %}
+
+            <div class="tab-content" id="nav-tabContent">
+                <div class="tab-pane fade show active" id="nav-Statistiche" role="tabpanel" aria-labelledby="nav-Statistiche-tab"></div>
+                    <table class="table table-bordered small ">
+                        <thead><tr><th colspan="2" class="table-success">{{lsel}}</th></tr></thead>
+                        <tbody>
+                            {% for obj in statistiche %}
+                                <tr><td>{{obj.Timestamp}}</td><td class="">{{obj.SampleCount }}</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                <div class="tab-pane fade show" id="nav-Proprieta" role="tabpanel" aria-labelledby="nav-Proprieta-tab">
+                    <table class="table table-bordered small ">
+                        <thead><tr><th colspan="2" class="table-success">{{lsel}}</th></tr></thead>
+                        <tbody>
+                            {% for obj in dettaglio %}
+                                <tr><td>{{obj}}</td><td class="">{{dettaglio[obj] }}</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                <div class="tab-pane fade show" id="nav-Logs" role="tabpanel" aria-labelledby="nav-Logs-tab">
+                    <table class="table table-bordered small ">
+                        <thead><tr><th colspan="2" class="table-success">LOGS</th></tr></thead>
+                        <tbody>
+                            {% for obj in logs %}
+                                <tr><td>{{obj.timestamp}}</td><td class="">{{obj.message }}</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+            </div>
+            {% else %}
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+{% endblock %}

@@ -3,6 +3,7 @@ from flask_session import Session
 import sys
 import os
 import base64
+from datetime import datetime
 from werkzeug.utils import secure_filename
 #parent_directory = os.path.abspath('..')
 #parent_directory = os.path.dirname(os.path.realpath(__file__))
@@ -11,6 +12,7 @@ from SDK.sdk01bucketS3 import AwsBucketS3
 from SDK.sdk00profiles import AwsProfiles
 from SDK.sdk04cloudFront import AwsCloudFront
 from SDK.sdk00ssmParameter  import AwsSSMparameterStore
+from SDK.sdk05lambda import AwsLambda
 
 app = Flask(__name__) 
 app.config["SESSION_PERMANENT"] = False
@@ -152,6 +154,25 @@ def ssm_parameter_store_update():    #see https://www.geeksforgeeks.org/how-to-u
         return ssm_parameter_store_level2(parametro)
     flash('Nothing to do')
     return index()
+
+@app.route('/lambda') 
+def service_lambda(): 
+    l=AwsLambda( session.get("profile") ) 
+    session["list"]=l.list_functions()
+    session["list"]=sorted(session["list"], key=lambda tup: tup["Name"])
+    return render_template("services/lambda.html", profile=session.get("profile"), list=session["list"] ,lsel='', detail=[],logs=[] , load_l2=False)
+
+@app.route('/lambda_level2/<function_name>') 
+def service_lambda_level2(function_name): 
+    l=AwsLambda( session.get("profile") ) 
+    d=l.get_function(function_name)
+    s=l.get_statistic(function_name)
+    logs=l.get_logs(function_name)
+    for l in logs:
+        l["timestamp"]=datetime.fromtimestamp( l['timestamp'] /1000 )
+        l["timestamp"]=l["timestamp"].strftime("%m-%d %H:%M:%S")
+    return render_template("services/lambda.html", profile=session.get("profile"), list=session["list"] 
+                        ,lsel=function_name, dettaglio=d,statistiche=s,logs=logs , load_l2=True)
 
 
 if __name__ == '__main__': 
