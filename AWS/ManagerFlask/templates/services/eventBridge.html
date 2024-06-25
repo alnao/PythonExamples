@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block content %}
+<!--
+<h1 class="text-primary">
+    S3
+</h1>     -->
+
+<div class="containerW100">
+    <div class="row align-items-start">
+        <div class="col">
+            <ul class="list-group">
+                <li class="list-group-item list-group-item-success">
+                    Lista CloudFront - Profilo attivo: <b>{{profile}}</b>
+                </li>
+                <li class="list-group-item p-1 overflow-hidden ">
+                    {% for b in list %}
+                        <a href="/event_bridge/{{b.Name}}"  class="badge {% if sel==b.Name %} badge-primary {% else %} badge-info  {% endif %}">
+                            {{b.Name}}</a>
+                    {% endfor %}
+                </li>
+            </ul>
+        </div>
+        <div class="col table-responsive">
+            {% if load_l2==True %}
+            <table class="table table-bordered small ">
+                <thead><tr><th colspan="2" class="table-success">{{sel}}</th></tr></thead>
+                <tbody>
+                    {% for obj in detail %}
+                        <tr><td>{{obj}}</td><td class="">{{detail[obj] }}</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            {% endif %}
+        </div>
+        <div class="col">
+            {% if load_l2==True and 'EventPattern' in detail %}
+            <table class="table table-bordered small ">
+                <thead><tr><th class="table-success">EventPattern</th></tr></thead>
+                <tbody>
+                    <tr><td><pre>{{detail['EventPattern']}}</pre></td></tr>
+                </tbody>
+            </table>
+            {% else %}
+            {% endif %}
+        </div>
+    </div>
+</div>
+  
+{% endblock %}

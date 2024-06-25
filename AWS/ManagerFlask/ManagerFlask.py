@@ -13,6 +13,7 @@ from SDK.sdk00profiles import AwsProfiles
 from SDK.sdk04cloudFront import AwsCloudFront
 from SDK.sdk00ssmParameter  import AwsSSMparameterStore
 from SDK.sdk05lambda import AwsLambda
+from SDK.sdk06eventBridge import AwsEventBridge
 
 app = Flask(__name__) 
 app.config["SESSION_PERMANENT"] = False
@@ -173,6 +174,20 @@ def service_lambda_level2(function_name):
         l["timestamp"]=l["timestamp"].strftime("%m-%d %H:%M:%S")
     return render_template("services/lambda.html", profile=session.get("profile"), list=session["list"] 
                         ,lsel=function_name, dettaglio=d,statistiche=s,logs=logs , load_l2=True)
+
+# event_bridge
+@app.route('/event_bridge') 
+def event_bridge(): 
+    eb=AwsEventBridge( session.get("profile") ) 
+    session["list_eb"]=eb.list("")
+    return render_template("services/eventBridge.html", profile=session.get("profile"), list=session["list_eb"] , load_l2=False)
+# event_bridge
+@app.route('/event_bridge/<name>') 
+def event_bridge_detail(name): 
+    eb=AwsEventBridge( session.get("profile") ) 
+    detail=eb.describe_rule(name)
+    return render_template("services/eventBridge.html", profile=session.get("profile"), list=session["list_eb"] , detail=detail, load_l2=True , sel=name)
+
 
 
 if __name__ == '__main__': 
