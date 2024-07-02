@@ -8,12 +8,13 @@ from werkzeug.utils import secure_filename
 #parent_directory = os.path.abspath('..')
 #parent_directory = os.path.dirname(os.path.realpath(__file__))
 sys.path.append( os.path.dirname( os.path.dirname( os.path.abspath(__file__) ) ) )
-from SDK.sdk01bucketS3 import AwsBucketS3
-from SDK.sdk00profiles import AwsProfiles
-from SDK.sdk04cloudFront import AwsCloudFront
-from SDK.sdk00ssmParameter  import AwsSSMparameterStore
-from SDK.sdk05lambda import AwsLambda
-from SDK.sdk06eventBridge import AwsEventBridge
+from SDK.bucketS3 import AwsBucketS3
+from SDK.profiles import AwsProfiles
+from SDK.cloud_front import AwsCloudFront
+from SDK.ssm_parameter  import AwsSSMparameterStore
+from SDK.lambda_function import AwsLambda
+from SDK.event_bridge import AwsEventBridge
+from SDK.step_function import AwsStepFunction
 
 app = Flask(__name__) 
 app.config["SESSION_PERMANENT"] = False
@@ -187,6 +188,22 @@ def event_bridge_detail(name):
     eb=AwsEventBridge( session.get("profile") ) 
     detail=eb.describe_rule(name)
     return render_template("services/eventBridge.html", profile=session.get("profile"), list=session["list_eb"] , detail=detail, load_l2=True , sel=name)
+
+
+# step_function
+@app.route('/step_function') 
+def step_function(): 
+    sf=AwsStepFunction( session.get("profile") ) 
+    session["list_sf"]=sf.state_machine_list()
+    return render_template("services/stepFunction.html", profile=session.get("profile"), list=session["list_sf"] , load_l2=False)
+@app.route('/step_function/<arn>') 
+def step_function_detail(arn): 
+    sf=AwsStepFunction( session.get("profile") ) 
+    detail=sf.state_machine_detail(arn)
+    detail2=sf.state_machine_execution(arn)
+    return render_template("services/stepFunction.html", profile=session.get("profile"), list=session["list_sf"] , detail=detail, detail2=detail2,load_l2=True , sel=arn)
+
+
 
 
 

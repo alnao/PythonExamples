@@ -3,21 +3,23 @@ import sys
 import os
 from Services.bucketS3 import ConsoleBucketS3
 from Services.ec2 import ConsoleEc2
-from Services.cloudFront import ConsoleCloudFront
+from Services.cloud_front import ConsoleCloudFront
 from Services.ec2_security_groups import ConsoleEc2sg
 from Services.ssm_parameter_store import ConsoleSSMparameterStore
 from Services.lambda_function import ConsoleLambda
 from Services.event_bridge import ConsoleEventBridge
+from Services.step_function import ConsoleStepFunction
 #nota indispensabile che il pacakge SDK sia caricato dopo con l'istruzione qua sotto
 #non sportare questa append sopra altrimenti andrebbe in un loop di import 
 sys.path.append( os.path.dirname( os.path.dirname( os.path.dirname( os.path.abspath(__file__) ) ) ) )
-from SDK.sdk00profiles import AwsProfiles 
-from SDK.sdk00ssmParameter import AwsSSMparameterStore
-from SDK.sdk01bucketS3 import AwsBucketS3 
-from SDK.sdk02ec2 import AwsEc2,AwsEc2SecurityGroup 
-from SDK.sdk04cloudFront import AwsCloudFront 
-from SDK.sdk05lambda import AwsLambda
-from SDK.sdk06eventBridge import AwsEventBridge
+from SDK.profiles import AwsProfiles 
+from SDK.ssm_parameter import AwsSSMparameterStore
+from SDK.bucketS3 import AwsBucketS3 
+from SDK.ec2 import AwsEc2,AwsEc2SecurityGroup 
+from SDK.cloud_front import AwsCloudFront 
+from SDK.lambda_function import AwsLambda
+from SDK.event_bridge import AwsEventBridge
+from SDK.step_function import AwsStepFunction
 #non mettere nessun import dopo perchè os.path sarebbe in errore
 
 
@@ -36,6 +38,7 @@ class ServiceManager:
             ,{'title':'SSM','desc':'Lista SSM parameter store','automatic':False,'classe':ConsoleSSMparameterStore,'sdk':AwsSSMparameterStore}
             ,{'title':'Lambda','desc':'Lista delle Lambda Function','automatic':False,'classe':ConsoleLambda,'sdk':AwsLambda}
             ,{'title':'Event Bridge','desc':'Lista delle regole Bridge','automatic':False,'classe':ConsoleEventBridge,'sdk':AwsEventBridge}
+            ,{'title':'Step function','desc':'Lista delle state machine','automatic':False,'classe':ConsoleStepFunction,'sdk':AwsStepFunction}
         ]
     def get_lista_funzionalita(self):
         return self.lista_funzionalita

@@ -47,7 +47,7 @@ def main():
     l=o.get_parameters_by_path("/nao")
     print (l)
     print (len(l))
-    o.put_parameter("/nao/prova","prova1","String","Prova alberto 2")
+    o.put_parameter("/nao/prova","prova1","String","Prova alberto 3")
     l=o.get_parameters_by_path("/nao")
     print (l)
     print("Aws Py Console - SSM parameters END")

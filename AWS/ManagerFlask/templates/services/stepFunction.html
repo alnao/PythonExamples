@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block content %}
+<!--
+<h1 class="text-primary">
+    S3
+</h1>     -->
+
+<div class="containerW100">
+    <div class="row align-items-start">
+        <div class="col">
+            <ul class="list-group">
+                <li class="list-group-item list-group-item-success">
+                    Lista Step Function - Profilo attivo: <b>{{profile}}</b>
+                </li>
+                <li class="list-group-item p-1 overflow-hidden ">
+                    {% for b in list %}
+                        <a href="/step_function/{{b.stateMachineArn}}"  class="badge {% if sel==b.stateMachineArn %} badge-primary {% else %} badge-info  {% endif %}">
+                            {{b.name}}</a>
+                    {% endfor %}
+                </li>
+            </ul>
+        </div>
+        <div class="col table-responsive">
+            {% if load_l2==True %}
+            <table class="table table-bordered small ">
+                <thead><tr><th colspan="2" class="table-success">{{sel}}</th></tr></thead>
+                <tbody>
+                    {% for obj in detail %}
+                        <tr><td>{{obj}}</td><td class="">{{detail[obj] }}</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            {% endif %}
+        </div>
+        <div class="col">
+            {% if load_l2==True  %}
+            <table class="table table-bordered small ">
+                <thead><tr><th colspan="3" class="table-success">Executions</th></tr></thead>
+                <tbody>
+                    {% for obj in detail2 %}
+                        <tr>
+                            <td>{{obj.status}}</td>
+                            <td>{{obj.startDate.strftime('%d/%m/%y %H:%M:%S') }}</td>
+                            <td>{{obj.stopDate.strftime('%d/%m/%y %H:%M:%S') }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            {% endif %}
+        </div>
+    </div>
+</div>
+<script type="text/javascript">
+    //document.getElementById("prejson").textContent = JSON.stringify(JSON.parse("{{detail2}}"), undefined, 2);
+</script>
+{% endblock %}
