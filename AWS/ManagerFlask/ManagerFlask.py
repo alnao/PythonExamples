@@ -2,6 +2,7 @@ from flask import Flask, render_template,session , send_file ,redirect , request
 from flask_session import Session
 import sys
 import os
+import json
 import base64
 from datetime import datetime
 from werkzeug.utils import secure_filename
@@ -187,7 +188,8 @@ def event_bridge():
 def event_bridge_detail(name): 
     eb=AwsEventBridge( session.get("profile") ) 
     detail=eb.describe_rule(name)
-    return render_template("services/eventBridge.html", profile=session.get("profile"), list=session["list_eb"] , detail=detail, load_l2=True , sel=name)
+    definition = json.dumps(json.loads(detail['EventPattern']) , indent=2)
+    return render_template("services/eventBridge.html", profile=session.get("profile"), list=session["list_eb"] , detail=detail, load_l2=True , sel=name , definition=definition)
 
 
 # step_function
@@ -201,7 +203,9 @@ def step_function_detail(arn):
     sf=AwsStepFunction( session.get("profile") ) 
     detail=sf.state_machine_detail(arn)
     detail2=sf.state_machine_execution(arn)
-    return render_template("services/stepFunction.html", profile=session.get("profile"), list=session["list_sf"] , detail=detail, detail2=detail2,load_l2=True , sel=arn)
+    #definition=json.dumps(detail['definition']).replace("\\n","\n").replace("\\\"","\"")[1:-1]
+    definition = json.dumps(json.loads(detail['definition']) , indent=2)
+    return render_template("services/stepFunction.html", profile=session.get("profile"), list=session["list_sf"] , detail=detail, detail2=detail2,load_l2=True , sel=arn, definition=definition)
 
 
 

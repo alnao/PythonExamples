@@ -1,33 +1,47 @@
-# CDK02 Ec2
-Esempio base per la creazione di una istanza EC2.
+# CDK06 EventBridge
+Esempio base per la creazione di una regole EventBridge che invoca una lambda
 
-Preso spunto dall'esempio di [cloudbrilliant](https://github.com/cloudbrilliant/cdk-ec2).
+Esempio preso dalla documentazione ufficiale e dal [repository aws-samples](https://github.com/aws-samples/aws-cdk-examples/tree/main/python/lambda-with-existing-s3-code)
 
 Per l'installazione e la configurazione della CLI e del tool CDK, vedere il file README esterno.
 
-## Comandi
+## Comandi 
 - Creazione del progetto
     ```
-    mkdir cdk02ec2
-    cd cdk02ec2
     cdk init app --language python
-    python -m pip install -r requirements.txt
-    python -m venv .venv
+    python3 -m pip install -r requirements.txt
+    python3 -m venv .venv
     cdk bootstrap
     ```
 - Deploy del progetto
     ```
     cdk ls
-    cdk synth > Ec2-template.yaml
-    cdk deploy --parameters vpcid=vpc-xxxx --parameters keypairname=xxxx --parameters publicsubnetid=subnet-xxxx
+    cdk synth > Cdk05lambda-template.yaml
+    cdk deploy      
     ```
-- Verifica dell'istanza 
+- Log in fase di creazione:
     ```
-    aws ec2 
-    aws ec2 describe-instances --filters "Name=tag:Name,Values=Cdk02Ec2Stack/MyInstance"
-
-    aws cloudformation list-stack-resources --stack-name Cdk02Ec2Stack --output text
-    aws cloudformation get-template --stack-name Cdk02Ec2Stack
+    Cdk05LambdaStack | 0/5 | 15:37:38 | REVIEW_IN_PROGRESS   | AWS::CloudFormation::Stack | Cdk05LambdaStack User Initiated
+    Cdk05LambdaStack | 0/5 | 15:37:44 | CREATE_IN_PROGRESS   | AWS::CloudFormation::Stack | Cdk05LambdaStack User Initiated
+    Cdk05LambdaStack | 0/5 | 15:37:47 | CREATE_IN_PROGRESS   | AWS::CDK::Metadata    | CDKMetadata/Default (CDKMetadata)
+    Cdk05LambdaStack | 0/5 | 15:37:47 | CREATE_IN_PROGRESS   | AWS::Logs::LogGroup   | Cdk05lambda (Cdk05lambdaF6A180B5)
+    Cdk05LambdaStack | 0/5 | 15:37:47 | CREATE_IN_PROGRESS   | AWS::Logs::LogGroup   | Cdk05lambda (Cdk05lambdaF6A180B5) 
+    Cdk05LambdaStack | 0/5 | 15:37:47 | CREATE_IN_PROGRESS   | AWS::CDK::Metadata    | CDKMetadata/Default (CDKMetadata)
+    Cdk05LambdaStack | 1/5 | 15:37:47 | CREATE_COMPLETE      | AWS::CDK::Metadata    | CDKMetadata/Default (CDKMetadata)
+    Cdk05LambdaStack | 2/5 | 15:37:54 | CREATE_COMPLETE      | AWS::Logs::LogGroup   | Cdk05lambda (Cdk05lambdaF6A180B5) 
+    Cdk05LambdaStack | 3/5 | 15:38:12 | CREATE_IN_PROGRESS   | AWS::Lambda::Function | eventConsumer1Lambda (eventConsumer1Lambda4AF2292E) 
+    Cdk05LambdaStack | 4/5 | 15:38:20 | CREATE_COMPLETE      | AWS::Lambda::Function | eventConsumer1Lambda (eventConsumer1Lambda4AF2292E) 
+    Cdk05LambdaStack | 5/5 | 15:38:21 | CREATE_COMPLETE      | AWS::CloudFormation::Stack | Cdk05LambdaStack 
+    ```
+- Comando verifica dello stack
+    ```
+    aws cloudformation list-stack-resources --stack-name Cdk05LambdaStack --output text
+    aws cloudformation get-template --stack-name Cdk05LambdaStack
+    ```
+- Comandi per il test della funzionalita
+    ```
+    aws lambda invoke --function-name cdk05lambda
+    aws logs filter-log-events --log-group-name "/aws/lambda/cdk05lambda" --query events[].[timestamp,message] --output text
     ```
 - Confronto tra sviluppo e ambiente target
     ```
@@ -39,6 +53,7 @@ Per l'installazione e la configurazione della CLI e del tool CDK, vedere il file
     ```
 
 
+
 # AlNao.it
 Nessun contenuto in questo repository è stato creato con IA o automaticamente, tutto il codice è stato scritto con molta pazienza da Alberto Nao. Se il codice è stato preso da altri siti/progetti è sempre indicata la fonte. Per maggior informazioni visitare il sito [alnao.it](https://www.alnao.it/).
 
@@ -46,6 +61,7 @@ Nessun contenuto in questo repository è stato creato con IA o automaticamente, 
 Public projects 
 <a href="https://it.wikipedia.org/wiki/GNU_General_Public_License"  valign="middle"><img src="https://img.shields.io/badge/License-GNU-blue" style="height:22px;"  valign="middle"></a> 
 *Free Software!*
+
 
 # Welcome to your CDK Python project!
 

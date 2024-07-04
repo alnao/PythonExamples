@@ -6,8 +6,13 @@ Prerequisito l'installazione e la configurazione di AWS-CLI, vedere il [sito uff
 
 Esempi di codice Python usando la AWS-CDK & la AWS-SDK:
 - **CDK**: Per la libreria CDK, l'installazione e la configurazione vedere il [sito ufficiale](https://docs.aws.amazon.com/cdk/v2/guide/getting_started.html) e il comando `npm install -g aws-cdk`. Per ogni progetto c'è un README dedicato:
-  - 01 **bucketS3**: progetto per la creazione di un bucket
-  - 02 **ec2**: progetto per la creazione di una istanza EC2
+  - 01 **bucketS3**: creazione di un bucket
+  - 02 **ec2**: creazione di una istanza EC2
+  - 03 **website S3**: creazione di una sito web esposto con S3
+  - 04 **cloud front**: creazione di una distribuzione con CloudFront, vedi [repository aws-samples](https://github.com/aws-samples/deploy-cloudfront-in-china-with-cdk/blob/main/Python/lib/cloudfront_in_china_stack.py)
+  - 05 **lambda function**: creazione di una funzione lambda function, vedi [repository aws-samples](https://github.com/aws-samples/aws-cdk-examples/tree/main/python/lambda-with-existing-s3-code)
+  - 06 **event bridge**: creazione di una regola EventBridge, vedi [repository aws-samples](https://github.com/aws-samples/aws-cdk-examples/blob/main/python/api-eventbridge-lambda/api_eventbridge_lambda/api_eventbridge_lambda.py) 
+  - 07 **step function**: creazione di una step function con due lambda [repository aws-samples](https://github.com/aws-samples/aws-cdk-examples/blob/main/python/stepfunctions/stepfunctions/stepfunctions_stack.py)
 - **CodeWhisperer**
   - 01 **basic**: semplice esempio usato come prima prova
 - **Glue**
@@ -15,13 +20,14 @@ Esempi di codice Python usando la AWS-CDK & la AWS-SDK:
 - **ManagerTk**: *Applicazione* sviluppata con la libreria tkinter (menu, gestione finestre ed elenchi)
 - **ManagerFlask**: *Applicazione* web sviluppata con Flask
 - **SDK**: Per la libreria SDK, l'installazione e la configurazione vedere il [sito ufficiale](https://boto3.amazonaws.com/v1/documentation/api/latest/guide/quickstart.html) e il comando `pip install boto3`.
-  - 00 **profiles**: classe per la gestione dei profili AWS-CLI
-  - 00 **ssm parameter**: classe per la gestione del Parameter Store di SSM
-  - 01 **bucketS3**: classe per la getsione dei bucket S3
-  - 02 **ec2**: classe per la getsione delle istanze EC2 e classe per la gestione dei security groups
-  - 03 **website**: TODO
-  - 04 **cloudFront**: classe per la gestione delle distribuzioni cloudFront
-  - 05 **lambda**: classe per la gestione delle lambda function 
+  - **profiles**: classe per la gestione dei profili AWS-CLI
+  - **ssm parameter**: classe per la gestione del Parameter Store di SSM
+  - **bucketS3**: classe per la getsione dei bucket S3
+  - **ec2**: classe per la getsione delle istanze EC2 e classe per la gestione dei security groups
+  - **cloudFront**: classe per la gestione delle distribuzioni CloudFront
+  - **lambda**: classe per la gestione delle lambda function 
+  - **event bridge**: classe per la gestione delle regole EventBridge
+  - **step function**: classe per la gestione delle StepFunction 
 
 ## Data Scientists
 Esempi di codice Python con Pandas e altre librerie per la manipolazione dati. See [khuyentran1401 website](https://khuyentran1401.github.io/Efficient_Python_tricks_and_tools_for_data_scientists/README.html).

@@ -32,13 +32,12 @@
             </table>
             {% else %}
             {% endif %}
-        </div>
-        <div class="col">
+
             {% if load_l2==True and 'EventPattern' in detail %}
             <table class="table table-bordered small ">
                 <thead><tr><th class="table-success">EventPattern</th></tr></thead>
                 <tbody>
-                    <tr><td><pre>{{detail['EventPattern']}}</pre></td></tr>
+                    <tr><td><pre>{{definition}}</pre></td></tr>
                 </tbody>
             </table>
             {% else %}

@@ -1,13 +1,13 @@
-# CDK01 BucketS3
-Esempio base per la creazione di un bucket
+# CDK06 EventBridge
+Esempio base per la creazione di una regole EventBridge che invoca una lambda.
+
+Esempio preso dalla documentazione ufficiale e dal [repository aws-samples](https://github.com/aws-samples/aws-cdk-examples/blob/main/python/api-eventbridge-lambda/api_eventbridge_lambda/api_eventbridge_lambda.py)
 
 Per l'installazione e la configurazione della CLI e del tool CDK, vedere il file README esterno.
 
-## Comandi
+## Comandi 
 - Creazione del progetto
     ```
-    mkdir Cdk01-bucketS3
-    cd Cdk01-bucketS3
     cdk init app --language python
     python3 -m pip install -r requirements.txt
     python3 -m venv .venv
@@ -16,15 +16,39 @@ Per l'installazione e la configurazione della CLI e del tool CDK, vedere il file
 - Deploy del progetto
     ```
     cdk ls
-    cdk synth > BucketS3-template.yaml
+    cdk synth > Cdk05lambda-template.yaml
     cdk deploy      
     ```
-- Verifica del bucket 
+- Log in fase di creazione:
     ```
-    aws s3 ls
-    aws s3 ls cdk-01-bucket-s3
-    aws cloudformation list-stack-resources --stack-name Cdk01BucketS3Stack --output text
-    aws cloudformation get-template --stack-name Cdk01BucketS3Stack
+    Cdk06EventBridgeStack: deploying... [1/1]
+    Cdk06EventBridgeStack: creating CloudFormation changeset...
+    Cdk06EventBridgeStack | 0/7 | 14:34:26 | REVIEW_IN_PROGRESS   | AWS::CloudFormation::Stack | Cdk06EventBridgeStack User Initiated
+    Cdk06EventBridgeStack | 0/7 | 14:34:32 | CREATE_IN_PROGRESS   | AWS::CloudFormation::Stack | Cdk06EventBridgeStack User Initiated
+    Cdk06EventBridgeStack | 0/7 | 14:34:34 | CREATE_IN_PROGRESS   | AWS::IAM::Role          | eventConsumer1Lambda/ServiceRole 
+    Cdk06EventBridgeStack | 0/7 | 14:34:34 | CREATE_IN_PROGRESS   | AWS::CDK::Metadata      | CDKMetadata/Default (CDKMetadata)
+    Cdk06EventBridgeStack | 0/7 | 14:34:35 | CREATE_IN_PROGRESS   | AWS::IAM::Role          | eventConsumer1Lambda/ServiceRole 
+    Cdk06EventBridgeStack | 0/7 | 14:34:35 | CREATE_IN_PROGRESS   | AWS::CDK::Metadata      | CDKMetadata/Default (CDKMetadata) 
+    Cdk06EventBridgeStack | 1/7 | 14:34:35 | CREATE_COMPLETE      | AWS::CDK::Metadata      | CDKMetadata/Default (CDKMetadata)
+    Cdk06EventBridgeStack | 2/7 | 14:34:51 | CREATE_COMPLETE      | AWS::IAM::Role          | eventConsumer1Lambda/ServiceRole 
+    ...
+    Cdk06EventBridgeStack | 5/7 | 14:36:13 | CREATE_IN_PROGRESS   | AWS::Lambda::Permission | cdk06eventbridge/
+    Cdk06EventBridgeStack | 5/7 | 14:36:14 | CREATE_IN_PROGRESS   | AWS::Lambda::Permission | cdk06eventbridge/
+    Cdk06EventBridgeStack | 6/7 | 14:36:14 | CREATE_COMPLETE      | AWS::Lambda::Permission | cdk06eventbridge/
+    Cdk06EventBridgeStack | 7/7 | 14:36:15 | CREATE_COMPLETE      | AWS::CloudFormation::Stack | Cdk06EventBridgeStack
+    ```
+- Comando verifica dello stack
+    ```
+    aws cloudformation list-stack-resources --stack-name Cdk06EventBridgeStack --output text
+    aws cloudformation get-template --stack-name Cdk06EventBridgeStack
+    ```
+- Comandi per il test della funzionalita
+    ```
+    aws s3 cp requirements.txt s3://formazione-alberto/INPUT/requirements.txt
+    aws s3 ls formazione-alberto/INPUT/
+    
+    aws logs filter-log-events --log-group-name "/aws/lambda/cdk06event-bridge" --query events[].[timestamp,message] --output text
+
     ```
 - Confronto tra sviluppo e ambiente target
     ```
@@ -36,13 +60,14 @@ Per l'installazione e la configurazione della CLI e del tool CDK, vedere il file
     ```
 
 
-## AlNao.it
+# AlNao.it
 Nessun contenuto in questo repository è stato creato con IA o automaticamente, tutto il codice è stato scritto con molta pazienza da Alberto Nao. Se il codice è stato preso da altri siti/progetti è sempre indicata la fonte. Per maggior informazioni visitare il sito [alnao.it](https://www.alnao.it/).
 
 ## License
 Public projects 
 <a href="https://it.wikipedia.org/wiki/GNU_General_Public_License"  valign="middle"><img src="https://img.shields.io/badge/License-GNU-blue" style="height:22px;"  valign="middle"></a> 
 *Free Software!*
+
 
 
 

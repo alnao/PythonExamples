@@ -1,33 +1,34 @@
-# CDK02 Ec2
-Esempio base per la creazione di una istanza EC2.
+# CDK04 CloudFront
+Esempio base per la creazione di una distribuzione CloudFront
 
-Preso spunto dall'esempio di [cloudbrilliant](https://github.com/cloudbrilliant/cdk-ec2).
+Esempio preso dalla documentazione ufficiale e dal [repository aws-samples](https://github.com/aws-samples/deploy-cloudfront-in-china-with-cdk/blob/main/Python/lib/cloudfront_in_china_stack.py)
 
 Per l'installazione e la configurazione della CLI e del tool CDK, vedere il file README esterno.
 
-## Comandi
+## Comandi 
 - Creazione del progetto
     ```
-    mkdir cdk02ec2
-    cd cdk02ec2
     cdk init app --language python
-    python -m pip install -r requirements.txt
-    python -m venv .venv
+    python3 -m pip install -r requirements.txt
+    python3 -m venv .venv
     cdk bootstrap
     ```
 - Deploy del progetto
     ```
     cdk ls
-    cdk synth > Ec2-template.yaml
-    cdk deploy --parameters vpcid=vpc-xxxx --parameters keypairname=xxxx --parameters publicsubnetid=subnet-xxxx
+    cdk synth > Cdk03websiteS3-template.yaml
+    cdk deploy      
     ```
-- Verifica dell'istanza 
+- Comando verifica dello stack
     ```
-    aws ec2 
-    aws ec2 describe-instances --filters "Name=tag:Name,Values=Cdk02Ec2Stack/MyInstance"
-
-    aws cloudformation list-stack-resources --stack-name Cdk02Ec2Stack --output text
-    aws cloudformation get-template --stack-name Cdk02Ec2Stack
+    aws cloudformation list-stack-resources --stack-name Cdk04CloudFrontStack --output text
+    aws cloudformation get-template --stack-name Cdk04CloudFrontStack
+    ```
+- Comandi per il test della step funcion eseguendola
+    ```
+    aws s3 cp index.html s3://formazione-alberto-website/index.html
+    curl https://formazione-alberto-website.s3.eu-west-1.amazonaws.com
+    curl http://formazione-alberto-website.s3-website-eu-west-1.amazonaws.com/
     ```
 - Confronto tra sviluppo e ambiente target
     ```
@@ -35,6 +36,7 @@ Per l'installazione e la configurazione della CLI e del tool CDK, vedere il file
     ```
 - Distruzione dello stack con rimozione di tutte le risorse
     ```    
+    aws s3 rm s3://formazione-alberto-website/index.html
     cdk destroy
     ```
 
@@ -46,6 +48,8 @@ Nessun contenuto in questo repository è stato creato con IA o automaticamente, 
 Public projects 
 <a href="https://it.wikipedia.org/wiki/GNU_General_Public_License"  valign="middle"><img src="https://img.shields.io/badge/License-GNU-blue" style="height:22px;"  valign="middle"></a> 
 *Free Software!*
+
+
 
 # Welcome to your CDK Python project!
 

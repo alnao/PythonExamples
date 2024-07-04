@@ -1,0 +1,13 @@
+#see https://github.com/aws-samples/deploy-cloudfront-in-china-with-cdk/blob/main/Python/requirements.txt
+aws-cdk-lib==2.147.3
+constructs>=10.0.0,<11.0.0
+
+
+
+#see https://rubenjgarcia.cloud/static-web-in-cloudfront-with-aws-cdk/
+#constructs>=10.0.0,<11.0.0
+#types-setuptools
+#aws-cdk.core==1.23.0
+#aws-cdk.aws-s3==1.23.0
+#aws-cdk.aws-cloudfront>=1.23.0
+#jsii~=0.21.2

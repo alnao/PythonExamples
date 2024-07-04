@@ -1,33 +1,37 @@
-# CDK02 Ec2
-Esempio base per la creazione di una istanza EC2.
+# CDK06 EventBridge
+Esempio base per la creazione di una step funcion che esegue due lambda con condizioni
 
-Preso spunto dall'esempio di [cloudbrilliant](https://github.com/cloudbrilliant/cdk-ec2).
+Esempio preso dalla documentazione ufficiale e dal [repository aws-samples](https://github.com/aws-samples/aws-cdk-examples/blob/main/python/stepfunctions/stepfunctions/stepfunctions_stack.py)
 
 Per l'installazione e la configurazione della CLI e del tool CDK, vedere il file README esterno.
 
-## Comandi
+## Comandi 
 - Creazione del progetto
     ```
-    mkdir cdk02ec2
-    cd cdk02ec2
     cdk init app --language python
-    python -m pip install -r requirements.txt
-    python -m venv .venv
+    python3 -m pip install -r requirements.txt
+    python3 -m venv .venv
     cdk bootstrap
     ```
 - Deploy del progetto
     ```
     cdk ls
-    cdk synth > Ec2-template.yaml
-    cdk deploy --parameters vpcid=vpc-xxxx --parameters keypairname=xxxx --parameters publicsubnetid=subnet-xxxx
+    cdk synth > Cdk07stepFunction-template.yaml
+    cdk deploy      
     ```
-- Verifica dell'istanza 
+- Comando verifica dello stack
     ```
-    aws ec2 
-    aws ec2 describe-instances --filters "Name=tag:Name,Values=Cdk02Ec2Stack/MyInstance"
+    aws cloudformation list-stack-resources --stack-name Cdk07StepFunctionStack --output text
+    aws cloudformation get-template --stack-name Cdk07StepFunctionStack
+    ```
+- Comandi per il test della step funcion eseguendola
+    ```
+    aws stepfunctions start-execution --state-machine-arn arn:aws:states:eu-west-1:740456629644:stateMachine:Cdk07stepFunction
 
-    aws cloudformation list-stack-resources --stack-name Cdk02Ec2Stack --output text
-    aws cloudformation get-template --stack-name Cdk02Ec2Stack
+    aws stepfunctions list-executions --state-machine-arn arn:aws:states:eu-west-1:740456629644:stateMachine:Cdk07stepFunction --output table  --query executions[*].[status,startDate,stopDate]    
+    
+    aws logs filter-log-events --log-group-name "/aws/lambda/cdk06submit" --query events[].[timestamp,message] --output text
+
     ```
 - Confronto tra sviluppo e ambiente target
     ```
@@ -46,6 +50,8 @@ Nessun contenuto in questo repository è stato creato con IA o automaticamente, 
 Public projects 
 <a href="https://it.wikipedia.org/wiki/GNU_General_Public_License"  valign="middle"><img src="https://img.shields.io/badge/License-GNU-blue" style="height:22px;"  valign="middle"></a> 
 *Free Software!*
+
+
 
 # Welcome to your CDK Python project!
 
