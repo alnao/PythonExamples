@@ -16,6 +16,7 @@ from SDK.ssm_parameter  import AwsSSMparameterStore
 from SDK.lambda_function import AwsLambda
 from SDK.event_bridge import AwsEventBridge
 from SDK.step_function import AwsStepFunction
+from SDK.api_gateway import AwsApiGateway
 
 app = Flask(__name__) 
 app.config["SESSION_PERMANENT"] = False
@@ -206,6 +207,21 @@ def step_function_detail(arn):
     #definition=json.dumps(detail['definition']).replace("\\n","\n").replace("\\\"","\"")[1:-1]
     definition = json.dumps(json.loads(detail['definition']) , indent=2)
     return render_template("services/stepFunction.html", profile=session.get("profile"), list=session["list_sf"] , detail=detail, detail2=detail2,load_l2=True , sel=arn, definition=definition)
+
+
+
+# api_gateway
+@app.route('/api_gateway') 
+def api_gateway(): 
+    apis=AwsApiGateway( session.get("profile") ) 
+    session["list_apis"]=apis.api_list()
+    return render_template("services/apiGateway.html", profile=session.get("profile"), list=session["list_apis"] , load_l2=False)
+@app.route('/api_gateway/<id>') 
+def api_gateway_detail(id): 
+    apis=AwsApiGateway( session.get("profile") ) 
+    rl=apis.resouce_list(id)
+    stag=apis.stage_list(id)
+    return render_template("services/apiGateway.html", profile=session.get("profile"), list=session["list_apis"] , detail=rl, detail2=stag,load_l2=True , sel=id)
 
 
 

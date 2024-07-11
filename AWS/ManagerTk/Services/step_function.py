@@ -59,6 +59,7 @@ class ConsoleStepFunction:
                 values=(sm['name'],sm['type'] ) )
             i=i+1
         self.tree.bind("<Double-1>", self.open_detail)
+        self.tree.bind("<Button-3>", func = lambda event :self.list_to_clipboard(self.tree,0) )
         self.tree.pack(side=LEFT, expand = 1)
         self.free2_loaded=False
         #return tab
@@ -100,6 +101,7 @@ class ConsoleStepFunction:
             self.tree2.insert(parent='',index='end',iid=i,text='',
                     values=(key,self.dettaglio_valore[key]) )
             i=i+1
+        self.tree2.bind("<Button-3>", func = lambda event :self.list_to_clipboard(self.tree2,1) )
         self.tree2.pack()
         self.frame2b = ttk.Frame(self.frame2)
         Button(self.frame2b, text = "Definizione", command=self.show_definition).pack()
@@ -131,7 +133,8 @@ class ConsoleStepFunction:
             # 'startDate': datetime.datetime(2023, 10, 17, 14, 57, 17, 318000, tzinfo=tzlocal()), 
             # 'stopDate': datetime.datetime(2023, 10, 17, 14, 57, 17, 704000, tzinfo=tzlocal())}
             i=i+1
-        self.tree3.bind("<Double-1>", self.show_definition)
+        #self.tree3.bind("<Double-1>", self.show_definition)
+        self.tree3.bind("<Button-3>", func = lambda event :self.list_to_clipboard(self.tree3,0) )
         self.tree3.pack()
         self.frame2a.pack()
         self.frame2b.pack()
