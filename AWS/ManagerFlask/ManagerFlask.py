@@ -17,6 +17,7 @@ from SDK.lambda_function import AwsLambda
 from SDK.event_bridge import AwsEventBridge
 from SDK.step_function import AwsStepFunction
 from SDK.api_gateway import AwsApiGateway
+from SDK.dynamo import AwsDynamoDB
 
 app = Flask(__name__) 
 app.config["SESSION_PERMANENT"] = False
@@ -224,7 +225,23 @@ def api_gateway_detail(id):
     return render_template("services/apiGateway.html", profile=session.get("profile"), list=session["list_apis"] , detail=rl, detail2=stag,load_l2=True , sel=id)
 
 
-
+# dynamo
+@app.route('/dynamo') 
+def dynamo(): 
+    obj=AwsDynamoDB( session.get("profile") ) 
+    session["tables"]=obj.table_list()
+    return render_template("services/dynamo.html", profile=session.get("profile"), list=session["tables"] , load_l2=False)
+@app.route('/dynamo/<id>') 
+def dynamo_detail(id): 
+    obj=AwsDynamoDB( session.get("profile") ) 
+    all=obj.full_scan_table(id)
+    header=[]
+    if len(all)>0:
+        for index,el in enumerate(all[0]):
+            if index<6:
+                header.append(el)
+    #stag=obj.stage_list(id)
+    return render_template("services/dynamo.html", profile=session.get("profile"), list=session["tables"] , all=all, header=header, load_l2=True , sel=id)
 
 
 if __name__ == '__main__': 

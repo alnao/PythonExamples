@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block content %}
+<!--
+<h1 class="text-primary">
+    S3
+</h1>     -->
+
+<div class="containerW100">
+    <div class="row align-items-start">
+        <div class="col">
+            <ul class="list-group">
+                <li class="list-group-item list-group-item-success">
+                    Lista tabelle Dynamo - Profilo attivo: <b>{{profile}}</b>
+                </li>
+                <li class="list-group-item p-1 overflow-hidden ">
+                    {% for b in list %}
+                        <a href="/dynamo/{{b}}"  class="badge {% if sel==b %} badge-primary {% else %} badge-info  {% endif %}">
+                            {{b}}</a>
+                    {% endfor %}
+                </li>
+            </ul>
+        </div>
+        <div class="col table-responsive">
+            {% if load_l2==True %}
+            <table class="table table-bordered small ">
+                <thead>
+                    <tr><th colspan="6" class="table-success">{{sel}}</th></tr>
+                    <tr>
+                        {% for col in header %}
+                            <th  class="table-info">{{col}}</th>
+                        {% endfor %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in all[:42] %}
+                        <tr>
+                            {% for col in header %}
+                                <td>{{row[col]}}</td>
+                            {% endfor %}
+                        </tr>
+                    {% endfor %}
+                    {% if all | length  > 42 %}
+                        <tr><th colspan="6" class="table-info">Max 42 rows in table</th></tr>
+                    {% endif %}
+                </tbody>
+            </table>
+            {% else %}
+            {% endif %}
+        </div>
+    </div>
+</div>
+<script type="text/javascript">
+    window.onload = function(){ //$('document').ready(function(){
+        //document.getElementById("definitionPRE").innerHTML = JSON.stringify(detail['definition' ] | tojson | safe }} , undefined, 2);
+    };    
+</script>
+{% endblock %}

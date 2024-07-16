@@ -10,6 +10,7 @@ from Services.lambda_function import ConsoleLambda
 from Services.event_bridge import ConsoleEventBridge
 from Services.step_function import ConsoleStepFunction
 from Services.api_gateway import ConsoleApiGateway
+from Services.dynamo import ConsoleDynamo
 #nota indispensabile che il pacakge SDK sia caricato dopo con l'istruzione qua sotto
 #non sportare questa append sopra altrimenti andrebbe in un loop di import 
 sys.path.append( os.path.dirname( os.path.dirname( os.path.dirname( os.path.abspath(__file__) ) ) ) )
@@ -22,6 +23,7 @@ from SDK.lambda_function import AwsLambda
 from SDK.event_bridge import AwsEventBridge
 from SDK.step_function import AwsStepFunction
 from SDK.api_gateway import AwsApiGateway
+from SDK.dynamo import AwsDynamoDB
 #non mettere nessun import dopo perchè os.path sarebbe in errore
 
 
@@ -42,6 +44,7 @@ class ServiceManager:
             ,{'title':'Event Bridge','desc':'Lista delle regole Bridge','automatic':False,'classe':ConsoleEventBridge,'sdk':AwsEventBridge}
             ,{'title':'Step function','desc':'Lista delle state machine','automatic':False,'classe':ConsoleStepFunction,'sdk':AwsStepFunction}
             ,{'title':'Api Gateway','desc':'Lista delle API','automatic':False,'classe':ConsoleApiGateway,'sdk':AwsApiGateway}
+            ,{'title':'DynamoDB','desc':'Lista delle tabelle Dynamo','automatic':False,'classe':ConsoleDynamo,'sdk':AwsDynamoDB}
         ]
     def get_lista_funzionalita(self):
         return self.lista_funzionalita
