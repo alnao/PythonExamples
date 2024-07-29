@@ -1,9 +1,20 @@
+#see https://docs.python.org/3/tutorial/classes.html
+
 #see https://www.youtube.com/watch?v=9SQTYoQkeoM
 #see https://www.geeksforgeeks.org/python-functools-total_ordering/
+#see https://www.youtube.com/watch?v=Qk8cmGvMAXU
+
 from functools import total_ordering 
+from abc import ABC, abstractmethod #see https://docs.python.org/3/library/abc.html#abc.abstractmethod and https://www.youtube.com/watch?v=Qk8cmGvMAXU
+
+class EssereVivente:
+
+    @abstractmethod  #see https://www.youtube.com/watch?v=Qk8cmGvMAXU
+    def sound(self):
+        ... #raise NotImplementedError
 
 @total_ordering
-class Persona:
+class Persona(metaclass=EssereVivente):
     def __init__(self, nome :str , age : int):
         self.nome=nome
         self.age=age
@@ -11,6 +22,11 @@ class Persona:
         print(f'{self.name} is working ... ')
     def sleep(self):
         print(f'{self.name} is sleeping ... but dreaming about working')
+    def sound(self):
+        return "voice"
+    @abstractmethod 
+    def aa(self):
+        ...
     #compare
     def __eq__(self, other) -> bool:
         return self.__dict__ == other.__dict__
@@ -24,10 +40,11 @@ class Persona:
     #special method call https://www.geeksforgeeks.org/__call__-in-python/?ref=ml_lbp  
     def __call__(self): 
         print("Instance is called via special method") 
+
   
 def main():
     #compare object
-    alberto = Persona("Alberto",24)
+    alberto : Persona = Persona("Alberto",24)
     alnao = Persona("Alberto",24)
     print ( "Alberto e alnao sono  uguali?" , alberto == alnao )
     andrea = Persona("Andrea",33)
