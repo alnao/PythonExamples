@@ -47,6 +47,7 @@ Quattro esempi di progetti **Django** sviluppati:
 - 03 **Api Persone NODB**: esempio di applicazione per l'esposizione di API, non previsto DB e non prevista concorrenza
 - 04 **Flask login Ldap**: esempio di piccola applicazione Flask con la gestione delle credenziali tramite un server AD e protocollo LDAP
 - 05 **Flask login Saml2-SSO**: esempio di piccola applicazione Flask con la gestione delle credenziali tramite un server AD e protocollo Saml2-SSO
+- 06 **TraslatorSubtitle**: esempio di immagine per tradurre file subtitle in formato srt, see https://www.youtube.com/watch?v=-l7YocEQtA0
 
 ## From Others Sites
 - Blockchain: esempi di implementazione dell'algoritmo "proof of work" con un unico nodo e un secondo esempio multi-nodo con metodo per la sincronia
@@ -66,6 +67,7 @@ Quattro esempi di progetti **Django** sviluppati:
 - TkinterExample:  https://www.youtube.com/watch?v=5qOnzF7RsNA (Tkinter e "Python Simplified")
 - Youtube Downloader: https://www.youtube.com/watch?v=EMlM6QTzJo0 
 - NotificationCron: https://www.youtube.com/watch?v=7ahUnBhdI5o
+- Traslator: see https://huggingface.co/spaces/Mediocreatmybest/PipelineTranslator/blob/main/app.py
 
 ## Manage File
 - Csv2fixedWidthFile: esempio di script py che prende un file csv e lo trasforma in un file txt posizionale

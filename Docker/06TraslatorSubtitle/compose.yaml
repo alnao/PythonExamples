@@ -1,0 +1,12 @@
+---
+services:
+  transformers-notebook:
+    #image: jupyter/tensorflow-notebook #removed to build with Dockerfile and "build" property
+    build: ./ #directory where container is runned,
+    ports:
+      - 8042:8888
+    environment:
+      - JUPYTER_TOKEN=iamspiderman
+    volumes:
+      - ./:/home/jovyan #directory where container is runned, jovyan nome nella immagine originale
+...
