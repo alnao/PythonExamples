@@ -29,11 +29,13 @@ Esempi di codice Python usando la AWS-CDK & la AWS-SDK:
   - **event bridge**: classe per la gestione delle regole EventBridge
   - **step function**: classe per la gestione delle StepFunction 
 
-## Data Scientists
-Esempi di codice Python con Pandas e altre librerie per la manipolazione dati. See [khuyentran1401 website](https://khuyentran1401.github.io/Efficient_Python_tricks_and_tools_for_data_scientists/README.html).
+## Data Scientist
+Esempi di codice Python con 
+- **Pandas** e altre librerie per la manipolazione dati, see [khuyentran1401 website](https://khuyentran1401.github.io/Efficient_Python_tricks_and_tools_for_data_scientists/README.html)
+- **Spark**, see [udemy.com/course/apache-spark](https://www.udemy.com/course/apache-spark-programming-in-python-for-beginners)
 
 ## Django
-Quattro esempi di progetti Django sviluppati:
+Quattro esempi di progetti **Django** sviluppati:
 - PythonDjango1example
 - PythonDjango2news
 - PythonDjango3forms
