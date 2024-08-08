@@ -1,5 +1,9 @@
 #ßee https://www.geeksforgeeks.org/python-lambda-anonymous-functions-filter-map-reduce/?ref=ml_lbp
 
+def sum(a,b): #https://www.youtube.com/shorts/ss-I6WAiMFA
+    return a+b
+sum_lambda=(lambda a,b:a+b)#(1,2)
+# c=sum_lambda(1,2)
 
 
 def main():

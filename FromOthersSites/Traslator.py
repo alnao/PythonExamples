@@ -1,7 +1,7 @@
 #see https://huggingface.co/spaces/Mediocreatmybest/PipelineTranslator/blob/main/app.py
 
 import torch
-import gradio as gr
+import gradio as gr #gradio 4.39.0 requires urllib3~=2.0, but you have urllib3 1.26.19 which is incompatible.
 from transformers import pipeline
 import ast
 
