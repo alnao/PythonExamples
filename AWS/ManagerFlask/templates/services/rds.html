@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block content %}
+<!--
+<h1 class="text-primary">
+    S3
+</h1>     -->
+
+<div class="containerW100">
+    <div class="row align-items-start">
+        <div class="col">
+            <ul class="list-group">
+                <li class="list-group-item list-group-item-success">
+                    Lista database RDS - Profilo attivo: <b>{{profile}}</b>
+                </li>
+                <li class="list-group-item p-1 overflow-hidden ">
+                    {% for b in list %}
+                        <a href="/rds/{{b.DBInstanceIdentifier}}"  class="badge {% if sel==b.DBInstanceIdentifier %} badge-primary {% else %} badge-info  {% endif %}">
+                            {{b.DBInstanceIdentifier}} ({{b.Engine}})</a>
+                    {% endfor %}
+                </li>
+            </ul>
+        </div>
+        <div class="col table-responsive">
+            {% if load_l2==True %}
+            <table class="table table-bordered small ">
+                <thead><tr><th colspan="2" class="table-success">{{sel}}</th></tr></thead>
+                <tbody>
+                    <tr><td colspan="2">{{detail.Endpoint.Address}} : {{detail.Endpoint.Port}}</td></tr>
+                    {% for obj in detail %}
+                        <tr><td>{{obj}}</td><td class="">{{detail[obj] }}</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            {% endif %}
+        </div>
+    </div>
+</div>
+<script type="text/javascript">
+    window.onload = function(){ //$('document').ready(function(){
+        //document.getElementById("definitionPRE").innerHTML = JSON.stringify(detail['definition' ] | tojson | safe }} , undefined, 2);
+    };    
+</script>
+{% endblock %}

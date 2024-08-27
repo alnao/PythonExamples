@@ -18,6 +18,7 @@ from SDK.event_bridge import AwsEventBridge
 from SDK.step_function import AwsStepFunction
 from SDK.api_gateway import AwsApiGateway
 from SDK.dynamo import AwsDynamoDB
+from SDK.rds import AwsRds
 
 app = Flask(__name__) 
 app.config["SESSION_PERMANENT"] = False
@@ -242,6 +243,20 @@ def dynamo_detail(id):
                 header.append(el)
     #stag=obj.stage_list(id)
     return render_template("services/dynamo.html", profile=session.get("profile"), list=session["tables"] , all=all, header=header, load_l2=True , sel=id)
+
+#rds
+@app.route('/rds') 
+def rds(): 
+    obj=AwsRds( session.get("profile") ) 
+    session["rds"]=obj.db_instances_list()
+    return render_template("services/rds.html", profile=session.get("profile"), list=session["rds"] , load_l2=False)
+@app.route('/rds/<id>') 
+def rds_detail(id): 
+    detail=[]
+    for l in session["rds"]:
+        if l['DBInstanceIdentifier']==id:
+            detail=l
+    return render_template("services/rds.html", profile=session.get("profile"), list=session["rds"] , detail=detail, all=all,  load_l2=True , sel=id)
 
 
 if __name__ == '__main__': 

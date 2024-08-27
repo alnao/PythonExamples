@@ -19,15 +19,9 @@ Esempi di codice Python usando la AWS-CDK & la AWS-SDK:
   - 01 **console**: Semplice esempio creato da console manualmente che elabora un file csv con una struttura ben definita (numero,lettera,lungo,gruppo), filtra gli elementi che hanno gruppo = 'A' e salva un nuovo file con la stessa struttura. Non è possibile eseguirlo in locale.
 - **ManagerTk**: *Applicazione* sviluppata con la libreria tkinter (menu, gestione finestre ed elenchi)
 - **ManagerFlask**: *Applicazione* web sviluppata con Flask
-- **SDK**: Per la libreria SDK, l'installazione e la configurazione vedere il [sito ufficiale](https://boto3.amazonaws.com/v1/documentation/api/latest/guide/quickstart.html) e il comando `pip install boto3`.
-  - **profiles**: classe per la gestione dei profili AWS-CLI
-  - **ssm parameter**: classe per la gestione del Parameter Store di SSM
-  - **bucketS3**: classe per la getsione dei bucket S3
-  - **ec2**: classe per la getsione delle istanze EC2 e classe per la gestione dei security groups
-  - **cloudFront**: classe per la gestione delle distribuzioni CloudFront
-  - **lambda**: classe per la gestione delle lambda function 
-  - **event bridge**: classe per la gestione delle regole EventBridge
-  - **step function**: classe per la gestione delle StepFunction 
+- **SDK**: Per la libreria SDK, l'installazione e la configurazione vedere il [sito ufficiale](https://boto3.amazonaws.com/v1/documentation/api/latest/guide/quickstart.html) e il comando `pip install boto3`. Classi per la gestione dei servizi: profiles, SSM parameter, Bucket S3, Ec2, CloudFront, Lambda, Event bridge, Step function, Dynamo & RDS.
+- **Services**
+  - **Polly**: text to speech, esempio preso dalla [documentazione ufficiale](https://docs.aws.amazon.com/it_it/polly/latest/dg/examples-python.html)
 
 ## Data Scientist
 Esempi di codice Python con 
@@ -95,6 +89,15 @@ Quattro esempi di progetti **Django** sviluppati:
 - lambda.py: esempi di lambda in Python
 - modules.py: Esempi di modulo in Python
 - scriptWithModules.py: Eempi di script che importa un modulo (modules.py) in Python
+
+## Creazione server
+Vedere la [documentazione ufficiale](https://docs.python.org/es/3.10/library/http.server.html) o pagine di [esempio](https://ryanblunden.com/create-a-http-server-with-one-command-thanks-to-python-29fcfdcd240e?gi=45d07bd349a1).
+Per lanciare il server, il comando è
+```
+python -m http.server 8080
+```
+e poi il server è pronto alla pagina `http://localhost:8080/`.
+
 
 # AlNao.it
 Nessun contenuto in questo repository è stato creato con IA o automaticamente, tutto il codice è stato scritto con molta pazienza da Alberto Nao. Se il codice è stato preso da altri siti/progetti è sempre indicata la fonte. Per maggior informazioni visitare il sito [AlNao.it](https://www.alnao.it/).

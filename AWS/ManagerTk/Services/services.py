@@ -11,6 +11,7 @@ from Services.event_bridge import ConsoleEventBridge
 from Services.step_function import ConsoleStepFunction
 from Services.api_gateway import ConsoleApiGateway
 from Services.dynamo import ConsoleDynamo
+from Services.rds import ConsoleRds
 #nota indispensabile che il pacakge SDK sia caricato dopo con l'istruzione qua sotto
 #non sportare questa append sopra altrimenti andrebbe in un loop di import 
 sys.path.append( os.path.dirname( os.path.dirname( os.path.dirname( os.path.abspath(__file__) ) ) ) )
@@ -24,6 +25,7 @@ from SDK.event_bridge import AwsEventBridge
 from SDK.step_function import AwsStepFunction
 from SDK.api_gateway import AwsApiGateway
 from SDK.dynamo import AwsDynamoDB
+from SDK.rds import AwsRds
 #non mettere nessun import dopo perchè os.path sarebbe in errore
 
 
@@ -45,6 +47,7 @@ class ServiceManager:
             ,{'title':'Step function','desc':'Lista delle state machine','automatic':False,'classe':ConsoleStepFunction,'sdk':AwsStepFunction}
             ,{'title':'Api Gateway','desc':'Lista delle API','automatic':False,'classe':ConsoleApiGateway,'sdk':AwsApiGateway}
             ,{'title':'DynamoDB','desc':'Lista delle tabelle Dynamo','automatic':False,'classe':ConsoleDynamo,'sdk':AwsDynamoDB}
+            ,{'title':'RDS','desc':'Lista dei database RDS','automatic':False,'classe':ConsoleRds,'sdk':AwsRds }
         ]
     def get_lista_funzionalita(self):
         return self.lista_funzionalita
