@@ -1,6 +1,8 @@
 """ 
 SEE https://docs.aws.amazon.com/it_it/polly/latest/dg/examples-python.html
 
+TO RUN python  server.py
+
 Example Python 2.7+/3.3+ Application
 
 This application consists of a HTTP 1.1 server using the HTTP chunked transfer

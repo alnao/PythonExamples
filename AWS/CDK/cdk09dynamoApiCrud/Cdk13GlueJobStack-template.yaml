@@ -1,0 +1,836 @@
+Resources:
+  Cdk09Dynamo86ECBADB:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      AttributeDefinitions:
+        - AttributeName: id
+          AttributeType: S
+      BillingMode: PAY_PER_REQUEST
+      KeySchema:
+        - AttributeName: id
+          KeyType: HASH
+    UpdateReplacePolicy: Delete
+    DeletionPolicy: Delete
+    Metadata:
+      aws:cdk:path: Cdk09DynamoApiCrudStack/Cdk09Dynamo/Resource
+  CreateItemFunctionServiceRoleFA9BEC66:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action: sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+        Version: "2012-10-17"
+      ManagedPolicyArns:
+        - Fn::Join:
+            - ""
+            - - "arn:"
+              - Ref: AWS::Partition
+              - :iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+    Metadata:
+      aws:cdk:path: Cdk09DynamoApiCrudStack/CreateItemFunction/ServiceRole/Resource
+  CreateItemFunctionServiceRoleDefaultPolicyDDC403C8:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyDocument:
+        Statement:
+          - Action:
+              - dynamodb:BatchGetItem
+              - dynamodb:BatchWriteItem
+              - dynamodb:ConditionCheckItem
+              - dynamodb:DeleteItem
+              - dynamodb:DescribeTable
+              - dynamodb:GetItem
+              - dynamodb:GetRecords
+              - dynamodb:GetShardIterator
+              - dynamodb:PutItem
+              - dynamodb:Query
+              - dynamodb:Scan
+              - dynamodb:UpdateItem
+            Effect: Allow
+            Resource:
+              - Fn::GetAtt:
+                  - Cdk09Dynamo86ECBADB
+                  - Arn
+              - Ref: AWS::NoValue
+        Version: "2012-10-17"
+      PolicyName: CreateItemFunctionServiceRoleDefaultPolicyDDC403C8
+      Roles:
+        - Ref: CreateItemFunctionServiceRoleFA9BEC66
+    Metadata:
+      aws:cdk:path: Cdk09DynamoApiCrudStack/CreateItemFunction/ServiceRole/DefaultPolicy/Resource
+  CreateItemFunctionFF2FFC34:
+    Type: AWS::Lambda::Function
+    Properties:
+      Code:
+        S3Bucket:
+          Fn::Sub: cdk-hnb659fds-assets-${AWS::AccountId}-${AWS::Region}
+        S3Key: 793de66b5d2141cec883306d4a5b7d6e146763eb20c27871604945b9990d7a81.zip
+      Environment:
+        Variables:
+          TABLE_NAME:
+            Ref: Cdk09Dynamo86ECBADB
+      Handler: create_item.lambda_handler
+      Role:
+        Fn::GetAtt:
+          - CreateItemFunctionServiceRoleFA9BEC66
+          - Arn
+      Runtime: python3.9
+    DependsOn:
+      - CreateItemFunctionServiceRoleDefaultPolicyDDC403C8
+      - CreateItemFunctionServiceRoleFA9BEC66
+    Metadata:
+      aws:cdk:path: Cdk09DynamoApiCrudStack/CreateItemFunction/Resource
+      aws:asset:path: asset.793de66b5d2141cec883306d4a5b7d6e146763eb20c27871604945b9990d7a81
+      aws:asset:is-bundled: false
+      aws:asset:property: Code
+  ReadItemFunctionServiceRoleD9195D91:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action: sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+        Version: "2012-10-17"
+      ManagedPolicyArns:
+        - Fn::Join:
+            - ""
+            - - "arn:"
+              - Ref: AWS::Partition
+              - :iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+    Metadata:
+      aws:cdk:path: Cdk09DynamoApiCrudStack/ReadItemFunction/ServiceRole/Resource
+  ReadItemFunctionServiceRoleDefaultPolicyB75696E7:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyDocument:
+        Statement:
+          - Action:
+              - dynamodb:BatchGetItem
+              - dynamodb:BatchWriteItem
+              - dynamodb:ConditionCheckItem
+              - dynamodb:DeleteItem
+              - dynamodb:DescribeTable
+              - dynamodb:GetItem
+              - dynamodb:GetRecords
+              - dynamodb:GetShardIterator
+              - dynamodb:PutItem
+              - dynamodb:Query
+              - dynamodb:Scan
+              - dynamodb:UpdateItem
+            Effect: Allow
+            Resource:
+              - Fn::GetAtt:
+                  - Cdk09Dynamo86ECBADB
+                  - Arn
+              - Ref: AWS::NoValue
+        Version: "2012-10-17"
+      PolicyName: ReadItemFunctionServiceRoleDefaultPolicyB75696E7
+      Roles:
+        - Ref: ReadItemFunctionServiceRoleD9195D91
+    Metadata:
+      aws:cdk:path: Cdk09DynamoApiCrudStack/ReadItemFunction/ServiceRole/DefaultPolicy/Resource
+  ReadItemFunction73A8B65A:
+    Type: AWS::Lambda::Function
+    Properties:
+      Code:
+        S3Bucket:
+          Fn::Sub: cdk-hnb659fds-assets-${AWS::AccountId}-${AWS::Region}
+        S3Key: 793de66b5d2141cec883306d4a5b7d6e146763eb20c27871604945b9990d7a81.zip
+      Environment:
+        Variables:
+          TABLE_NAME:
+            Ref: Cdk09Dynamo86ECBADB
+      Handler: read_item.lambda_handler
+      Role:
+        Fn::GetAtt:
+          - ReadItemFunctionServiceRoleD9195D91
+          - Arn
+      Runtime: python3.9
+    DependsOn:
+      - ReadItemFunctionServiceRoleDefaultPolicyB75696E7
+      - ReadItemFunctionServiceRoleD9195D91
+    Metadata:
+      aws:cdk:path: Cdk09DynamoApiCrudStack/ReadItemFunction/Resource
+      aws:asset:path: asset.793de66b5d2141cec883306d4a5b7d6e146763eb20c27871604945b9990d7a81
+      aws:asset:is-bundled: false
+      aws:asset:property: Code
+  UpdateItemFunctionServiceRole8FE11F3A:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action: sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+        Version: "2012-10-17"
+      ManagedPolicyArns:
+        - Fn::Join:
+            - ""
+            - - "arn:"
+              - Ref: AWS::Partition
+              - :iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+    Metadata:
+      aws:cdk:path: Cdk09DynamoApiCrudStack/UpdateItemFunction/ServiceRole/Resource
+  UpdateItemFunctionServiceRoleDefaultPolicyAB7219DA:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyDocument:
+        Statement:
+          - Action:
+              - dynamodb:BatchGetItem
+              - dynamodb:BatchWriteItem
+              - dynamodb:ConditionCheckItem
+              - dynamodb:DeleteItem
+              - dynamodb:DescribeTable
+              - dynamodb:GetItem
+              - dynamodb:GetRecords
+              - dynamodb:GetShardIterator
+              - dynamodb:PutItem
+              - dynamodb:Query
+              - dynamodb:Scan
+              - dynamodb:UpdateItem
+            Effect: Allow
+            Resource:
+              - Fn::GetAtt:
+                  - Cdk09Dynamo86ECBADB
+                  - Arn
+              - Ref: AWS::NoValue
+        Version: "2012-10-17"
+      PolicyName: UpdateItemFunctionServiceRoleDefaultPolicyAB7219DA
+      Roles:
+        - Ref: UpdateItemFunctionServiceRole8FE11F3A
+    Metadata:
+      aws:cdk:path: Cdk09DynamoApiCrudStack/UpdateItemFunction/ServiceRole/DefaultPolicy/Resource
+  UpdateItemFunction430AAE49:
+    Type: AWS::Lambda::Function
+    Properties:
+      Code:
+        S3Bucket:
+          Fn::Sub: cdk-hnb659fds-assets-${AWS::AccountId}-${AWS::Region}
+        S3Key: 793de66b5d2141cec883306d4a5b7d6e146763eb20c27871604945b9990d7a81.zip
+      Environment:
+        Variables:
+          TABLE_NAME:
+            Ref: Cdk09Dynamo86ECBADB
+      Handler: update_item.lambda_handler
+      Role:
+        Fn::GetAtt:
+          - UpdateItemFunctionServiceRole8FE11F3A
+          - Arn
+      Runtime: python3.9
+    DependsOn:
+      - UpdateItemFunctionServiceRoleDefaultPolicyAB7219DA
+      - UpdateItemFunctionServiceRole8FE11F3A
+    Metadata:
+      aws:cdk:path: Cdk09DynamoApiCrudStack/UpdateItemFunction/Resource
+      aws:asset:path: asset.793de66b5d2141cec883306d4a5b7d6e146763eb20c27871604945b9990d7a81
+      aws:asset:is-bundled: false
+      aws:asset:property: Code
+  DeleteItemFunctionServiceRoleB2BAE34D:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action: sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+        Version: "2012-10-17"
+      ManagedPolicyArns:
+        - Fn::Join:
+            - ""
+            - - "arn:"
+              - Ref: AWS::Partition
+              - :iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+    Metadata:
+      aws:cdk:path: Cdk09DynamoApiCrudStack/DeleteItemFunction/ServiceRole/Resource
+  DeleteItemFunctionServiceRoleDefaultPolicy7767DA08:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyDocument:
+        Statement:
+          - Action:
+              - dynamodb:BatchGetItem
+              - dynamodb:BatchWriteItem
+              - dynamodb:ConditionCheckItem
+              - dynamodb:DeleteItem
+              - dynamodb:DescribeTable
+              - dynamodb:GetItem
+              - dynamodb:GetRecords
+              - dynamodb:GetShardIterator
+              - dynamodb:PutItem
+              - dynamodb:Query
+              - dynamodb:Scan
+              - dynamodb:UpdateItem
+            Effect: Allow
+            Resource:
+              - Fn::GetAtt:
+                  - Cdk09Dynamo86ECBADB
+                  - Arn
+              - Ref: AWS::NoValue
+        Version: "2012-10-17"
+      PolicyName: DeleteItemFunctionServiceRoleDefaultPolicy7767DA08
+      Roles:
+        - Ref: DeleteItemFunctionServiceRoleB2BAE34D
+    Metadata:
+      aws:cdk:path: Cdk09DynamoApiCrudStack/DeleteItemFunction/ServiceRole/DefaultPolicy/Resource
+  DeleteItemFunction6C994993:
+    Type: AWS::Lambda::Function
+    Properties:
+      Code:
+        S3Bucket:
+          Fn::Sub: cdk-hnb659fds-assets-${AWS::AccountId}-${AWS::Region}
+        S3Key: 793de66b5d2141cec883306d4a5b7d6e146763eb20c27871604945b9990d7a81.zip
+      Environment:
+        Variables:
+          TABLE_NAME:
+            Ref: Cdk09Dynamo86ECBADB
+      Handler: delete_item.lambda_handler
+      Role:
+        Fn::GetAtt:
+          - DeleteItemFunctionServiceRoleB2BAE34D
+          - Arn
+      Runtime: python3.9
+    DependsOn:
+      - DeleteItemFunctionServiceRoleDefaultPolicy7767DA08
+      - DeleteItemFunctionServiceRoleB2BAE34D
+    Metadata:
+      aws:cdk:path: Cdk09DynamoApiCrudStack/DeleteItemFunction/Resource
+      aws:asset:path: asset.793de66b5d2141cec883306d4a5b7d6e146763eb20c27871604945b9990d7a81
+      aws:asset:is-bundled: false
+      aws:asset:property: Code
+  ItemsApi3788C05C:
+    Type: AWS::ApiGateway::RestApi
+    Properties:
+      Name: Items API
+    Metadata:
+      aws:cdk:path: Cdk09DynamoApiCrudStack/ItemsApi/Resource
+  ItemsApiDeployment2A6EC55370211b875dce06e2881a0ea8377b6915:
+    Type: AWS::ApiGateway::Deployment
+    Properties:
+      Description: Automatically created by the RestApi construct
+      RestApiId:
+        Ref: ItemsApi3788C05C
+    DependsOn:
+      - ItemsApiitemsidDELETE0785B0E9
+      - ItemsApiitemsidGET842BCF1E
+      - ItemsApiitemsidPUT9BA4F1B8
+      - ItemsApiitemsid9B2E43B3
+      - ItemsApiitemsGET0F801345
+      - ItemsApiitemsPOSTE9B0FD12
+      - ItemsApiitems0C302221
+    Metadata:
+      aws:cdk:path: Cdk09DynamoApiCrudStack/ItemsApi/Deployment/Resource
+  ItemsApiDeploymentStageprod39700B5C:
+    Type: AWS::ApiGateway::Stage
+    Properties:
+      DeploymentId:
+        Ref: ItemsApiDeployment2A6EC55370211b875dce06e2881a0ea8377b6915
+      RestApiId:
+        Ref: ItemsApi3788C05C
+      StageName: prod
+    Metadata:
+      aws:cdk:path: Cdk09DynamoApiCrudStack/ItemsApi/DeploymentStage.prod/Resource
+  ItemsApiitems0C302221:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      ParentId:
+        Fn::GetAtt:
+          - ItemsApi3788C05C
+          - RootResourceId
+      PathPart: items
+      RestApiId:
+        Ref: ItemsApi3788C05C
+    Metadata:
+      aws:cdk:path: Cdk09DynamoApiCrudStack/ItemsApi/Default/items/Resource
+  ItemsApiitemsPOSTApiPermissionCdk09DynamoApiCrudStackItemsApi3CD911BDPOSTitemsD54F2E17:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName:
+        Fn::GetAtt:
+          - CreateItemFunctionFF2FFC34
+          - Arn
+      Principal: apigateway.amazonaws.com
+      SourceArn:
+        Fn::Join:
+          - ""
+          - - "arn:"
+            - Ref: AWS::Partition
+            - ":execute-api:"
+            - Ref: AWS::Region
+            - ":"
+            - Ref: AWS::AccountId
+            - ":"
+            - Ref: ItemsApi3788C05C
+            - /
+            - Ref: ItemsApiDeploymentStageprod39700B5C
+            - /POST/items
+    Metadata:
+      aws:cdk:path: Cdk09DynamoApiCrudStack/ItemsApi/Default/items/POST/ApiPermission.Cdk09DynamoApiCrudStackItemsApi3CD911BD.POST..items
+  ItemsApiitemsPOSTApiPermissionTestCdk09DynamoApiCrudStackItemsApi3CD911BDPOSTitems7806E8F5:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName:
+        Fn::GetAtt:
+          - CreateItemFunctionFF2FFC34
+          - Arn
+      Principal: apigateway.amazonaws.com
+      SourceArn:
+        Fn::Join:
+          - ""
+          - - "arn:"
+            - Ref: AWS::Partition
+            - ":execute-api:"
+            - Ref: AWS::Region
+            - ":"
+            - Ref: AWS::AccountId
+            - ":"
+            - Ref: ItemsApi3788C05C
+            - /test-invoke-stage/POST/items
+    Metadata:
+      aws:cdk:path: Cdk09DynamoApiCrudStack/ItemsApi/Default/items/POST/ApiPermission.Test.Cdk09DynamoApiCrudStackItemsApi3CD911BD.POST..items
+  ItemsApiitemsPOSTE9B0FD12:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      AuthorizationType: NONE
+      HttpMethod: POST
+      Integration:
+        IntegrationHttpMethod: POST
+        Type: AWS_PROXY
+        Uri:
+          Fn::Join:
+            - ""
+            - - "arn:"
+              - Ref: AWS::Partition
+              - ":apigateway:"
+              - Ref: AWS::Region
+              - :lambda:path/2015-03-31/functions/
+              - Fn::GetAtt:
+                  - CreateItemFunctionFF2FFC34
+                  - Arn
+              - /invocations
+      ResourceId:
+        Ref: ItemsApiitems0C302221
+      RestApiId:
+        Ref: ItemsApi3788C05C
+    Metadata:
+      aws:cdk:path: Cdk09DynamoApiCrudStack/ItemsApi/Default/items/POST/Resource
+  ItemsApiitemsGETApiPermissionCdk09DynamoApiCrudStackItemsApi3CD911BDGETitems3ACFDF8B:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName:
+        Fn::GetAtt:
+          - ReadItemFunction73A8B65A
+          - Arn
+      Principal: apigateway.amazonaws.com
+      SourceArn:
+        Fn::Join:
+          - ""
+          - - "arn:"
+            - Ref: AWS::Partition
+            - ":execute-api:"
+            - Ref: AWS::Region
+            - ":"
+            - Ref: AWS::AccountId
+            - ":"
+            - Ref: ItemsApi3788C05C
+            - /
+            - Ref: ItemsApiDeploymentStageprod39700B5C
+            - /GET/items
+    Metadata:
+      aws:cdk:path: Cdk09DynamoApiCrudStack/ItemsApi/Default/items/GET/ApiPermission.Cdk09DynamoApiCrudStackItemsApi3CD911BD.GET..items
+  ItemsApiitemsGETApiPermissionTestCdk09DynamoApiCrudStackItemsApi3CD911BDGETitemsC1C865C1:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName:
+        Fn::GetAtt:
+          - ReadItemFunction73A8B65A
+          - Arn
+      Principal: apigateway.amazonaws.com
+      SourceArn:
+        Fn::Join:
+          - ""
+          - - "arn:"
+            - Ref: AWS::Partition
+            - ":execute-api:"
+            - Ref: AWS::Region
+            - ":"
+            - Ref: AWS::AccountId
+            - ":"
+            - Ref: ItemsApi3788C05C
+            - /test-invoke-stage/GET/items
+    Metadata:
+      aws:cdk:path: Cdk09DynamoApiCrudStack/ItemsApi/Default/items/GET/ApiPermission.Test.Cdk09DynamoApiCrudStackItemsApi3CD911BD.GET..items
+  ItemsApiitemsGET0F801345:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      AuthorizationType: NONE
+      HttpMethod: GET
+      Integration:
+        IntegrationHttpMethod: POST
+        Type: AWS_PROXY
+        Uri:
+          Fn::Join:
+            - ""
+            - - "arn:"
+              - Ref: AWS::Partition
+              - ":apigateway:"
+              - Ref: AWS::Region
+              - :lambda:path/2015-03-31/functions/
+              - Fn::GetAtt:
+                  - ReadItemFunction73A8B65A
+                  - Arn
+              - /invocations
+      ResourceId:
+        Ref: ItemsApiitems0C302221
+      RestApiId:
+        Ref: ItemsApi3788C05C
+    Metadata:
+      aws:cdk:path: Cdk09DynamoApiCrudStack/ItemsApi/Default/items/GET/Resource
+  ItemsApiitemsid9B2E43B3:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      ParentId:
+        Ref: ItemsApiitems0C302221
+      PathPart: "{id}"
+      RestApiId:
+        Ref: ItemsApi3788C05C
+    Metadata:
+      aws:cdk:path: Cdk09DynamoApiCrudStack/ItemsApi/Default/items/{id}/Resource
+  ItemsApiitemsidGETApiPermissionCdk09DynamoApiCrudStackItemsApi3CD911BDGETitemsidC4B111DC:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName:
+        Fn::GetAtt:
+          - ReadItemFunction73A8B65A
+          - Arn
+      Principal: apigateway.amazonaws.com
+      SourceArn:
+        Fn::Join:
+          - ""
+          - - "arn:"
+            - Ref: AWS::Partition
+            - ":execute-api:"
+            - Ref: AWS::Region
+            - ":"
+            - Ref: AWS::AccountId
+            - ":"
+            - Ref: ItemsApi3788C05C
+            - /
+            - Ref: ItemsApiDeploymentStageprod39700B5C
+            - /GET/items/*
+    Metadata:
+      aws:cdk:path: Cdk09DynamoApiCrudStack/ItemsApi/Default/items/{id}/GET/ApiPermission.Cdk09DynamoApiCrudStackItemsApi3CD911BD.GET..items.{id}
+  ItemsApiitemsidGETApiPermissionTestCdk09DynamoApiCrudStackItemsApi3CD911BDGETitemsidB271177E:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName:
+        Fn::GetAtt:
+          - ReadItemFunction73A8B65A
+          - Arn
+      Principal: apigateway.amazonaws.com
+      SourceArn:
+        Fn::Join:
+          - ""
+          - - "arn:"
+            - Ref: AWS::Partition
+            - ":execute-api:"
+            - Ref: AWS::Region
+            - ":"
+            - Ref: AWS::AccountId
+            - ":"
+            - Ref: ItemsApi3788C05C
+            - /test-invoke-stage/GET/items/*
+    Metadata:
+      aws:cdk:path: Cdk09DynamoApiCrudStack/ItemsApi/Default/items/{id}/GET/ApiPermission.Test.Cdk09DynamoApiCrudStackItemsApi3CD911BD.GET..items.{id}
+  ItemsApiitemsidGET842BCF1E:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      AuthorizationType: NONE
+      HttpMethod: GET
+      Integration:
+        IntegrationHttpMethod: POST
+        Type: AWS_PROXY
+        Uri:
+          Fn::Join:
+            - ""
+            - - "arn:"
+              - Ref: AWS::Partition
+              - ":apigateway:"
+              - Ref: AWS::Region
+              - :lambda:path/2015-03-31/functions/
+              - Fn::GetAtt:
+                  - ReadItemFunction73A8B65A
+                  - Arn
+              - /invocations
+      ResourceId:
+        Ref: ItemsApiitemsid9B2E43B3
+      RestApiId:
+        Ref: ItemsApi3788C05C
+    Metadata:
+      aws:cdk:path: Cdk09DynamoApiCrudStack/ItemsApi/Default/items/{id}/GET/Resource
+  ItemsApiitemsidPUTApiPermissionCdk09DynamoApiCrudStackItemsApi3CD911BDPUTitemsid8ED056E5:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName:
+        Fn::GetAtt:
+          - UpdateItemFunction430AAE49
+          - Arn
+      Principal: apigateway.amazonaws.com
+      SourceArn:
+        Fn::Join:
+          - ""
+          - - "arn:"
+            - Ref: AWS::Partition
+            - ":execute-api:"
+            - Ref: AWS::Region
+            - ":"
+            - Ref: AWS::AccountId
+            - ":"
+            - Ref: ItemsApi3788C05C
+            - /
+            - Ref: ItemsApiDeploymentStageprod39700B5C
+            - /PUT/items/*
+    Metadata:
+      aws:cdk:path: Cdk09DynamoApiCrudStack/ItemsApi/Default/items/{id}/PUT/ApiPermission.Cdk09DynamoApiCrudStackItemsApi3CD911BD.PUT..items.{id}
+  ItemsApiitemsidPUTApiPermissionTestCdk09DynamoApiCrudStackItemsApi3CD911BDPUTitemsid7F895FFC:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName:
+        Fn::GetAtt:
+          - UpdateItemFunction430AAE49
+          - Arn
+      Principal: apigateway.amazonaws.com
+      SourceArn:
+        Fn::Join:
+          - ""
+          - - "arn:"
+            - Ref: AWS::Partition
+            - ":execute-api:"
+            - Ref: AWS::Region
+            - ":"
+            - Ref: AWS::AccountId
+            - ":"
+            - Ref: ItemsApi3788C05C
+            - /test-invoke-stage/PUT/items/*
+    Metadata:
+      aws:cdk:path: Cdk09DynamoApiCrudStack/ItemsApi/Default/items/{id}/PUT/ApiPermission.Test.Cdk09DynamoApiCrudStackItemsApi3CD911BD.PUT..items.{id}
+  ItemsApiitemsidPUT9BA4F1B8:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      AuthorizationType: NONE
+      HttpMethod: PUT
+      Integration:
+        IntegrationHttpMethod: POST
+        Type: AWS_PROXY
+        Uri:
+          Fn::Join:
+            - ""
+            - - "arn:"
+              - Ref: AWS::Partition
+              - ":apigateway:"
+              - Ref: AWS::Region
+              - :lambda:path/2015-03-31/functions/
+              - Fn::GetAtt:
+                  - UpdateItemFunction430AAE49
+                  - Arn
+              - /invocations
+      ResourceId:
+        Ref: ItemsApiitemsid9B2E43B3
+      RestApiId:
+        Ref: ItemsApi3788C05C
+    Metadata:
+      aws:cdk:path: Cdk09DynamoApiCrudStack/ItemsApi/Default/items/{id}/PUT/Resource
+  ItemsApiitemsidDELETEApiPermissionCdk09DynamoApiCrudStackItemsApi3CD911BDDELETEitemsidBB890B55:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName:
+        Fn::GetAtt:
+          - DeleteItemFunction6C994993
+          - Arn
+      Principal: apigateway.amazonaws.com
+      SourceArn:
+        Fn::Join:
+          - ""
+          - - "arn:"
+            - Ref: AWS::Partition
+            - ":execute-api:"
+            - Ref: AWS::Region
+            - ":"
+            - Ref: AWS::AccountId
+            - ":"
+            - Ref: ItemsApi3788C05C
+            - /
+            - Ref: ItemsApiDeploymentStageprod39700B5C
+            - /DELETE/items/*
+    Metadata:
+      aws:cdk:path: Cdk09DynamoApiCrudStack/ItemsApi/Default/items/{id}/DELETE/ApiPermission.Cdk09DynamoApiCrudStackItemsApi3CD911BD.DELETE..items.{id}
+  ItemsApiitemsidDELETEApiPermissionTestCdk09DynamoApiCrudStackItemsApi3CD911BDDELETEitemsid45F77132:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName:
+        Fn::GetAtt:
+          - DeleteItemFunction6C994993
+          - Arn
+      Principal: apigateway.amazonaws.com
+      SourceArn:
+        Fn::Join:
+          - ""
+          - - "arn:"
+            - Ref: AWS::Partition
+            - ":execute-api:"
+            - Ref: AWS::Region
+            - ":"
+            - Ref: AWS::AccountId
+            - ":"
+            - Ref: ItemsApi3788C05C
+            - /test-invoke-stage/DELETE/items/*
+    Metadata:
+      aws:cdk:path: Cdk09DynamoApiCrudStack/ItemsApi/Default/items/{id}/DELETE/ApiPermission.Test.Cdk09DynamoApiCrudStackItemsApi3CD911BD.DELETE..items.{id}
+  ItemsApiitemsidDELETE0785B0E9:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      AuthorizationType: NONE
+      HttpMethod: DELETE
+      Integration:
+        IntegrationHttpMethod: POST
+        Type: AWS_PROXY
+        Uri:
+          Fn::Join:
+            - ""
+            - - "arn:"
+              - Ref: AWS::Partition
+              - ":apigateway:"
+              - Ref: AWS::Region
+              - :lambda:path/2015-03-31/functions/
+              - Fn::GetAtt:
+                  - DeleteItemFunction6C994993
+                  - Arn
+              - /invocations
+      ResourceId:
+        Ref: ItemsApiitemsid9B2E43B3
+      RestApiId:
+        Ref: ItemsApi3788C05C
+    Metadata:
+      aws:cdk:path: Cdk09DynamoApiCrudStack/ItemsApi/Default/items/{id}/DELETE/Resource
+  CDKMetadata:
+    Type: AWS::CDK::Metadata
+    Properties:
+      Analytics: v2:deflate64:H4sIAAAAAAAA/1WPQW+DMAyFf0vvaSbGpGnHlmm3aYjuXpngUheSIOwIoYj/PhE6rTu9z/bzS/yss5dXne9g4r1pun1PtY4nAdMpmPgcm9mB9U2t4zfUPari4hIsqgdbN6DjR3BGyLt19MgljpaYybtFEVgdK7/tJy19T2ZOvkSL4vwMzCisD6sozvUxmA7lCIwKBmpBcIJZxwpZDgOlrDu+49D72aKTtftQnQTa9OoGFbIPo8GU+Vvcgzb+RLn6Zm1ttCx/vvSxNYhcuzq+ggxB/q0XF1d415Cku8tZrt495TrL9NvuxkT7MTghi7ra9AfO34c/gAEAAA==
+    Metadata:
+      aws:cdk:path: Cdk09DynamoApiCrudStack/CDKMetadata/Default
+    Condition: CDKMetadataAvailable
+Outputs:
+  ItemsApiEndpointE9939A7D:
+    Value:
+      Fn::Join:
+        - ""
+        - - https://
+          - Ref: ItemsApi3788C05C
+          - .execute-api.
+          - Ref: AWS::Region
+          - "."
+          - Ref: AWS::URLSuffix
+          - /
+          - Ref: ItemsApiDeploymentStageprod39700B5C
+          - /
+Conditions:
+  CDKMetadataAvailable:
+    Fn::Or:
+      - Fn::Or:
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - af-south-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - ap-east-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - ap-northeast-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - ap-northeast-2
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - ap-south-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - ap-southeast-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - ap-southeast-2
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - ca-central-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - cn-north-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - cn-northwest-1
+      - Fn::Or:
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - eu-central-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - eu-north-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - eu-south-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - eu-west-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - eu-west-2
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - eu-west-3
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - il-central-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - me-central-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - me-south-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - sa-east-1
+      - Fn::Or:
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - us-east-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - us-east-2
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - us-west-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - us-west-2
+Parameters:
+  BootstrapVersion:
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: /cdk-bootstrap/hnb659fds/version
+    Description: Version of the CDK Bootstrap resources in this environment, automatically retrieved from SSM Parameter Store. [cdk:skip]
+

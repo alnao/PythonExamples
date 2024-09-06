@@ -2,34 +2,33 @@
 Esempi Python by [AlNao.it](https://www.alnao.it)
 
 ## AWS
-Prerequisito l'installazione e la configurazione di AWS-CLI, vedere il [sito ufficiale]() e il comando `aws configure`.
-
-Esempi di codice Python usando la AWS-CDK & la AWS-SDK:
+- Prerequisito l'installazione e la configurazione di AWS-CLI, vedere il [sito ufficiale]() e il comando `aws configure`.
 - **CDK**: Per la libreria CDK, l'installazione e la configurazione vedere il [sito ufficiale](https://docs.aws.amazon.com/cdk/v2/guide/getting_started.html) e il comando `npm install -g aws-cdk`. Per ogni progetto c'è un README dedicato:
   - 01 **bucketS3**: creazione di un bucket
   - 02 **ec2**: creazione di una istanza EC2
   - 03 **website S3**: creazione di una sito web esposto con S3
-  - 04 **cloud front**: creazione di una distribuzione con CloudFront, vedi [repository aws-samples](https://github.com/aws-samples/deploy-cloudfront-in-china-with-cdk/blob/main/Python/lib/cloudfront_in_china_stack.py)
-  - 05 **lambda function**: creazione di una funzione lambda function, vedi [repository aws-samples](https://github.com/aws-samples/aws-cdk-examples/tree/main/python/lambda-with-existing-s3-code)
-  - 06 **event bridge**: creazione di una regola EventBridge, vedi [repository aws-samples](https://github.com/aws-samples/aws-cdk-examples/blob/main/python/api-eventbridge-lambda/api_eventbridge_lambda/api_eventbridge_lambda.py) 
-  - 07 **step function**: creazione di una step function con due lambda [repository aws-samples](https://github.com/aws-samples/aws-cdk-examples/blob/main/python/stepfunctions/stepfunctions/stepfunctions_stack.py)
-- **CodeWhisperer**
-  - 01 **basic**: semplice esempio usato come prima prova
-- **Glue**
-  - 01 **console**: Semplice esempio creato da console manualmente che elabora un file csv con una struttura ben definita (numero,lettera,lungo,gruppo), filtra gli elementi che hanno gruppo = 'A' e salva un nuovo file con la stessa struttura. Non è possibile eseguirlo in locale.
-- **ManagerTk**: *Applicazione* sviluppata con la libreria tkinter (menu, gestione finestre ed elenchi)
-- **ManagerFlask**: *Applicazione* web sviluppata con Flask
-- **SDK**: Per la libreria SDK, l'installazione e la configurazione vedere il [sito ufficiale](https://boto3.amazonaws.com/v1/documentation/api/latest/guide/quickstart.html) e il comando `pip install boto3`. Classi per la gestione dei servizi: profiles, SSM parameter, Bucket S3, Ec2, CloudFront, Lambda, Event bridge, Step function, Dynamo & RDS.
+  - 04 **cloud front**: creazione di una distribuzione con CloudFront, vedere [repository aws-samples](https://github.com/aws-samples/deploy-cloudfront-in-china-with-cdk/blob/main/Python/lib/cloudfront_in_china_stack.py)
+  - 05 **lambda function**: creazione di una funzione lambda function, vedere [repository aws-samples](https://github.com/aws-samples/aws-cdk-examples/tree/main/python/lambda-with-existing-s3-code)
+  - 06 **event bridge**: creazione di una regola EventBridge, vedere [repository aws-samples](https://github.com/aws-samples/aws-cdk-examples/blob/main/python/api-eventbridge-lambda/api_eventbridge_lambda/api_eventbridge_lambda.py) 
+  - 07 **step function**: creazione di una step function con due lambda, vedere [repository aws-samples](https://github.com/aws-samples/aws-cdk-examples/blob/main/python/stepfunctions/stepfunctions/stepfunctions_stack.py)
+  - 09 **dynamo api crud**: creazione di una tabella dynamo con api gateway e lambda come crud 
+  - 13 **glue job**: creazione di un job glue per leggere un file e modificarne il contenuto
+
+- **ManagerTk**: *Applicazione* sviluppata con la libreria tkinter (menu, gestione finestre ed elenchi) per gestire i servizi AWS usando le librerie SDK
+- **ManagerFlask**: *Applicazione* web sviluppata con Flask per gestire i servizi AWS usando le librerie SDK
+- **SDK**: Per la libreria SDK, l'installazione e la configurazione vedere il [sito ufficiale](https://boto3.amazonaws.com/v1/documentation/api/latest/guide/quickstart.html) e il comando `pip install boto3`. Classi per la gestione dei servizi: profiles, SSM parameter, Bucket S3, Ec2, CloudFront, Lambda, Event bridge, Step function, Dynamo, RDS e tanti altri.
 - **Services**
+  - **CodeWhisperer**
+    - 01 **basic**: semplice esempio usato come prima prova
+  - **Glue**
+    - 01 **console**: Semplice esempio creato da console manualmente che elabora un file csv con una struttura ben definita (numero,lettera,lungo,gruppo), filtra gli elementi che hanno gruppo = 'A' e salva un nuovo file con la stessa struttura. Non è possibile eseguirlo in locale.
   - **Polly**: text to speech, esempio preso dalla [documentazione ufficiale](https://docs.aws.amazon.com/it_it/polly/latest/dg/examples-python.html)
 
 ## Data Scientist
-Esempi di codice Python con 
 - **Pandas** e altre librerie per la manipolazione dati, see [khuyentran1401 website](https://khuyentran1401.github.io/Efficient_Python_tricks_and_tools_for_data_scientists/README.html)
 - **Spark**, see [udemy.com/course/apache-spark](https://www.udemy.com/course/apache-spark-programming-in-python-for-beginners)
 
 ## Django
-Quattro esempi di progetti **Django** sviluppati:
 - PythonDjango1example
 - PythonDjango2news
 - PythonDjango3forms

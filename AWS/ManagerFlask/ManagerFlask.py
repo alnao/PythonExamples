@@ -19,6 +19,8 @@ from SDK.step_function import AwsStepFunction
 from SDK.api_gateway import AwsApiGateway
 from SDK.dynamo import AwsDynamoDB
 from SDK.rds import AwsRds
+from SDK.ec2 import AwsEc2
+from SDK.glue_job import AwsGlueJob
 
 app = Flask(__name__) 
 app.config["SESSION_PERMANENT"] = False
@@ -257,6 +259,61 @@ def rds_detail(id):
         if l['DBInstanceIdentifier']==id:
             detail=l
     return render_template("services/rds.html", profile=session.get("profile"), list=session["rds"] , detail=detail, all=all,  load_l2=True , sel=id)
+
+
+#ec2
+def aggiorna_lista_ec2():
+    obj=AwsEc2( session.get("profile") ) 
+    lista=[]
+    i_list=obj.get_lista_istanze()
+    for reservation in i_list['Reservations']:
+        for istanza in reservation['Instances']:
+            nome=''
+            if 'Tags' in istanza: #len(istanza.Tags)>0 :
+                for tag in istanza['Tags']:#print (tag)
+                    if tag['Key']=='Name':
+                        nome=tag['Value']
+            i=istanza
+            i['Nome']=nome
+            lista.append(i)
+    session["ec2"]=lista
+@app.route('/ec2') 
+def ec2(): 
+    aggiorna_lista_ec2()
+    return render_template("services/ec2.html", profile=session.get("profile"), list=session["ec2"] , load_l2=False)
+@app.route('/ec2/detail/<id>') 
+def ec2_detail(id): 
+    detail=[]
+    for l in session["ec2"]:
+        if l['InstanceId']==id:
+            detail=l
+    return render_template("services/ec2.html", profile=session.get("profile"), list=session["ec2"] , detail=detail, all=all,  load_l2=True , sel=id)
+@app.route('/ec2/start/<id>') 
+def ec2_start(id): 
+    obj=AwsEc2( session.get("profile") ) 
+    obj.start_instance(id)
+    aggiorna_lista_ec2()
+    return ec2_detail(id)
+@app.route('/ec2/stop/<id>') 
+def ec2_stop(id): 
+    obj=AwsEc2( session.get("profile") ) 
+    obj.stop_instance(id)
+    aggiorna_lista_ec2()
+    return ec2_detail(id)
+
+# glue_job
+@app.route('/glue_job') 
+def service_glue_job(): 
+    gj=AwsGlueJob( session.get("profile") )
+    session["list_gj"]=gj.jobs_list() #print(e['Id'] + "|" + e['Status'] + "|" + e['Origins']['Items'][0]['DomainName'])
+    return render_template("services/glue_job.html", profile=session.get("profile"), list_gj=session["list_gj"] , list_invalidaz=[] , load_l2=False)
+
+@app.route('/glue_job_level2/<id>') 
+def service_glue_job_level2(id): 
+    cf=AwsGlueJob( session.get("profile") )
+    dettaglio=cf.job_detail(id)
+    esecuzioni=cf.job_execution_list(id)
+    return render_template("services/glue_job.html", profile=session.get("profile"), idsel=id, list_gj=session["list_gj"], dettaglio=dettaglio, esecuzioni=esecuzioni , load_l2=True)
 
 
 if __name__ == '__main__': 
