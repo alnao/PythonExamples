@@ -13,6 +13,7 @@ from Services.api_gateway import ConsoleApiGateway
 from Services.dynamo import ConsoleDynamo
 from Services.rds import ConsoleRds
 from Services.glue_job import ConsoleGlueJob
+from Services.sqs import ConsoleSqs
 #nota indispensabile che il pacakge SDK sia caricato dopo con l'istruzione qua sotto
 #non sportare questa append sopra altrimenti andrebbe in un loop di import 
 sys.path.append( os.path.dirname( os.path.dirname( os.path.dirname( os.path.abspath(__file__) ) ) ) )
@@ -28,6 +29,7 @@ from SDK.api_gateway import AwsApiGateway
 from SDK.dynamo import AwsDynamoDB
 from SDK.rds import AwsRds
 from SDK.glue_job import AwsGlueJob
+from SDK.sqs import AwsSqs
 #non mettere nessun import dopo perchè os.path sarebbe in errore
 
 
@@ -51,6 +53,7 @@ class ServiceManager:
             ,{'title':'DynamoDB','desc':'Lista delle tabelle Dynamo','automatic':False,'classe':ConsoleDynamo,'sdk':AwsDynamoDB}
             ,{'title':'RDS','desc':'Lista dei database RDS','automatic':False,'classe':ConsoleRds,'sdk':AwsRds }
             ,{'title':'GlueJob','desc':'Lista dei job Glue','automatic':False,'classe':ConsoleGlueJob,'sdk':AwsGlueJob }
+            ,{'title':'Sqs','desc':'Lista di code SQS','automatic':False,'classe':ConsoleSqs,'sdk':AwsSqs }
         ]
     def get_lista_funzionalita(self):
         return self.lista_funzionalita

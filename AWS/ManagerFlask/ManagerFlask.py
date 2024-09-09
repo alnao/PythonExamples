@@ -21,6 +21,7 @@ from SDK.dynamo import AwsDynamoDB
 from SDK.rds import AwsRds
 from SDK.ec2 import AwsEc2
 from SDK.glue_job import AwsGlueJob
+from SDK.sqs import AwsSqs
 
 app = Flask(__name__) 
 app.config["SESSION_PERMANENT"] = False
@@ -315,6 +316,60 @@ def service_glue_job_level2(id):
     esecuzioni=cf.job_execution_list(id)
     return render_template("services/glue_job.html", profile=session.get("profile"), idsel=id, list_gj=session["list_gj"], dettaglio=dettaglio, esecuzioni=esecuzioni , load_l2=True)
 
+
+#sqs
+@app.route('/sqs') 
+def sqs(): 
+    obj=AwsSqs( session.get("profile") ) 
+    session["sqs"]=obj.get_sns_list()
+    return render_template("services/sqs.html", profile=session.get("profile"), list=session["sqs"] , load_l2=False, load_l3=False)
+@app.route('/sqs/<id>') 
+def sqs_detail(id): 
+    obj=AwsSqs( session.get("profile") ) 
+    detail=[]
+    url_sel=""
+    for el in session["sqs"]:
+        if el.split('/')[-1]==id:
+            url_sel=el
+    detail = obj.get_queue( url_sel )
+    return render_template("services/sqs.html", profile=session.get("profile"), list=session["sqs"] , detail=detail, all=all,  load_l2=True, load_l3=False , sel=id)
+
+@app.route('/sqs_produce', methods = ['POST'])   
+def sqs_produce(): 
+    if request.method == 'POST':   
+        obj=AwsSqs( session.get("profile") ) 
+        url_sel=""
+        sqs=request.form.get('sqs')
+        for el in session["sqs"]:
+            if el.split('/')[-1]==sqs:
+                url_sel=el
+        content = request.form.get('content')
+        formatted_json = json.dumps({'messageEvent':content})
+        obj.send_queue_message( url_sel, {}, formatted_json )
+        return sqs_detail( sqs )
+    flash('Nothing to do')
+    return index()
+
+@app.route('/sqs_consume/<id>') 
+def sqs_consume(id): 
+    obj=AwsSqs( session.get("profile") ) 
+    detail=[]
+    url_sel=""
+    for el in session["sqs"]:
+        if el.split('/')[-1]==id:
+            url_sel=el
+    detail = obj.get_queue( url_sel )
+    messages=[]
+    lista=obj.receive_queue_messages( url_sel )
+    for msg in lista:
+        if 'Body' in msg:
+            msg_body = msg['Body']
+        else:
+            msg_body = str(msg)
+        receipt_handle = msg['ReceiptHandle']
+        obj.delete_queue_message( url_sel , receipt_handle)
+        messages.append(msg_body)
+    return render_template("services/sqs.html", profile=session.get("profile"), list=session["sqs"] , detail=detail, all=all,  load_l2=True, messages=messages, load_l3=True , sel=id)
 
 if __name__ == '__main__': 
     #app.run() 

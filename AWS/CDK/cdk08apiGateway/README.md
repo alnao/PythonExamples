@@ -1,5 +1,9 @@
-# CDK13 Glue Job
-Esempio base per la creazione di un Job di Glue per copiare dati da bucket S3 verso un database RDS
+# CDK08 Api Gateway
+Esempio base per la creazione di una API Rest con Api gateway con Lambda function come backend.
+
+
+Esempio preso dal [repository ufficiale aws-samples](https://github.com/aws-samples/aws-cdk-examples/blob/main/python/api-stages-lambda/lambda/lambda-handler.py)
+
 
 Per l'installazione e la configurazione della CLI e del tool CDK, vedere il file README globale.
 
@@ -11,30 +15,22 @@ Per l'installazione e la configurazione della CLI e del tool CDK, vedere il file
     python3 -m venv .venv
     cdk bootstrap
     ```
+
 - Deploy del progetto
     ```
     cdk ls
-    cdk synth > Cdk13GlueJobStack-template.yaml
-    cdk deploy
+    cdk synth > Cdk08ApiGatewayStack-template.yaml
+    cdk deploy 
     ```
 - Comando verifica dello stack
     ```
-    aws cloudformation list-stack-resources --stack-name Cdk13GlueJobStack --output text
-    aws cloudformation get-template --stack-name Cdk13GlueJobStack
+    aws cloudformation list-stack-resources --stack-name Cdk08ApiGatewayStack --output text
+    aws cloudformation get-template --stack-name Cdk08ApiGatewayStack
     ```
-- Comandi per il test
+- Comandi per il test del job eseguendolo
     ```
-    curl https://<API-ID>.execute-api.eu-west-1.amazonaws.com/prod/items
-    
-    curl -X POST https://<API-ID>.execute-api.eu-west-1.amazonaws.com/prod/items -H 'Content-Type: application/json' -d "{\"id\": \"1\", \"name\": \"Alberto\", \"description\": \"bellissimo\"}"
-    curl https://<API-ID>.execute-api.eu-west-1.amazonaws.com/prod/items
-    
-    curl -X PUT https://<API-ID>.execute-api.eu-west-1.amazonaws.com/prod/items/1 -H 'Content-Type: application/json' -d "{\"name\": \"Alberto\", \"description\": \"magnifico\"}"
-    
-    curl https://<API-ID>.execute-api.eu-west-1.amazonaws.com/prod/items
-    curl -X DELETE https://<API-ID>.execute-api.eu-west-1.amazonaws.com/prod/items/1
-    
-    curl https://<API-ID>.execute-api.eu-west-1.amazonaws.com/prod/items
+    curl https://<APIID>.execute-api.eu-west-1.amazonaws.com/dev/stage_info
+
     ```
 - Confronto tra sviluppo e ambiente target
     ```
@@ -53,6 +49,9 @@ Nessun contenuto in questo repository è stato creato con IA o automaticamente, 
 Public projects 
 <a href="https://it.wikipedia.org/wiki/GNU_General_Public_License"  valign="middle"><img src="https://img.shields.io/badge/License-GNU-blue" style="height:22px;"  valign="middle"></a> 
 *Free Software!*
+
+
+
 
 
 
