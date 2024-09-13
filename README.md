@@ -11,8 +11,11 @@ Esempi Python by [AlNao.it](https://www.alnao.it)
   - 05 **lambda function**: creazione di una funzione lambda function, vedere [repository aws-samples](https://github.com/aws-samples/aws-cdk-examples/tree/main/python/lambda-with-existing-s3-code)
   - 06 **event bridge**: creazione di una regola EventBridge, vedere [repository aws-samples](https://github.com/aws-samples/aws-cdk-examples/blob/main/python/api-eventbridge-lambda/api_eventbridge_lambda/api_eventbridge_lambda.py) 
   - 07 **step function**: creazione di una step function con due lambda, vedere [repository aws-samples](https://github.com/aws-samples/aws-cdk-examples/blob/main/python/stepfunctions/stepfunctions/stepfunctions_stack.py)
+  - 08 **api gateway**: api gateway con esposizione di una risorsa REST
   - 09 **dynamo api crud**: creazione di una tabella dynamo con api gateway e lambda come crud 
+  - 10 **lambda auth**: creazione di una API REST con lambda authorizer per la validazione di Token JWT
   - 13 **glue job**: creazione di un job glue per leggere un file e modificarne il contenuto
+  - 15 **SQS**: creazione di una coda SQS, un API con un metodo producer e un metodo consumer
 
 - **ManagerTk**: *Applicazione* sviluppata con la libreria tkinter (menu, gestione finestre ed elenchi) per gestire i servizi AWS usando le librerie SDK
 - **ManagerFlask**: *Applicazione* web sviluppata con Flask per gestire i servizi AWS usando le librerie SDK
@@ -26,7 +29,7 @@ Esempi Python by [AlNao.it](https://www.alnao.it)
 
 ## Data Scientist
 - **Pandas** e altre librerie per la manipolazione dati, see [khuyentran1401 website](https://khuyentran1401.github.io/Efficient_Python_tricks_and_tools_for_data_scientists/README.html)
-- **Spark**, see [udemy.com/course/apache-spark](https://www.udemy.com/course/apache-spark-programming-in-python-for-beginners)
+- **Spark** vedere file README all'interno della cartella, progetti ispirati al corso [udemy.com/course/apache-spark](https://www.udemy.com/course/apache-spark-programming-in-python-for-beginners)
 
 ## Django
 - PythonDjango1example
