@@ -1,16 +1,18 @@
 import json
 import boto3
 from datetime import datetime 
-#see https://hands-on.cloud/boto3-sqs-tutorial/
-
-#see https://github.com/boto/botocore/issues/2705
+import logging
 import warnings
+
 warnings.filterwarnings('ignore', category=FutureWarning, module='botocore.client')
 
 class AwsSqs:
     def __init__(self, profile_name):
         self.profile_name=profile_name
-    def get_sns_list(self):
+        self.logger = logging.getLogger(__name__)
+        boto3.setup_default_session(profile_name=self.profile_name)
+        
+    def get_sqs_list(self):
         sqs_client = boto3.client("sqs") #, region_name=AWS_REGION
         topics_iter = sqs_client.list_queues(
             #QueueNamePrefix='string',
@@ -69,7 +71,7 @@ def main(profile):
     print ("----------------------------------------------------------------")
     
     #list
-    lista= o.get_sns_list()
+    lista= o.get_sqs_list()
     print (lista)
     print ("----------------------------------------------------------------")
     QUEUE_URL=lista[1] 

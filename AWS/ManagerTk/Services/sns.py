@@ -7,7 +7,7 @@ import os
 sys.path.append( os.path.dirname( os.path.dirname( os.path.dirname( os.path.abspath(__file__) ) ) ) )
 from Application.json_viewer import JSONViewer
 
-class ConsoleSqs:
+class ConsoleSns:
     def __init__(self,frame,profilo,configuration,classe_sdk,list_to_clipboard):
         for widget in frame.winfo_children():
             widget.destroy()
@@ -24,17 +24,13 @@ class ConsoleSqs:
         for widget in self.frame.winfo_children():
             widget.destroy()
         service=self.classe_sdk(self.profilo)
-        self.lista=service.get_sqs_list()
-        #self.lista_db = sorted(self.lista_db, key=lambda tup: tup["DBInstanceIdentifier"])
-        self.dettaglio=service.get_queue
-        self.send_queue_message=service.send_queue_message
-        self.receive_queue_messages=service.receive_queue_messages
-        self.delete_queue_message=service.delete_queue_message
+        self.lista=service.list_topics()
+        self.get_topic_attributes=service.get_topic_attributes
+        self.list_subscriptions=service.list_subscriptions
+        self.publish_message=service.publish_message
         self.crea_window()
 
     def crea_window(self):
-       #grid # https://www.geeksforgeeks.org/python-grid-method-in-tkinter/
-        #grid see https://tkdocs.com/tutorial/grid.html
         self.frame.columnconfigure(2)
         self.frame1 = ttk.Frame(self.frame, width=350, height=630)
         self.frame1.grid(row = 1, column = 2, sticky = tk.W, padx = 2) 
@@ -57,7 +53,7 @@ class ConsoleSqs:
         self.tree.heading("Nome",text="Nome",anchor=CENTER)
         i=1
         for sm in self.lista:
-            name=sm.split("/")[-1]
+            name=sm.split(":")[-1]
             self.tree.insert(parent='',index='end',iid=i,text='',values=(sm,name ) )
             i=i+1
         self.tree.bind("<Double-1>", self.open_detail)
@@ -66,21 +62,22 @@ class ConsoleSqs:
         #return tab
 
     def open_detail(self, event): #(frame,profilo,lista_istanze,istanza):
-        item = self.tree.selection()[0]
-        self.SQS_selezionata = self.tree.item(item)['values'][0]
-        self.SQS_selezionata_url=""
-        for sqs in self.lista:
-            if sqs==self.SQS_selezionata:
-                self.SQS_selezionata_url=sqs
-        if self.SQS_selezionata_url=="":
+        item = self.tree.selection()
+        self.sns_selezionata = self.tree.item(item)['values'][0]
+        self.sns_selezionata_arn=""
+        for sns in self.lista:
+            if sns==self.sns_selezionata:
+                self.sns_selezionata_arn=sns
+            self.dettaglio_valore=sns
+        if self.sns_selezionata_arn=="":
             print("ERRORE")
             return
-        self.dettaglio_valore=self.dettaglio(self.SQS_selezionata_url)
-
+        
+        self.dettaglio_valore=self.get_topic_attributes(self.sns_selezionata_arn)
         if self.free2_loaded==True:
             self.frame2.pack_forget()# or frm.grid_forget() depending on whether the frame was packed or grided. #self.frame2.Destroy()
             self.frame2 = ttk.Frame(self.frame)
-        Label(self.frame2, text="Queue: " + self.SQS_selezionata ).pack()
+        Label(self.frame2, text="Job: " + self.sns_selezionata ).pack()
         #Label(self.frame2, text="Stato: " + istanza['State']['Name'] ).pack()
         #if istanza['State']['Name']=='running':
         #    Button(self.frame2, text = "Stop", command=self.send_stop).pack()
@@ -90,11 +87,11 @@ class ConsoleSqs:
         self.scroll2 = Scrollbar(self.frame2a)
         self.scroll2.pack(side=RIGHT, fill=Y)
         self.free2_loaded=True
-        self.tree2 = ttk.Treeview(self.frame2a,yscrollcommand=self.scroll2.set,height=20)
+        self.tree2 = ttk.Treeview(self.frame2a,yscrollcommand=self.scroll2.set,height=10)
         self.tree2['columns'] = ('Chiave', 'Valore')
         self.tree2.column("#0", width=0,  stretch=NO)
-        self.tree2.column("Chiave", width=300)
-        self.tree2.column("Valore",anchor=CENTER,width=480)
+        self.tree2.column("Chiave", width=200)
+        self.tree2.column("Valore",anchor=CENTER,width=580)
         self.tree2.heading("#0",text="",anchor=CENTER)
         self.tree2.heading("Chiave",text="Chiave",anchor=CENTER)
         self.tree2.heading("Valore",text="Valore",anchor=CENTER)
@@ -107,47 +104,55 @@ class ConsoleSqs:
         self.tree2.pack()
         self.frame2b = ttk.Frame(self.frame2)
         #Button(self.frame2b, text = "Definizione", command=self.show_definition).pack()
-        Label(self.frame2b, text="Operazioni possibili" ).grid(row = 0, column = 0, sticky = W, pady = 2) #.pack()
-        Button(self.frame2b, text = "Consuma coda", command=self.consuma).grid(row = 1, column = 0, sticky = W, pady = 2)# .pack()
-        Button(self.frame2b, text = "Produci"     , command=self.produci).grid(row = 1, column = 1, sticky = W, pady = 2)# .pack()
+        l_name= Label(self.frame2b, text="Sottoscrizione" )
+        l_name.pack()
+        #l_name.bind("<Button-1>", lambda e:self.open_window_set_tag())
+        self.scroll2b = Scrollbar(self.frame2b)
+        self.scroll2b.pack(side=RIGHT, fill=Y)
+        self.tree3 = ttk.Treeview(self.frame2b,yscrollcommand=self.scroll2b.set,height=15)
+        self.tree3['columns'] = ('Owner', 'Protocol' ,'Endpoint')
+        self.tree3.column("#0", width=0,  stretch=NO)
+        self.tree3.column("Owner", width=150)
+        self.tree3.column("Protocol",anchor=CENTER,width=200)
+        self.tree3.column("Endpoint",anchor=CENTER,width=500)
+        self.tree3.heading("#0",text="",anchor=CENTER)
+        self.tree3.heading("Owner",text="Owner",anchor=CENTER)
+        self.tree3.heading("Protocol",text="Protocol",anchor=CENTER)
+        self.tree3.heading("Endpoint",text="Endpoint",anchor=CENTER)
+        i=0
+        self.sottoscrizioni_list=self.list_subscriptions(self.sns_selezionata_arn)
+        for es in self.sottoscrizioni_list:
+            self.tree3.insert(parent='',index='end',iid=i,text='',
+                values=( es['Owner'] , es['Protocol'] , str(es['Endpoint']) ) )
+            i=i+1
+        Button(self.frame2, text = "Send message to topic", command=self.send_content_window).pack()
+        self.tree3.pack()
         self.frame2a.pack()
         self.frame2b.pack()
         self.frame2.pack(side=LEFT)
-
-    def consuma(self):
-        lista=self.receive_queue_messages(self.SQS_selezionata_url)
-        for msg in lista:
-            if 'Body' in msg:
-                msg_body = msg['Body']
-            else:
-                msg_body = str(msg)
-            receipt_handle = msg['ReceiptHandle']
-            self.delete_queue_message(self.SQS_selezionata_url, receipt_handle)
-            JSONViewer(Toplevel(self.frame),msg_body,self.SQS_selezionata_url.split("/")[-1])
-            self.open_detail(self.frame)
-            return
-        #JSONViewer(Toplevel(self.frame),"NESSUN MESSAGGIO",self.SQS_selezionata_url.split("/")[-1])
-        tk.messagebox.showinfo(title= self.SQS_selezionata_url.split("/")[-1] , message="Nessun messaggio")#https://docs.python.org/3/library/tkinter.messagebox.html
-        
-
-    def produci(self): #https://www.geeksforgeeks.org/python-grid-method-in-tkinter/
-        w_tag_child=Toplevel(self.frame2) # Child window 
-        w_tag_child.geometry("600x300")#+ str(x) + "+" + str(y))  # Size of the window 
-        w_tag_child.title(self.SQS_selezionata_url.split("/")[-1])
-        l2 = Label(w_tag_child, text = "Content:")
-        l2.grid(row = 1, column = 0, sticky = W, pady = 2)
-        self.e2 = Entry(w_tag_child,textvariable="{}") #, width= 42)
-        self.e2.grid(row = 1, column = 1, padx=20, pady=2, ipadx=150 , ipady=20)
-        b1 = Button(w_tag_child, text = "Save", command=self.send_prod)
-        b1.grid(row = 2, column = 1, sticky = E)
-        self.e2.insert(0,"")#item = self.tree.selection()[0]
     
-    def send_prod(self): #send_queue_message(profile_name,queue_url,msg_attributes,msg_body)
-        formatted_json = json.dumps({'messageEvent':self.e2.get()})
-        self.send_queue_message( self.SQS_selezionata_url, {}, formatted_json )
+    def send_content_window(self): #(frame,profilo,lista_istanze,istanza):
+        w_tag_child=Toplevel(self.frame2) # Child window 
+        w_tag_child.geometry("600x300" )#+ str(x) + "+" + str(y))  # Size of the window 
+        w_tag_child.title("SNS: " + self.sns_selezionata_arn ) #min = a if a < b else b
+        self.window_modifica={}
+        l = Label(w_tag_child, text =  "Content:")
+        l.grid(row = 0, column = 0, sticky = W, pady = 2)
+        entry_text = tk.StringVar()
+        entry_text.set( str( self.sns_selezionata_arn ) ) #e.insert( 0 , str( element[e] ) )
+        en = Entry(w_tag_child,textvariable=entry_text )
+        en.grid(row = 0, column = 1, padx=20, pady=2, ipadx=150 , ipady=20)
+        self.window_modifica["text"]=en
+        self.w_tag_child=w_tag_child
+        b1 = Button(w_tag_child, text = "Send to SNS topic", command=self.send_content_exec)
+        b1.grid(row = 1, column = 1, sticky = E)
+
+    def send_content_exec(self):
+        testo=self.window_modifica["text"].get()
+        self.publish_message(self.sns_selezionata_arn , testo)
         for widget in self.frame2.winfo_children():
             widget.destroy()
-        self.open_detail(self.frame)
+    #        self.open_detail( event=None )
 
 if __name__ == '__main__':
     print("Error")

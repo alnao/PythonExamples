@@ -22,6 +22,7 @@ from SDK.rds import AwsRds
 from SDK.ec2 import AwsEc2
 from SDK.glue_job import AwsGlueJob
 from SDK.sqs import AwsSqs
+from SDK.sns import AwsSns
 
 app = Flask(__name__) 
 app.config["SESSION_PERMANENT"] = False
@@ -321,7 +322,7 @@ def service_glue_job_level2(id):
 @app.route('/sqs') 
 def sqs(): 
     obj=AwsSqs( session.get("profile") ) 
-    session["sqs"]=obj.get_sns_list()
+    session["sqs"]=obj.get_sqs_list()
     return render_template("services/sqs.html", profile=session.get("profile"), list=session["sqs"] , load_l2=False, load_l3=False)
 @app.route('/sqs/<id>') 
 def sqs_detail(id): 
@@ -370,6 +371,30 @@ def sqs_consume(id):
         obj.delete_queue_message( url_sel , receipt_handle)
         messages.append(msg_body)
     return render_template("services/sqs.html", profile=session.get("profile"), list=session["sqs"] , detail=detail, all=all,  load_l2=True, messages=messages, load_l3=True , sel=id)
+
+#sns
+@app.route('/sns') 
+def sns(): 
+    obj=AwsSns( session.get("profile") ) 
+    session["sns"]=obj.list_topics()
+    return render_template("services/sns.html", profile=session.get("profile"), list=session["sns"] , load_l2=False)
+@app.route('/sns/<id>') 
+def sns_detail(id): 
+    obj=AwsSns( session.get("profile") ) 
+    detail=obj.get_topic_attributes(id)
+    sub=obj.list_subscriptions(id)
+    return render_template("services/sns.html", profile=session.get("profile"), list=session["sns"] , detail=detail, sub=sub,  load_l2=True , sel=id)
+@app.route('/sns_send/<id>', methods = ['POST'])   
+def sns_send(id):
+    if request.method == 'POST':   
+        obj=AwsSns( session.get("profile") ) 
+        sns=request.form.get('sns')
+        content = request.form.get('content')
+        formatted_json = json.dumps({'message':content})
+        obj.publish_message( sns, formatted_json )
+        return sns_detail( sns )
+    flash('Nothing to do')
+    return index()
 
 if __name__ == '__main__': 
     #app.run() 
