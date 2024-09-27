@@ -23,6 +23,7 @@ from SDK.ec2 import AwsEc2
 from SDK.glue_job import AwsGlueJob
 from SDK.sqs import AwsSqs
 from SDK.sns import AwsSns
+from SDK.elastic_ip import AwsElasticIp
 
 app = Flask(__name__) 
 app.config["SESSION_PERMANENT"] = False
@@ -395,6 +396,22 @@ def sns_send(id):
         return sns_detail( sns )
     flash('Nothing to do')
     return index()
+
+
+#rds
+@app.route('/elastic_ip') 
+def elastic_ip(): 
+    obj=AwsElasticIp( session.get("profile") ) 
+    session["elastic_ip"]=obj.get_elastic_addresses()
+    return render_template("services/elastic_ip.html", profile=session.get("profile"), list=session["elastic_ip"] , load_l2=False)
+@app.route('/elastic_ip/<id>') 
+def elastic_ip_detail(id): 
+    detail=[]
+    for l in session["elastic_ip"]:
+        if l['PublicIp']==id:
+            detail=l
+    return render_template("services/elastic_ip.html", profile=session.get("profile"), list=session["elastic_ip"] , detail=detail, all=all,  load_l2=True , sel=id)
+
 
 if __name__ == '__main__': 
     #app.run() 

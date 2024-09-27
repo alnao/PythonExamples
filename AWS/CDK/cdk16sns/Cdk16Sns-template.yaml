@@ -1,0 +1,236 @@
+Resources:
+  Cdk16NotificationTopicBC9953DF:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: NotificationTopic
+    Metadata:
+      aws:cdk:path: Cdk16SnsStack/Cdk16NotificationTopic/Resource
+  Cdk16NotificationTopicbellissimoalnaoitA0EE4F88:
+    Type: AWS::SNS::Subscription
+    Properties:
+      Endpoint: bellissimo@alnao.it
+      Protocol: email
+      TopicArn:
+        Ref: Cdk16NotificationTopicBC9953DF
+    Metadata:
+      aws:cdk:path: Cdk16SnsStack/Cdk16NotificationTopic/bellissimo@alnao.it/Resource
+  Cdk16LoggingLambdaServiceRole354FD2C4:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action: sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+        Version: "2012-10-17"
+      ManagedPolicyArns:
+        - Fn::Join:
+            - ""
+            - - "arn:"
+              - Ref: AWS::Partition
+              - :iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+    Metadata:
+      aws:cdk:path: Cdk16SnsStack/Cdk16LoggingLambda/ServiceRole/Resource
+  Cdk16LoggingLambdaB2AA2D88:
+    Type: AWS::Lambda::Function
+    Properties:
+      Code:
+        S3Bucket:
+          Fn::Sub: cdk-hnb659fds-assets-${AWS::AccountId}-${AWS::Region}
+        S3Key: 74420d12e15dd5df068f53a1b0341f905daf35260fcfb9c70de105c1c3440fda.zip
+      Environment:
+        Variables:
+          TOPIC_ARN:
+            Ref: Cdk16NotificationTopicBC9953DF
+      FunctionName: cdk16Logging
+      Handler: index.handler
+      Role:
+        Fn::GetAtt:
+          - Cdk16LoggingLambdaServiceRole354FD2C4
+          - Arn
+      Runtime: python3.11
+      Timeout: 300
+    DependsOn:
+      - Cdk16LoggingLambdaServiceRole354FD2C4
+    Metadata:
+      aws:cdk:path: Cdk16SnsStack/Cdk16LoggingLambda/Resource
+      aws:asset:path: asset.74420d12e15dd5df068f53a1b0341f905daf35260fcfb9c70de105c1c3440fda
+      aws:asset:is-bundled: false
+      aws:asset:property: Code
+  Cdk16LoggingLambdaAllowInvokeCdk16SnsStackCdk16NotificationTopic0D28B2B4C87020DF:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName:
+        Fn::GetAtt:
+          - Cdk16LoggingLambdaB2AA2D88
+          - Arn
+      Principal: sns.amazonaws.com
+      SourceArn:
+        Ref: Cdk16NotificationTopicBC9953DF
+    Metadata:
+      aws:cdk:path: Cdk16SnsStack/Cdk16LoggingLambda/AllowInvoke:Cdk16SnsStackCdk16NotificationTopic0D28B2B4
+  Cdk16LoggingLambdaCdk16NotificationTopicA3673A2A:
+    Type: AWS::SNS::Subscription
+    Properties:
+      Endpoint:
+        Fn::GetAtt:
+          - Cdk16LoggingLambdaB2AA2D88
+          - Arn
+      Protocol: lambda
+      TopicArn:
+        Ref: Cdk16NotificationTopicBC9953DF
+    Metadata:
+      aws:cdk:path: Cdk16SnsStack/Cdk16LoggingLambda/Cdk16NotificationTopic/Resource
+  Cdk16NotificationStateMachineRoleCB6DD937:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action: sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service:
+                Fn::Join:
+                  - ""
+                  - - states.
+                    - Ref: AWS::Region
+                    - .amazonaws.com
+        Version: "2012-10-17"
+    Metadata:
+      aws:cdk:path: Cdk16SnsStack/Cdk16NotificationStateMachine/Role/Resource
+  Cdk16NotificationStateMachineRoleDefaultPolicyC136BFC8:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyDocument:
+        Statement:
+          - Action: sns:Publish
+            Effect: Allow
+            Resource:
+              Ref: Cdk16NotificationTopicBC9953DF
+        Version: "2012-10-17"
+      PolicyName: Cdk16NotificationStateMachineRoleDefaultPolicyC136BFC8
+      Roles:
+        - Ref: Cdk16NotificationStateMachineRoleCB6DD937
+    Metadata:
+      aws:cdk:path: Cdk16SnsStack/Cdk16NotificationStateMachine/Role/DefaultPolicy/Resource
+  Cdk16NotificationStateMachine0B92EDEF:
+    Type: AWS::StepFunctions::StateMachine
+    Properties:
+      DefinitionString:
+        Fn::Join:
+          - ""
+          - - '{"StartAt":"Cdk16SendToSNS","States":{"Cdk16SendToSNS":{"End":true,"Type":"Task","ResultPath":"$.sns_result","Resource":"arn:'
+            - Ref: AWS::Partition
+            - :states:::sns:publish","Parameters":{"TopicArn":"
+            - Ref: Cdk16NotificationTopicBC9953DF
+            - '","Message.$":"$.message"}}}}'
+      RoleArn:
+        Fn::GetAtt:
+          - Cdk16NotificationStateMachineRoleCB6DD937
+          - Arn
+      StateMachineName: sfCdk16Sns
+    DependsOn:
+      - Cdk16NotificationStateMachineRoleDefaultPolicyC136BFC8
+      - Cdk16NotificationStateMachineRoleCB6DD937
+    UpdateReplacePolicy: Delete
+    DeletionPolicy: Delete
+    Metadata:
+      aws:cdk:path: Cdk16SnsStack/Cdk16NotificationStateMachine/Resource
+  CDKMetadata:
+    Type: AWS::CDK::Metadata
+    Properties:
+      Analytics: v2:deflate64:H4sIAAAAAAAA/1WPQWuEQAyFf8veZ1OshdJjV+itVLR3ieO4pmpGTIZlEf97ceyCPb2X5CMveYbk5RXSE97kbJv+PFANS6loe4M3qRZhgeXbT2RN1vJuylCLnWlS8rx1j/VqBhzrBmH5CGwfxNHnbh5JJLKEIyyFH9w2iJr7gew9ctGtRtIKRZwKvG9iJIVLsL3TC4ozom5q/7ZLpSi9QMmSh3og6f6P42PqPtF2xDHyWK+rKZz4MFtnYlKpeCW+btxX0CloPPKBZC1nnhvan87v2nl+SiFJ4O30I0TnObDS6KDY9RfoaFHRaQEAAA==
+    Metadata:
+      aws:cdk:path: Cdk16SnsStack/CDKMetadata/Default
+    Condition: CDKMetadataAvailable
+Outputs:
+  Cdk16StateMachineArn:
+    Description: State Machine ARN
+    Value:
+      Ref: Cdk16NotificationStateMachine0B92EDEF
+Conditions:
+  CDKMetadataAvailable:
+    Fn::Or:
+      - Fn::Or:
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - af-south-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - ap-east-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - ap-northeast-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - ap-northeast-2
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - ap-south-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - ap-southeast-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - ap-southeast-2
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - ca-central-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - cn-north-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - cn-northwest-1
+      - Fn::Or:
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - eu-central-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - eu-north-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - eu-south-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - eu-west-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - eu-west-2
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - eu-west-3
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - il-central-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - me-central-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - me-south-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - sa-east-1
+      - Fn::Or:
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - us-east-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - us-east-2
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - us-west-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - us-west-2
+Parameters:
+  BootstrapVersion:
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: /cdk-bootstrap/hnb659fds/version
+    Description: Version of the CDK Bootstrap resources in this environment, automatically retrieved from SSM Parameter Store. [cdk:skip]
+

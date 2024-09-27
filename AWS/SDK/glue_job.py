@@ -27,7 +27,7 @@ class AwsGlueJob:
         if "Jobs" in response:
             return response["Jobs"]
         return response
-    #  {'Name': 'documentazione-epc-to-box', 'Description': '', 'Role': 'arn:aws:iam::740456629644:role/ExportDocumentiDaEPC-GlueExecutionRole-1NE952LG3LC5V', 
+    #  {'Name': 'documentazione-epc-to-box', 'Description': '', 'Role': 'arn:aws:iam::xxxx:role/ExportDocumentiDaEPC-GlueExecutionRole-1NE952LG3LC5V', 
     # 'CreatedOn': datetime.datetime(2023, 9, 14, 9, 8, 0, 794000, tzinfo=tzlocal()), 'LastModifiedOn': datetime.datetime(2023, 10, 13, 17, 14, 53, 392000, tzinfo=tzlocal()), 
     # 'ExecutionProperty': {'MaxConcurrentRuns': 20}, 
     # 'Command': {'Name': 'glueetl', 'ScriptLocation': 's3://alberto-input/OUTGOING/exportBase/crea_zip_per_box.py', 'PythonVersion': '3'}, 

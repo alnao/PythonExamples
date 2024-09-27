@@ -155,14 +155,14 @@ IpProtocol': 'tcp', 'IpRanges': [{'CidrIp': '0.0.0.0/0', 'Description': 'Custom 
 'ToPort': 3269, 'UserIdGroupPairs': []}, {'FromPort': 1024, 'IpProtocol': 'tcp', 'IpRanges': [{'CidrIp': '0.0.0.0/0', 'Description': 
 'Custom TCP rule'}], 'Ipv6Ranges': [], 'PrefixListIds': [], 'ToPort': 65535, 'UserIdGroupPairs': []}, {'IpProtocol': '-1', 'IpRanges'
 : [], 'Ipv6Ranges': [], 'PrefixListIds': [], 'UserIdGroupPairs': [{'Description': 'Allow All traffic from SG', 'GroupId': 'sg-0a31f889186305019', 
-'UserId': '740456629644'}]}, {'FromPort': 135, 'IpProtocol': 'tcp', 'IpRanges': [{'CidrIp': '0.0.0.0/0', 'Description': 'Custom TCP rule'}], 
+'UserId': 'xxxx'}]}, {'FromPort': 135, 'IpProtocol': 'tcp', 'IpRanges': [{'CidrIp': '0.0.0.0/0', 'Description': 'Custom TCP rule'}], 
 'Ipv6Ranges': [], 'PrefixListIds': [], 'ToPort': 135, 'UserIdGroupPairs': []}, {'FromPort': 636, 'IpProtocol': 'tcp', 'IpRanges': [{'CidrIp':
  '0.0.0.0/0', 'Description': 'Custom TCP rule'}], 'Ipv6Ranges': [], 'PrefixListIds': [], 'ToPort': 636, 'UserIdGroupPairs': []}, 
  {'FromPort': 53, 'IpProtocol': 'tcp', 'IpRanges': [{'CidrIp': '0.0.0.0/0', 'Description': 'Default DNS TCP rule'}], 'Ipv6Ranges': [],
    'PrefixListIds': [], 'ToPort': 53, 'UserIdGroupPairs': []}, {'FromPort': 88, 'IpProtocol': 'udp', 'IpRanges': [{'CidrIp': '0.0.0.0/0',
      'Description': 'Custom UDP rule'}], 'Ipv6Ranges': [], 'PrefixListIds': [], 'ToPort': 88, 'UserIdGroupPairs': []}], 'OwnerId': 
-     '740456629644', 'GroupId': 'sg-0a31f889186305019', 'IpPermissionsEgress': [{'IpProtocol': '-1', 'IpRanges': [], 'Ipv6Ranges': [],
+     'xxxx', 'GroupId': 'sg-0a31f889186305019', 'IpPermissionsEgress': [{'IpProtocol': '-1', 'IpRanges': [], 'Ipv6Ranges': [],
        'PrefixListIds': [], 'UserIdGroupPairs': [{'Description': 'Allow All traffic from SG', 'GroupId': 'sg-0a31f889186305019', 'UserId'
-       : '740456629644'}]}], 'VpcId': 'vpc-0720cb9155edcbce9'}
+       : 'xxxx'}]}], 'VpcId': 'vpc-0720cb9155edcbce9'}
        
 """

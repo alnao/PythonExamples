@@ -127,8 +127,8 @@ class ConsoleStepFunction:
         for es in self.esecuzioni_list:
             self.tree3.insert(parent='',index='end',iid=i,text='',
                     values=(es['name'],es['status'],str(es['startDate']),str(es['stopDate'])) )
-            #{'executionArn': 'arn:aws:states:eu-west-1:740456629644:execution:sfBonificiWaitingDaCedacri:testByBoto3',
-            #  'stateMachineArn': 'arn:aws:states:eu-west-1:740456629644:stateMachine:sfBonificiWaitingDaCedacri', 
+            #{'executionArn': 'arn:aws:states:eu-west-1:xxxx:execution:sfBonificiWaitingDaCedacri:testByBoto3',
+            #  'stateMachineArn': 'arn:aws:states:eu-west-1:xxxx:stateMachine:sfBonificiWaitingDaCedacri', 
             # 'name': 'testByBoto3', 'status': 'FAILED', 
             # 'startDate': datetime.datetime(2023, 10, 17, 14, 57, 17, 318000, tzinfo=tzlocal()), 
             # 'stopDate': datetime.datetime(2023, 10, 17, 14, 57, 17, 704000, tzinfo=tzlocal())}
