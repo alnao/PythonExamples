@@ -16,7 +16,7 @@ requirements.txt
 from typing import Optional
 import tcod.event
 import os
-dirname=os.path.dirname(__file__)
+DIR_PATH=os.path.dirname(os.path.abspath(__file__))+"/"
 
 class Action:
     pass
@@ -54,7 +54,7 @@ def main() -> None:
     player_y = int(screen_height / 2)
 
     tileset = tcod.tileset.load_tilesheet(
-        dirname + "/rogueliketutorials01.png", 32, 8, tcod.tileset.CHARMAP_TCOD #ex dejavu10x10_gs_tc
+        DIR_PATH + "images/rogueliketutorials01.png", 32, 8, tcod.tileset.CHARMAP_TCOD #ex dejavu10x10_gs_tc
     )
     event_handler = EventHandler()
     with tcod.context.new_terminal(

@@ -8,6 +8,7 @@ SCREEN_WIDTH = 80
 SCREEN_HEIGHT = 50
 
 LIMIT_FPS = 20  #20 frames-per-second maximum
+DIR_PATH=os.path.dirname(os.path.abspath(__file__))+""
 
 
 def handle_keys():
@@ -41,7 +42,7 @@ def handle_keys():
 # Initialization & Main Loop
 #############################################
 
-libtcod.console_set_custom_font(dirname+'/rogueliketutorials01.png', libtcod.FONT_TYPE_GREYSCALE | libtcod.FONT_LAYOUT_TCOD)
+libtcod.console_set_custom_font(DIR_PATH+'/images/rogueliketutorials01.png', libtcod.FONT_TYPE_GREYSCALE | libtcod.FONT_LAYOUT_TCOD)
 libtcod.console_init_root(SCREEN_WIDTH, SCREEN_HEIGHT, 'python/libtcod tutorial', False)
 libtcod.sys_set_fps(LIMIT_FPS)
 

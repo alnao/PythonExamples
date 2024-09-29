@@ -54,12 +54,24 @@ Esempi Python by [AlNao.it](https://www.alnao.it)
 - FlaskLoginGoogle: https://realpython.com/flask-google-login/
 - Ia: https://www.youtube.com/watch?v=CkkjXTER2KE
 - SimpleGames
+  - ArcadeLib: 
+    - Snake see https://www.geeksforgeeks.org/python-arcade-player-movement/
+    - Space see https://realpython.com/arcade-python-game-framework/
+    - see https://api.arcade.academy/en/latest/examples/platform_tutorial/step_02.html
+    - see https://realpython.com/arcade-python-game-framework/
   - Coffe: https://github.com/uxai/100daysofcode/blob/main/Day%2015/coffee_machine.py
-  - PyGame01: see https://www.pygame.org/docs/
-  - PyGame02 fly game: see https://realpython.com/pygame-a-primer/
-  - PyGame03 asteroid:  see https://realpython.com/asteroids-game-python/
+  - Pong: https://api.arcade.academy/en/latest/examples/sections_demo_2.html#sections-demo-2
+  - PyGame
+    - see https://www.pygame.org/docs/
+    - fly game: see https://realpython.com/pygame-a-primer/
+    - asteroid: see https://realpython.com/asteroids-game-python/
   - Rogue Like tutorial see https://rogueliketutorials.com/tutorials/tcod/v2/part-1/
+  - Tetris see https://api.arcade.academy/en/latest/examples/tetris.html#tetris
   - Vital_messages & shootout: https://www.youtube.com/watch?v=3kdM9wyglnw
+  - TODO https://github.com/BlakeDalmas/Python
+  - TODO Simple Platformer https://api.arcade.academy/en/latest/examples/platform_tutorial/index.html
+  - TODO https://api.arcade.academy/en/latest/sample_games.html
+  - TODO https://api.arcade.academy/en/stable/examples/procedural_caves_bsp.html
 - TkinterExample:  https://www.youtube.com/watch?v=5qOnzF7RsNA (Tkinter e "Python Simplified")
 - Youtube Downloader: https://www.youtube.com/watch?v=EMlM6QTzJo0 
 - NotificationCron: https://www.youtube.com/watch?v=7ahUnBhdI5o
