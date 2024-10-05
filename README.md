@@ -112,6 +112,19 @@ python -m http.server 8080
 ```
 e poi il server è pronto alla pagina `http://localhost:8080/`.
 
+## pyinstaller
+Come crare i file eseguibile da un python con **pyinstaller**, vedi [documentazione ufficiale](https://pyinstaller.org/en/stable/) e [video](https://www.youtube.com/watch?v=bqNvkAfTvIc). [Guida all'installazione](https://pyinstaller.org/en/v3.5/installation.html) e comando
+```
+pip install pyinstaller 
+```
+
+Per poi creare il file eseguibile dentro alla cartella dist del progetto:
+```
+pyinstaller file.py --onefile
+pyinstaller ManagerTk.py --onefile  --hidden-import=Services --hidden-import=Services.services
+pyinstaller --hidden-import=Services --hidden-import=Services.services  -F ManagerTk.py
+```
+
 
 # AlNao.it
 Nessun contenuto in questo repository è stato creato con IA o automaticamente, tutto il codice è stato scritto con molta pazienza da Alberto Nao. Se il codice è stato preso da altri siti/progetti è sempre indicata la fonte. Per maggior informazioni visitare il sito [AlNao.it](https://www.alnao.it/).
