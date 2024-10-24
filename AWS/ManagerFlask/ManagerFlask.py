@@ -24,6 +24,7 @@ from SDK.glue_job import AwsGlueJob
 from SDK.sqs import AwsSqs
 from SDK.sns import AwsSns
 from SDK.elastic_ip import AwsElasticIp
+from SDK.efs import AwsEfs
 
 app = Flask(__name__) 
 app.config["SESSION_PERMANENT"] = False
@@ -261,7 +262,7 @@ def rds_detail(id):
     for l in session["rds"]:
         if l['DBInstanceIdentifier']==id:
             detail=l
-    return render_template("services/rds.html", profile=session.get("profile"), list=session["rds"] , detail=detail, all=all,  load_l2=True , sel=id)
+    return render_template("services/rds.html", profile=session.get("profile"), list=session["rds"] , detail=detail,   load_l2=True , sel=id)
 
 
 #ec2
@@ -411,6 +412,31 @@ def elastic_ip_detail(id):
         if l['PublicIp']==id:
             detail=l
     return render_template("services/elastic_ip.html", profile=session.get("profile"), list=session["elastic_ip"] , detail=detail, all=all,  load_l2=True , sel=id)
+
+
+
+#efs
+@app.route('/efs') 
+def efs(): 
+    obj=AwsEfs( session.get("profile") ) 
+    session["efs"]=obj.describe_file_systems()
+    return render_template("services/efs.html", profile=session.get("profile"), list=session["efs"] , load_l2=False)
+@app.route('/efs/<id>') 
+def efs_detail(id): 
+    detail=[]
+    for l in session["efs"]:
+        if l['FileSystemId']==id:
+            detail=l
+    obj=AwsEfs( session.get("profile") ) 
+    d=obj.describe_mount_targets(id)
+    detail2={}
+    load_l3=False
+    if 'MountTargets' in d:
+        if len(d['MountTargets'])>0:
+            detail2=d['MountTargets'][0]
+            load_l3=True
+    return render_template("services/efs.html", profile=session.get("profile"), list=session["efs"] , detail=detail, detail2=detail2, load_l2=True,load_l3=load_l3 , sel=id)
+
 
 
 if __name__ == '__main__': 

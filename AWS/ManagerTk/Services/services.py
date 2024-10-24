@@ -16,6 +16,7 @@ from Services.glue_job import ConsoleGlueJob
 from Services.sqs import ConsoleSqs
 from Services.sns import ConsoleSns
 from Services.elastic_ip import ConsoleElasticIp
+from Services.efs import ConsoleEFS
 #nota indispensabile che il pacakge SDK sia caricato dopo con l'istruzione qua sotto
 #non sportare questa append sopra altrimenti andrebbe in un loop di import 
 sys.path.append( os.path.dirname( os.path.dirname( os.path.dirname( os.path.abspath(__file__) ) ) ) )
@@ -34,6 +35,7 @@ from SDK.glue_job import AwsGlueJob
 from SDK.sqs import AwsSqs
 from SDK.sns import AwsSns
 from SDK.elastic_ip import AwsElasticIp
+from SDK.efs import AwsEfs
 #non mettere nessun import dopo perchè os.path sarebbe in errore
 
 if __name__ == '__main__':
@@ -59,6 +61,7 @@ class ServiceManager:
             ,{'title':'Sqs','desc':'Lista di code SQS','automatic':False,'classe':ConsoleSqs,'sdk':AwsSqs }
             ,{'title':'Sns','desc':'Lista di code SNS','automatic':False,'classe':ConsoleSns,'sdk':AwsSns }
             ,{'title':'ElasticIP','desc':'Lista di ElasticIp','automatic':False,'classe':ConsoleElasticIp,'sdk':AwsElasticIp }
+            ,{'title':'Efs','desc':'Lista dischi EFS','automatic':False,'classe':ConsoleEFS,'sdk':AwsEfs }
         ]
     def get_lista_funzionalita(self):
         return self.lista_funzionalita

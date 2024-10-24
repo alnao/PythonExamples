@@ -2,10 +2,10 @@
 Esempi Python by [AlNao.it](https://www.alnao.it)
 
 ## AWS
-- Prerequisito l'installazione e la configurazione di AWS-CLI, vedere il [sito ufficiale]() e il comando `aws configure`.
-- **CDK**: Per la libreria CDK, l'installazione e la configurazione vedere il [sito ufficiale](https://docs.aws.amazon.com/cdk/v2/guide/getting_started.html) e il comando `npm install -g aws-cdk`. Per ogni progetto c'è un README dedicato:
+- Prerequisito: utenza AWS e installazione della AWS-CLI, vedere il [sito ufficiale](), per la configurazione eseguire comando `aws configure`.
+- **CDK**: Per la libreria CDK, installare della libreria, vedere il [sito ufficiale](https://docs.aws.amazon.com/cdk/v2/guide/getting_started.html) eseguire il comando `npm install -g aws-cdk`. Per ogni progetto c'è un README dedicato:
   - 01 **bucketS3**: creazione di un bucket
-  - 02 **ec2**: creazione di una istanza EC2
+  - 02 **EC2**: creazione di una istanza EC2
   - 03 **website S3**: creazione di una sito web esposto con S3
   - 04 **cloud front**: creazione di una distribuzione con CloudFront, vedere [repository aws-samples](https://github.com/aws-samples/deploy-cloudfront-in-china-with-cdk/blob/main/Python/lib/cloudfront_in_china_stack.py)
   - 05 **lambda function**: creazione di una funzione lambda function, vedere [repository aws-samples](https://github.com/aws-samples/aws-cdk-examples/tree/main/python/lambda-with-existing-s3-code)
@@ -16,6 +16,8 @@ Esempi Python by [AlNao.it](https://www.alnao.it)
   - 10 **lambda auth**: creazione di una API REST con lambda authorizer per la validazione di Token JWT
   - 13 **glue job**: creazione di un job glue per leggere un file e modificarne il contenuto
   - 15 **SQS**: creazione di una coda SQS, un API con un metodo producer e un metodo consumer
+  - 16 **SNS**: creazione di un sistema SNS con una lambda che scoda le notifiche
+  - 18 **EFS**: creazione di un disco EFS montato da una EC2 che espone un server apache
 
 - **ManagerTk**: *Applicazione* sviluppata con la libreria tkinter (menu, gestione finestre ed elenchi) per gestire i servizi AWS usando le librerie SDK
 - **ManagerFlask**: *Applicazione* web sviluppata con Flask per gestire i servizi AWS usando le librerie SDK

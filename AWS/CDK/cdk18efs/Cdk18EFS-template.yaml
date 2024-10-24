@@ -1,0 +1,293 @@
+Parameters:
+  vpcid:
+    Type: String
+    Description: vpc_id
+  keyname:
+    Type: String
+    Description: key_name
+  publicsubnetids:
+    Type: String
+    Description: public_subnet_ids
+  SsmParameterValueawsserviceamiamazonlinuxlatestamzn2amihvmx8664gp2C96584B6F00A464EAD1953AFF4B05118Parameter:
+    Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
+    Default: /aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2
+  BootstrapVersion:
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: /cdk-bootstrap/hnb659fds/version
+    Description: Version of the CDK Bootstrap resources in this environment, automatically retrieved from SSM Parameter Store. [cdk:skip]
+Resources:
+  EfsSecurityGroupEC5F36AC:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Security Group per EFS
+      SecurityGroupEgress:
+        - CidrIp: 0.0.0.0/0
+          Description: Allow all outbound traffic by default
+          IpProtocol: "-1"
+      VpcId:
+        Ref: vpcid
+    Metadata:
+      aws:cdk:path: Cdk18EfsStack/EfsSecurityGroup/Resource
+  EfsSecurityGroupfromCdk18EfsStackEc2SecurityGroupB00829232049B00032C8:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      Description: Permetti NFS da EC2
+      FromPort: 2049
+      GroupId:
+        Fn::GetAtt:
+          - EfsSecurityGroupEC5F36AC
+          - GroupId
+      IpProtocol: tcp
+      SourceSecurityGroupId:
+        Fn::GetAtt:
+          - Ec2SecurityGroup55889913
+          - GroupId
+      ToPort: 2049
+    Metadata:
+      aws:cdk:path: Cdk18EfsStack/EfsSecurityGroup/from Cdk18EfsStackEc2SecurityGroupB0082923:2049
+  Ec2SecurityGroup55889913:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Security Group per EC2
+      SecurityGroupEgress:
+        - CidrIp: 0.0.0.0/0
+          Description: Allow all outbound traffic by default
+          IpProtocol: "-1"
+      SecurityGroupIngress:
+        - CidrIp: 0.0.0.0/0
+          Description: Permetti HTTP
+          FromPort: 80
+          IpProtocol: tcp
+          ToPort: 80
+        - CidrIp: 0.0.0.0/0
+          Description: Permetti HTTPS
+          FromPort: 443
+          IpProtocol: tcp
+          ToPort: 443
+        - CidrIp: 0.0.0.0/0
+          Description: Permetti HTTPS
+          FromPort: 22
+          IpProtocol: tcp
+          ToPort: 22
+      VpcId:
+        Ref: vpcid
+    Metadata:
+      aws:cdk:path: Cdk18EfsStack/Ec2SecurityGroup/Resource
+  EfsFileSystem37910666:
+    Type: AWS::EFS::FileSystem
+    Properties:
+      Encrypted: true
+      FileSystemPolicy:
+        Statement:
+          - Action: elasticfilesystem:ClientMount
+            Effect: Allow
+            Principal:
+              AWS: "*"
+            Resource: "*"
+          - Action:
+              - elasticfilesystem:ClientRootAccess
+              - elasticfilesystem:ClientWrite
+            Condition:
+              Bool:
+                elasticfilesystem:AccessedViaMountTarget: "true"
+            Effect: Allow
+            Principal:
+              AWS: "*"
+        Version: "2012-10-17"
+      FileSystemTags:
+        - Key: Name
+          Value: Cdk18EfsStack/EfsFileSystem
+    UpdateReplacePolicy: Delete
+    DeletionPolicy: Delete
+    Metadata:
+      aws:cdk:path: Cdk18EfsStack/EfsFileSystem/Resource
+  EfsFileSystemEfsMountTargetPublicSubnet15C4703BE:
+    Type: AWS::EFS::MountTarget
+    Properties:
+      FileSystemId:
+        Ref: EfsFileSystem37910666
+      SecurityGroups:
+        - Fn::GetAtt:
+            - EfsSecurityGroupEC5F36AC
+            - GroupId
+      SubnetId:
+        Ref: publicsubnetids
+    Metadata:
+      aws:cdk:path: Cdk18EfsStack/EfsFileSystem/EfsMountTarget-PublicSubnet1
+  Ec2Role2FD9A272:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action: sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service: ec2.amazonaws.com
+        Version: "2012-10-17"
+      ManagedPolicyArns:
+        - Fn::Join:
+            - ""
+            - - "arn:"
+              - Ref: AWS::Partition
+              - :iam::aws:policy/AmazonElasticFileSystemClientReadWriteAccess
+        - Fn::Join:
+            - ""
+            - - "arn:"
+              - Ref: AWS::Partition
+              - :iam::aws:policy/AmazonElasticFileSystemClientFullAccess
+    Metadata:
+      aws:cdk:path: Cdk18EfsStack/Ec2Role/Resource
+  WebServerInstanceProfile7A5DA8F6:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Roles:
+        - Ref: Ec2Role2FD9A272
+    Metadata:
+      aws:cdk:path: Cdk18EfsStack/WebServer/InstanceProfile
+  WebServer99EDD300:
+    Type: AWS::EC2::Instance
+    Properties:
+      AvailabilityZone: eu-west-1b
+      IamInstanceProfile:
+        Ref: WebServerInstanceProfile7A5DA8F6
+      ImageId:
+        Ref: SsmParameterValueawsserviceamiamazonlinuxlatestamzn2amihvmx8664gp2C96584B6F00A464EAD1953AFF4B05118Parameter
+      InstanceType: t3.micro
+      KeyName:
+        Ref: keyname
+      NetworkInterfaces:
+        - AssociatePublicIpAddress: true
+          DeviceIndex: "0"
+          GroupSet:
+            - Fn::GetAtt:
+                - Ec2SecurityGroup55889913
+                - GroupId
+          SubnetId:
+            Ref: publicsubnetids
+      Tags:
+        - Key: Name
+          Value: Cdk18EfsStack/WebServer
+      UserData:
+        Fn::Base64:
+          Fn::Join:
+            - ""
+            - - |-
+                #!/bin/bash
+                sudo yum update -y
+                sudo yum install -y httpd amazon-efs-utils
+                sudo chmod 777 /var/www/html
+                mkdir -p /var/www/html
+                rm -rf /var/www/html/*
+                REGION=$(curl http://169.254.169.254/latest/meta-data/placement/region)
+                sleep 30
+                sleep 30
+                sudo mount -t efs -o tls 
+              - Ref: EfsFileSystem37910666
+              - |-
+                :/ /var/www/html
+                sudo echo Site from $(hostname -f) $REGION > /var/www/html/index.html 
+                sudo echo Site from $REGION >> /home/ec2-user/aaaa.html 
+                sudo chown -R apache:apache /var/www/html
+                sudo systemctl enable httpd
+                sudo systemctl start httpd
+    DependsOn:
+      - Ec2Role2FD9A272
+    Metadata:
+      aws:cdk:path: Cdk18EfsStack/WebServer/Resource
+  CDKMetadata:
+    Type: AWS::CDK::Metadata
+    Properties:
+      Analytics: v2:deflate64:H4sIAAAAAAAA/32PTWvDMAyGf0vvjkbaQdk5sNHDWEh2L56rdGoTuUgyJRj/95GOHHbZ6f3QwwvaQv28h93G37UKp2s10hfk3ny4umbg1ouf0FBchxqTBHT+rseMYQu5x5CEbH6TmG4L/X9x4LOgqjuwmueAC7D64nBQyK80Yj+r4bQc/6b3mNg+vZzRiiM/Qe7i+BhZdR1rJQ40YilL+ZHsluyBrR80AzeRT2QUubh2tu/ITzuoa3jZXJSoksRGE0L3qz/3lnf9IwEAAA==
+    Metadata:
+      aws:cdk:path: Cdk18EfsStack/CDKMetadata/Default
+    Condition: CDKMetadataAvailable
+Outputs:
+  InstancePublicIP:
+    Description: Indirizzo IP pubblico dell'istanza EC2
+    Value:
+      Fn::GetAtt:
+        - WebServer99EDD300
+        - PublicIp
+  FileSystemId:
+    Description: ID del File System EFS
+    Value:
+      Ref: EfsFileSystem37910666
+Conditions:
+  CDKMetadataAvailable:
+    Fn::Or:
+      - Fn::Or:
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - af-south-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - ap-east-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - ap-northeast-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - ap-northeast-2
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - ap-south-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - ap-southeast-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - ap-southeast-2
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - ca-central-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - cn-north-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - cn-northwest-1
+      - Fn::Or:
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - eu-central-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - eu-north-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - eu-south-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - eu-west-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - eu-west-2
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - eu-west-3
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - il-central-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - me-central-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - me-south-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - sa-east-1
+      - Fn::Or:
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - us-east-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - us-east-2
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - us-west-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - us-west-2
+
