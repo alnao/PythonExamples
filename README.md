@@ -18,6 +18,7 @@ Esempi Python by [AlNao.it](https://www.alnao.it)
   - 15 **SQS**: creazione di una coda SQS, un API con un metodo producer e un metodo consumer
   - 16 **SNS**: creazione di un sistema SNS con una lambda che scoda le notifiche
   - 18 **EFS**: creazione di un disco EFS montato da una EC2 che espone un server apache
+  - 20 **ASG** e **ALB**: creazione di un AutoScaling group e Application Load Balancer con EC2 che eseguono un webserver apache senza disco condiviso
 
 - **ManagerTk**: *Applicazione* sviluppata con la libreria tkinter (menu, gestione finestre ed elenchi) per gestire i servizi AWS usando le librerie SDK
 - **ManagerFlask**: *Applicazione* web sviluppata con Flask per gestire i servizi AWS usando le librerie SDK
