@@ -1,5 +1,5 @@
-# CDK18 SFS
-Esempio base per la creazione di un disco EFS con una istanza EC2 che lo monta come root directory per un server apache
+# CDK20 AutoScaling
+Esempio base per la creazione di un autoscaling group con un ALB, le istanze avviano Apache autonomo senza disco EFS condiviso
 
 Per l'installazione e la configurazione della CLI e del tool CDK, vedere il file README globale.
 
@@ -15,14 +15,14 @@ Per l'installazione e la configurazione della CLI e del tool CDK, vedere il file
 - Deploy del progetto
     ```
     cdk ls
-    cdk synth > Cdk18EFS-template.yaml
-    cdk deploy --parameters vpcid=vpc-xxxx --parameters keyname=xxx --parameters publicsubnetids=subnet-xxx
+    cdk synth > Cdk20AG-template.yaml
+    cdk deploy --parameters vpcid=vpc-0013c2751d04a7413 --parameters keyname=AlbertoNaoFormazione --parameters publicsubnetids1=subnet-0b6f53c0291c13f02 --parameters publicsubnetids2=subnet-08d2c516da5786c77 --parameters privatesubnetid1=subnet-0ca3ce54f35c3d3ef --parameters privatesubnetid2=subnet-08dbf4b5fed6a83b2
     ```
 - Comando verifica dello stack
     ```
-    aws cloudformation list-stack-resources --stack-name Cdk18EfsStack --output text
-    aws cloudformation list-stack-resources --stack-name Cdk18EfsStack --output table
-    aws cloudformation get-template --stack-name Cdk18EfsStack
+    aws cloudformation list-stack-resources --stack-name Cdk20AG --output text
+    aws cloudformation list-stack-resources --stack-name Cdk20AG --output table
+    aws cloudformation get-template --stack-name Cdk20AG
     ```
 
 - Confronto tra sviluppo e ambiente target
@@ -42,6 +42,10 @@ Nessun contenuto in questo repository è stato creato con IA o automaticamente, 
 Public projects 
 <a href="https://it.wikipedia.org/wiki/GNU_General_Public_License"  valign="middle"><img src="https://img.shields.io/badge/License-GNU-blue" style="height:22px;"  valign="middle"></a> 
 *Free Software!*
+
+
+
+
 
 
 

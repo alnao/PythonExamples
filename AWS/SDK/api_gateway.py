@@ -33,7 +33,7 @@ class AwsApiGateway:
         return response
 
 def main(profile):
-    print("Aws Py Console - AwsBucket START")
+    print("Aws Py Console - Aws Api Gateway START")
     o = AwsApiGateway(profile)
     l=o.api_list()
     for e in l:

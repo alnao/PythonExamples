@@ -1,0 +1,339 @@
+Parameters:
+  vpcid:
+    Type: String
+    Description: vpc_id
+  keyname:
+    Type: String
+    Description: key_name
+  publicsubnetids1:
+    Type: String
+    Description: public_subnet_id1
+  publicsubnetids2:
+    Type: String
+    Description: public_subnet_id2
+  privatesubnetid1:
+    Type: String
+    Description: private_subnet_id1
+  privatesubnetid2:
+    Type: String
+    Description: private_subnet_id2
+  SsmParameterValueawsserviceamiamazonlinuxlatestamzn2amihvmx8664gp2C96584B6F00A464EAD1953AFF4B05118Parameter:
+    Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
+    Default: /aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2
+  BootstrapVersion:
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: /cdk-bootstrap/hnb659fds/version
+    Description: Version of the CDK Bootstrap resources in this environment, automatically retrieved from SSM Parameter Store. [cdk:skip]
+Resources:
+  AlbSecurityGroup86A59E99:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Security Group per ALB
+      SecurityGroupEgress:
+        - CidrIp: 0.0.0.0/0
+          Description: Allow all outbound traffic by default
+          IpProtocol: "-1"
+      SecurityGroupIngress:
+        - CidrIp: 0.0.0.0/0
+          Description: Permetti HTTP
+          FromPort: 80
+          IpProtocol: tcp
+          ToPort: 80
+      VpcId:
+        Ref: vpcid
+    Metadata:
+      aws:cdk:path: Cdk20AutoScalingStack/AlbSecurityGroup/Resource
+  AsgSecurityGroupABD137B7:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Security Group per ASG
+      SecurityGroupEgress:
+        - CidrIp: 0.0.0.0/0
+          Description: Allow all outbound traffic by default
+          IpProtocol: "-1"
+      SecurityGroupIngress:
+        - CidrIp: 0.0.0.0/0
+          Description: Permetti SSH
+          FromPort: 22
+          IpProtocol: tcp
+          ToPort: 22
+      VpcId:
+        Ref: vpcid
+    Metadata:
+      aws:cdk:path: Cdk20AutoScalingStack/AsgSecurityGroup/Resource
+  AsgSecurityGroupfromCdk20AutoScalingStackAlbSecurityGroupF657982E80C3B7BE07:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      Description: Permetti HTTP dall ALB
+      FromPort: 80
+      GroupId:
+        Fn::GetAtt:
+          - AsgSecurityGroupABD137B7
+          - GroupId
+      IpProtocol: tcp
+      SourceSecurityGroupId:
+        Fn::GetAtt:
+          - AlbSecurityGroup86A59E99
+          - GroupId
+      ToPort: 80
+    Metadata:
+      aws:cdk:path: Cdk20AutoScalingStack/AsgSecurityGroup/from Cdk20AutoScalingStackAlbSecurityGroupF657982E:80
+  WebAlb916F4A49:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Properties:
+      LoadBalancerAttributes:
+        - Key: deletion_protection.enabled
+          Value: "false"
+      Scheme: internet-facing
+      SecurityGroups:
+        - Fn::GetAtt:
+            - AlbSecurityGroup86A59E99
+            - GroupId
+      Subnets:
+        - Ref: publicsubnetids1
+        - Ref: publicsubnetids2
+      Type: application
+    Metadata:
+      aws:cdk:path: Cdk20AutoScalingStack/WebAlb/Resource
+  WebAlbHttpListener3FE89D19:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      DefaultActions:
+        - TargetGroupArn:
+            Ref: WebTargetGroup12079923
+          Type: forward
+      LoadBalancerArn:
+        Ref: WebAlb916F4A49
+      Port: 80
+      Protocol: HTTP
+    Metadata:
+      aws:cdk:path: Cdk20AutoScalingStack/WebAlb/HttpListener/Resource
+  WebTargetGroup12079923:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      HealthCheckIntervalSeconds: 15
+      HealthCheckPath: /
+      HealthCheckTimeoutSeconds: 10
+      HealthyThresholdCount: 2
+      Port: 80
+      Protocol: HTTP
+      TargetGroupAttributes:
+        - Key: stickiness.enabled
+          Value: "false"
+      TargetType: instance
+      UnhealthyThresholdCount: 2
+      VpcId:
+        Ref: vpcid
+    Metadata:
+      aws:cdk:path: Cdk20AutoScalingStack/WebTargetGroup/Resource
+  WebServerRole42ABA571:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action: sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service: ec2.amazonaws.com
+        Version: "2012-10-17"
+      ManagedPolicyArns:
+        - Fn::Join:
+            - ""
+            - - "arn:"
+              - Ref: AWS::Partition
+              - :iam::aws:policy/AmazonElasticFileSystemClientReadWriteAccess
+    Metadata:
+      aws:cdk:path: Cdk20AutoScalingStack/WebServerRole/Resource
+  WebServerTemplateProfileA290B181:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Roles:
+        - Ref: WebServerRole42ABA571
+    Metadata:
+      aws:cdk:path: Cdk20AutoScalingStack/WebServerTemplate/Profile
+  WebServerTemplate6F1FCC7A:
+    Type: AWS::EC2::LaunchTemplate
+    Properties:
+      LaunchTemplateData:
+        IamInstanceProfile:
+          Arn:
+            Fn::GetAtt:
+              - WebServerTemplateProfileA290B181
+              - Arn
+        ImageId:
+          Ref: SsmParameterValueawsserviceamiamazonlinuxlatestamzn2amihvmx8664gp2C96584B6F00A464EAD1953AFF4B05118Parameter
+        InstanceType: t3.micro
+        KeyName:
+          Ref: keyname
+        NetworkInterfaces:
+          - AssociatePublicIpAddress: false
+            DeviceIndex: 0
+            Groups:
+              - Fn::GetAtt:
+                  - AsgSecurityGroupABD137B7
+                  - GroupId
+        TagSpecifications:
+          - ResourceType: instance
+            Tags:
+              - Key: Name
+                Value: Cdk20AutoScalingStack/WebServerTemplate
+          - ResourceType: volume
+            Tags:
+              - Key: Name
+                Value: Cdk20AutoScalingStack/WebServerTemplate
+        UserData:
+          Fn::Base64: |-
+            #!/bin/bash
+            yum update -y
+            yum install -y httpd amazon-efs-utils
+            REGION=$(curl http://169.254.169.254/latest/meta-data/placement/region)
+            AZ=$(curl http://169.254.169.254/latest/meta-data/placement/availability-zone)
+            echo '<html><body><h1>Auto Scaling Group Test</h1><p>' > /var/www/html/index.html
+            echo Site from $(hostname -f) $REGION $AZ >> /var/www/html/index.html
+            echo '</p></body></html>' >> /var/www/html/index.html
+            systemctl enable httpd
+            systemctl start httpd
+      TagSpecifications:
+        - ResourceType: launch-template
+          Tags:
+            - Key: Name
+              Value: Cdk20AutoScalingStack/WebServerTemplate
+    DependsOn:
+      - WebServerRole42ABA571
+    Metadata:
+      aws:cdk:path: Cdk20AutoScalingStack/WebServerTemplate/Resource
+  WebServerAsgASG04CD6075:
+    Type: AWS::AutoScaling::AutoScalingGroup
+    Properties:
+      DesiredCapacity: "2"
+      HealthCheckGracePeriod: 60
+      HealthCheckType: ELB
+      LaunchTemplate:
+        LaunchTemplateId:
+          Ref: WebServerTemplate6F1FCC7A
+        Version:
+          Fn::GetAtt:
+            - WebServerTemplate6F1FCC7A
+            - LatestVersionNumber
+      MaxSize: "4"
+      MinSize: "1"
+      TargetGroupARNs:
+        - Ref: WebTargetGroup12079923
+      VPCZoneIdentifier:
+        - Ref: privatesubnetid1
+        - Ref: privatesubnetid2
+    UpdatePolicy:
+      AutoScalingScheduledAction:
+        IgnoreUnmodifiedGroupSizeProperties: true
+    Metadata:
+      aws:cdk:path: Cdk20AutoScalingStack/WebServerAsg/ASG
+  WebServerAsgScalingPolicyCpuScaling3F4F7BE8:
+    Type: AWS::AutoScaling::ScalingPolicy
+    Properties:
+      AutoScalingGroupName:
+        Ref: WebServerAsgASG04CD6075
+      Cooldown: "300"
+      PolicyType: TargetTrackingScaling
+      TargetTrackingConfiguration:
+        PredefinedMetricSpecification:
+          PredefinedMetricType: ASGAverageCPUUtilization
+        TargetValue: 70
+    Metadata:
+      aws:cdk:path: Cdk20AutoScalingStack/WebServerAsg/ScalingPolicyCpuScaling/Resource
+  CDKMetadata:
+    Type: AWS::CDK::Metadata
+    Properties:
+      Analytics: v2:deflate64:H4sIAAAAAAAA/31RTWvDMAz9Lb27Hm0HY8cuh1EoLCS5D9VRUy2OHGx5JYT895G0KRmDnaT3gfRsbfXm+UXvVnANa1PWa0sn3ecCplbJmVPw0KCgVxkGF71BBdfw2aPZ6j5HEz1J9+5dbEf3/8SBK48hqCNENpcCm9aC4Gj7zQwKLQQhYx2UJ7DAhrj63up+37aWDAg5Pjoo3yYN/TRiiZc+CoJ898z9Qi/AVyiPwAs4KIJG95mzU8a5HjjIuCX17kwWBwVRXDBgiSvd76O4/AYeM/9wtyWFB1MTV3cpdZZMN33akhiGkfqI0kaZYsxnSM6cOC5pfMSg0k4ujp92erPRr6uvQLT2kYUa1Nmt/gA9sM6G6AEAAA==
+    Metadata:
+      aws:cdk:path: Cdk20AutoScalingStack/CDKMetadata/Default
+    Condition: CDKMetadataAvailable
+Outputs:
+  LoadBalancerDNS:
+    Description: DNS name del Load Balancer
+    Value:
+      Fn::GetAtt:
+        - WebAlb916F4A49
+        - DNSName
+  AutoScalingGroupName:
+    Description: Nome dell'Auto Scaling Group
+    Value:
+      Ref: WebServerAsgASG04CD6075
+Conditions:
+  CDKMetadataAvailable:
+    Fn::Or:
+      - Fn::Or:
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - af-south-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - ap-east-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - ap-northeast-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - ap-northeast-2
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - ap-south-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - ap-southeast-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - ap-southeast-2
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - ca-central-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - cn-north-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - cn-northwest-1
+      - Fn::Or:
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - eu-central-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - eu-north-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - eu-south-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - eu-west-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - eu-west-2
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - eu-west-3
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - il-central-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - me-central-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - me-south-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - sa-east-1
+      - Fn::Or:
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - us-east-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - us-east-2
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - us-west-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - us-west-2
+

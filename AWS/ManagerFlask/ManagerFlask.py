@@ -25,6 +25,8 @@ from SDK.sqs import AwsSqs
 from SDK.sns import AwsSns
 from SDK.elastic_ip import AwsElasticIp
 from SDK.efs import AwsEfs
+from SDK.auto_scaling import AwsAutoScaling
+from SDK.app_load_balancer import AwsAppLoadBalancer
 
 app = Flask(__name__) 
 app.config["SESSION_PERMANENT"] = False
@@ -437,6 +439,52 @@ def efs_detail(id):
             load_l3=True
     return render_template("services/efs.html", profile=session.get("profile"), list=session["efs"] , detail=detail, detail2=detail2, load_l2=True,load_l3=load_l3 , sel=id)
 
+#autoScaling
+@app.route('/asg') 
+def asg(): 
+    obj=AwsAutoScaling( session.get("profile") ) 
+    session["asg"]=obj.list_asgs()
+    return render_template("services/asg.html", profile=session.get("profile"), list=session["asg"] , load_l2=False)
+@app.route('/asg/<id>') 
+def asg_detail(id): 
+    detail=[]
+    for l in session["asg"]:
+        if l['AutoScalingGroupName']==id:
+            detail=l
+    obj=AwsAutoScaling( session.get("profile") ) 
+    d=obj.describe_asg(id)
+    detail2=[]
+    load_l3=False
+    if 'Instances' in d:
+        if len(d['Instances'])>0:
+            for e in d['Instances']:
+                detail2.append(e)
+            load_l3=True
+    return render_template("services/asg.html", profile=session.get("profile"), list=session["asg"] , detail=detail, detail2=detail2, load_l2=True,load_l3=load_l3 , sel=id)
+
+#ALB
+@app.route('/alb') 
+def alb(): 
+    obj=AwsAppLoadBalancer( session.get("profile") ) 
+    session["alb"]=obj.describe_load_balancers()
+    return render_template("services/alb.html", profile=session.get("profile"), list=session["alb"] , load_l2=False)
+@app.route('/alb/<id>') 
+def alb_detail(id): 
+    detail=[]
+    for l in session["alb"]:
+        if l['LoadBalancerName']==id:
+            detail=l
+    obj=AwsAppLoadBalancer( session.get("profile") ) 
+    d=obj.describe_target_groups(detail['LoadBalancerArn'])
+    detail2=[]
+    load_l3=False
+    for dl in d :
+        if 'TargetGroupArn' in dl:
+            #for e in dl['TargetGroupArn']:
+            ee=obj.describe_target_health( dl['TargetGroupArn'] )
+            detail2.append( ee )
+            load_l3=True
+    return render_template("services/alb.html", profile=session.get("profile"), list=session["alb"] , detail=detail, detail2=detail2, load_l2=True,load_l3=load_l3 , sel=id)
 
 
 if __name__ == '__main__': 

@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="containerW100">
+    <div class="row align-items-start">
+        <div class="col">
+            <ul class="list-group">
+                <li class="list-group-item list-group-item-success">
+                    Lista AutoScaling groups - Profilo attivo: <b>{{profile}}</b>
+                </li>
+                <li class="list-group-item p-1 overflow-hidden ">
+                    {% for b in list %}
+                        <a href="/asg/{{b.AutoScalingGroupName}}"  class="badge {% if sel==b.AutoScalingGroupName %} badge-primary {% else %} badge-info  {% endif %}">
+                            {{b.AutoScalingGroupName}} ({{b.MinSize}}-{{b.DesiredCapacity}}-{{b.MaxSize}})</a>
+                    {% endfor %}
+                </li>
+            </ul>
+        </div>
+        <div class="col table-responsive">
+            {% if load_l2==True %}
+            <table class="table table-bordered small ">
+                <thead><tr><th colspan="2" class="table-success">{{detail.AutoScalingGroupName}} </th></tr></thead>
+                <tbody>
+                    {% for obj in detail %}
+                        <tr><td>{{obj}}</td><td class="">{{detail[obj] }}</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <div class="col  table-responsive">
+            {% if load_l3==True %}
+                <table class="table table-bordered small ">
+                    
+                    <tbody>
+                        {% for el in detail2 %}
+                            <tr><td colspan="2" class="table-success"><b>{{el.InstanceId}}</b></td></tr>
+                            {% for obj in el %}
+                                <tr><td>{{obj}}</td><td class="">{{el[obj] }}</td></tr>
+                            {% endfor %}
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% endif %}
+            {% else %}
+            {% endif %}
+        </div>
+    </div>
+</div>
+<script type="text/javascript">
+    window.onload = function(){ //$('document').ready(function(){
+        //document.getElementById("definitionPRE").innerHTML = JSON.stringify(detail['definition' ] | tojson | safe }} , undefined, 2);
+    };    
+</script>
+{% endblock %}
