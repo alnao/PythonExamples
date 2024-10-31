@@ -3,9 +3,13 @@ from pandas.tseries.offsets import DateOffset, BDay
 #see https://pandas.pydata.org/docs/reference/api/pandas.read_csv.html
 #see https://sparkbyexamples.com/pandas/pandas-read-csv-examples/
 import warnings
+import os
 warnings.filterwarnings("ignore")
 
-pathFile="/mnt/Dati/Workspace/PythonExamples/DataScientists/08data.csv"
+#pathFile="/mnt/Dati/Workspace/PythonExamples/DataScientists/08data.csv"
+current_dir = os.path.dirname(os.path.abspath(__file__))
+pathFile = os.path.join(current_dir, "08data.csv")
+
 #read_csv with sep (or delimiter)
 print ("---- .pd.read_csv ---- ")
 df = pd.read_csv(pathFile, sep=";")
@@ -16,7 +20,7 @@ print ( df )
 print ("---- copy ---- ")
 df = pd.read_csv(pathFile, sep=";")
 df3 = df.copy()
-df3['col1'] = [1, 2, 3 ,4,5]
+df3['col1'] = [ 1 , 2 , 3 , 4 , 5 , 6 , 7 , 8 , 9 ]
 print (df)
 
 
@@ -40,7 +44,7 @@ print ( df )
 
 ##usecols=Load only Selected Columns
 print ("---- usecols ---- ")
-df = pd.read_csv ( pathFile, sep=";", usecols =['name','value']  )
+df = pd.read_csv ( pathFile, sep=";", usecols =['name','age']  )
 print ( df )
 
 ## Timestamp e DateOffset
@@ -57,14 +61,14 @@ print ( ts )
 #rolling Find The Average of The Previous n Datapoints Using pandas
 print ("---- rolling ---- ")
 df = pd.read_csv(pathFile, sep=";")
-df = df.rolling(3).mean()
+#df = df.rolling(3).mean()
 print (df )
 
 #pandas Grouper: Group Values Based on a Specific Frequency
 print ("---- Grouper ---- ")
 df = pd.read_csv(pathFile, sep=";")
 df["date_column_1"] = pd.to_datetime(df["date_column_1"])
-df = df.groupby(pd.Grouper(key="date_column_1", freq="1W")).mean()
+#df = df.groupby(pd.Grouper(key="date_column_1", freq="1W")).mean()
 print (df)
 
 # subpart of date

@@ -3,6 +3,11 @@ from pyspark import SparkConf
 from utils.log4j import Log4j
 from utils.utils import get_spark_app_config
 
+"""
+Per eseguire questo script necessario avere spark.conf, log4j.properties e cartella utils
+"""
+
+
 #to config log4j.properties check
 #echo %SPARK_HOME%  #C:\ProgrammiDev\hadoop-3.3.6\spark-3.5.1-bin-hadoop3\spark-3.5.1-bin-hadoop3
 # conf\spark.defaults.conf

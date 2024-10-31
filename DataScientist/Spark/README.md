@@ -1,4 +1,9 @@
 # Spark by alNao
+Elenco esempi:
+- 01first
+- 02dataFrame
+- 03fistProject
+- 04dataFrameReadProcessWrite
 
 ## Installazione di pySpark
 - su piattaforma windows
