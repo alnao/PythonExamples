@@ -19,6 +19,8 @@ from Services.elastic_ip import ConsoleElasticIp
 from Services.efs import ConsoleEFS
 from Services.auto_scaling import ConsoleAutoScaling
 from Services.app_load_balancer import ConsoleAppLoadBalancer
+from Services.cloud_watch_alarms import ConsoleCloudWatchAlarms
+from Services.cloud_watch_logs import ConsoleCloudWatchLogs
 #nota indispensabile che il pacakge SDK sia caricato dopo con l'istruzione qua sotto
 #non sportare questa append sopra altrimenti andrebbe in un loop di import 
 sys.path.append( os.path.dirname( os.path.dirname( os.path.dirname( os.path.abspath(__file__) ) ) ) )
@@ -40,6 +42,8 @@ from SDK.elastic_ip import AwsElasticIp
 from SDK.efs import AwsEfs
 from SDK.auto_scaling import AwsAutoScaling
 from SDK.app_load_balancer import AwsAppLoadBalancer
+from SDK.cloud_watch_alarms import AwsCloudWatchAlarm
+from SDK.cloud_watch_logs import AwsCloudWatchLogs
 #non mettere nessun import dopo perchè os.path sarebbe in errore
 
 if __name__ == '__main__':
@@ -68,7 +72,8 @@ class ServiceManager:
             ,{'title':'EFS','desc':'Lista dischi EFS','automatic':False,'classe':ConsoleEFS,'sdk':AwsEfs }
             ,{'title':'ASG','desc':'Lista AutoScaling','automatic':False,'classe':ConsoleAutoScaling,'sdk':AwsAutoScaling }
             ,{'title':'ALB','desc':'Lista AppLoadBalancer','automatic':False,'classe':ConsoleAppLoadBalancer,'sdk':AwsAppLoadBalancer }
-            
+            ,{'title':'CWAlarms','desc':'Lista Cloud Watch Alarms','automatic':False,'classe':ConsoleCloudWatchAlarms,'sdk':AwsCloudWatchAlarm }
+            ,{'title':'CWLogs','desc':'Lista Cloud Watch Logs','automatic':False,'classe':ConsoleCloudWatchLogs,'sdk':AwsCloudWatchLogs }
         ]
     def get_lista_funzionalita(self):
         return self.lista_funzionalita

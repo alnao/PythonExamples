@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="containerW100">
+    <div class="row align-items-start">
+        <div class="col">
+            <ul class="list-group">
+                <li class="list-group-item list-group-item-success">
+                    Lista CloudWatch Alarms - Profilo attivo: <b>{{profile}}</b>
+                </li>
+                <li class="list-group-item p-1 overflow-hidden ">
+                    {% for b in list %}
+                        <a href="/cw_alarms/{{b.AlarmName}}"  class="badge {% if sel==b.AlarmName %} badge-primary {% else %} badge-info  {% endif %}">
+                            {{b.AlarmName}} ({{b.StateValue}})</a>
+                    {% endfor %}
+                </li>
+            </ul>
+        </div>
+        <div class="col table-responsive">
+            {% if load_l2==True %}
+            <table class="table table-bordered small ">
+                <thead><tr><th colspan="2" class="table-success">{{detail.AlarmName}} </th></tr></thead>
+                <tbody>
+                    {% for obj in detail %}
+                        <tr><td>{{obj}}</td><td class="">{{detail[obj] }}</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+
+            {% if load_l3==True %}
+                <table class="table table-bordered small ">
+                    <tbody>
+                        <tr><td colspan="3" class="table-success"><b>History of {{detail.AlarmName}}</b></td></tr>
+                        {% for el in detail2 %}
+                            <tr>
+                                <td>{{el.event.Timestamp}} {{el.history.type}}</td>
+                                <td>{{el.oldState}}</td>
+                                <td>{{el.newState}}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% endif %}
+            {% else %}
+            {% endif %}
+        </div>
+    </div>
+</div>
+<script type="text/javascript">
+    window.onload = function(){ //$('document').ready(function(){
+        //document.getElementById("definitionPRE").innerHTML = JSON.stringify(detail['definition' ] | tojson | safe }} , undefined, 2);
+    };    
+</script>
+{% endblock %}

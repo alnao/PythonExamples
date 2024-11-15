@@ -27,6 +27,8 @@ from SDK.elastic_ip import AwsElasticIp
 from SDK.efs import AwsEfs
 from SDK.auto_scaling import AwsAutoScaling
 from SDK.app_load_balancer import AwsAppLoadBalancer
+from SDK.cloud_watch_alarms import AwsCloudWatchAlarm
+from SDK.cloud_watch_logs import AwsCloudWatchLogs
 
 app = Flask(__name__) 
 app.config["SESSION_PERMANENT"] = False
@@ -485,6 +487,77 @@ def alb_detail(id):
             detail2.append( ee )
             load_l3=True
     return render_template("services/alb.html", profile=session.get("profile"), list=session["alb"] , detail=detail, detail2=detail2, load_l2=True,load_l3=load_l3 , sel=id)
+
+#cw_alarms
+@app.route('/cw_alarms') 
+def cw_alarms(): 
+    obj=AwsCloudWatchAlarm( session.get("profile") ) 
+    session["cw_alarms"]=obj.list_alarms()
+    return render_template("services/cw_alarms.html", profile=session.get("profile"), list=session["cw_alarms"] , load_l2=False)
+@app.route('/cw_alarms/<id>') 
+def cw_alarms_detail(id): 
+    detail=[]
+    for l in session["cw_alarms"]:
+        if l['AlarmName']==id:
+            detail=l
+    obj=AwsCloudWatchAlarm( session.get("profile") ) 
+    d=obj.get_alarm_history(detail['AlarmName'])
+    detail2=[]
+    load_l3=False
+    for event in d:
+        history = json.loads( event['HistoryData'] )
+        oldState=""
+        if 'oldState' in history:
+            oldState=history['oldState']
+        else:
+            if 'type' in history:
+                oldState=history['type']
+        newState=""
+        if 'newState' in history:
+            newState=history['newState']
+        if oldState!="" or newState!="":
+            detail2.append( {'event':event,'oldState':oldState,'newState':newState, 'history':history} )
+        load_l3=True
+    return render_template("services/cw_alarms.html", profile=session.get("profile"), list=session["cw_alarms"] , detail=detail, detail2=detail2, load_l2=True,load_l3=load_l3 , sel=id)
+
+#cw_logs
+@app.route('/cw_logs') 
+def cw_logs(): 
+    obj=AwsCloudWatchLogs( session.get("profile") ) 
+    session["cw_logs"]=[]
+    l=obj.list_log_groups()
+    for dis in l:
+        session["cw_logs"].append(dis)
+    return render_template("services/cw_logs.html", profile=session.get("profile"), list=session["cw_logs"] , load_l2=False, load_l3=False)
+
+@app.route('/cw_logs/<id>') 
+def cw_logs_stream(id): 
+    id=id.replace("ç","/")
+    obj=AwsCloudWatchLogs( session.get("profile") ) 
+    l=obj.list_log_streams(id)
+    session["cw_logs_stream"]=[]
+    for e in l:
+        session["cw_logs_stream"].append(e)
+    session["cw_logs_stream"]=sorted( session["cw_logs_stream"] , key=lambda tup: tup["creationTime"] , reverse=True )
+    session["cw_logs_stream"]=session["cw_logs_stream"][0:42]
+    return render_template("services/cw_logs.html", profile=session.get("profile"), list=session["cw_logs"] , load_l2=True , 
+                           detail=session["cw_logs_stream"], load_l3=False, sel=id)
+
+@app.route('/cw_logs/<id>/<stream>') 
+def cw_logs_list(id,stream): 
+    id=id.replace("ç","/")
+    stream=stream.replace("ç","/")
+    obj=AwsCloudWatchLogs( session.get("profile") ) 
+    l=obj.get_log_events(id,stream)['events']
+    session["cw_logs_list"]=[]
+    for e in l:
+        session["cw_logs_list"].append(e)
+    session["cw_logs_list"]=sorted( session["cw_logs_list"] , key=lambda tup: tup["timestamp"] , reverse=True )
+    session["cw_logs_list"]=session["cw_logs_list"][0:42]
+    return render_template("services/cw_logs.html", profile=session.get("profile"), list=session["cw_logs"] , load_l2=False , 
+                           detail=session["cw_logs_list"], load_l3=True, sel=id,stream=stream)
+
+
 
 
 if __name__ == '__main__': 

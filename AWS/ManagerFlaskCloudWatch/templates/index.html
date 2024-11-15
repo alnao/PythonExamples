@@ -1,0 +1,762 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CloudWatch Manager</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <nav class="navbar navbar-dark bg-dark">
+        <div class="container-fluid">
+            <span class="navbar-brand mb-0 h1">
+                <i class="fas fa-chart-line me-2"></i>CloudWatch Manager
+            </span>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <ul class="nav nav-tabs" id="mainTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="alarms-tab" data-bs-toggle="tab" data-bs-target="#alarms" type="button" role="tab">
+                    <i class="fas fa-bell me-2"></i>Alarms
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="logs-tab" data-bs-toggle="tab" data-bs-target="#logs" type="button" role="tab">
+                    <i class="fas fa-list me-2"></i>Logs
+                </button>
+            </li>
+        </ul>
+
+        <div class="tab-content mt-3" id="mainTabsContent">
+            <!-- Alarms Tab -->
+            <div class="tab-pane fade show active" id="alarms" role="tabpanel">
+                <!-- Create Alarm Form -->
+                 <!--
+                <div class="card mb-4">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0">Create CPU Alarm</h5>
+                    </div>
+                    <div class="card-body">
+                        <form id="createAlarmForm">
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="alarmName" class="form-label">Alarm Name</label>
+                                    <input type="text" class="form-control" id="alarmName" required>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="asgName" class="form-label">Auto Scaling Group Name</label>
+                                    <input type="text" class="form-control" id="asgName" required>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-4 mb-3">
+                                    <label for="threshold" class="form-label">Threshold (%)</label>
+                                    <input type="number" class="form-control" id="threshold" value="84" required>
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label for="evaluationPeriods" class="form-label">Evaluation Periods</label>
+                                    <input type="number" class="form-control" id="evaluationPeriods" value="2" required>
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label for="period" class="form-label">Period (seconds)</label>
+                                    <input type="number" class="form-control" id="period" value="300" required>
+                                </div>
+                            </div>
+                            <button type="submit" class="btn btn-primary">Create Alarm</button>
+                        </form>
+                    </div>
+                </div>-->
+
+                <!-- Alarms List -->
+                <div class="card">
+                    <div class="card-header bg-secondary text-white d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">Alarms List</h5>
+                        <button class="btn btn-light btn-sm" onclick="refreshAlarms()">
+                            <i class="fas fa-sync-alt"></i> Refresh
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>State</th>
+                                        <th>Threshold</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="alarmsTable">
+                                    <!-- Alarms will be loaded here -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Logs Tab -->
+            <div class="tab-pane fade" id="logs" role="tabpanel">
+                <!-- Create Log Group Form -->
+                 <!--
+                <div class="card mb-4">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0">Create Log Group</h5>
+                    </div>
+                    <div class="card-body">
+                        <form id="createLogGroupForm">
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="logGroupName" class="form-label">Log Group Name</label>
+                                    <input type="text" class="form-control" id="logGroupName" required>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="retentionDays" class="form-label">Retention Days</label>
+                                    <input type="number" class="form-control" id="retentionDays" value="30" required>
+                                </div>
+                            </div>
+                            <button type="submit" class="btn btn-primary">Create Log Group</button>
+                        </form>
+                    </div>
+                </div>-->
+
+                <!-- Log Groups List -->
+                <div class="card mb-4">
+                    <div class="card-header bg-secondary text-white d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">Log Groups</h5>
+                        <div>
+                            <input type="text" id="groupFilter" class="form-control form-control-sm d-inline-block w-auto" placeholder="Filter groups...">
+                            <button class="btn btn-light btn-sm ms-2" onclick="refreshLogGroups()">
+                                <i class="fas fa-sync-alt"></i> Refresh
+                            </button>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Group Name</th>
+                                        <th>Created</th>
+                                        <th>Retention Days</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="logGroupsTable">
+                                    <!-- Log groups will be loaded here -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Log Streams Panel -->
+                <div class="card" id="logStreamsPanel" style="display: none;">
+                    <div class="card-header bg-info text-white d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">Log Streams: <span id="currentLogGroup"></span></h5>
+                        <div>
+                            <button class="btn btn-light btn-sm" data-bs-toggle="modal" data-bs-target="#createStreamModal">
+                                <i class="fas fa-plus"></i> New Stream
+                            </button>
+                            <button class="btn btn-light btn-sm ms-2" onclick="refreshLogStreams()">
+                                <i class="fas fa-sync-alt"></i> Refresh
+                            </button>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Stream Name</th>
+                                        <th>Created</th>
+                                        <th>Last Event</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="logStreamsTable">
+                                    <!-- Log streams will be loaded here -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modals -->
+    <!-- Create Stream Modal -->
+    <div class="modal fade" id="createStreamModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Create New Log Stream</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="createStreamForm">
+                        <div class="mb-3">
+                            <label for="streamName" class="form-label">Stream Name</label>
+                            <input type="text" class="form-control" id="streamName" required>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" onclick="createLogStream()">Create</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- View Logs Modal -->
+    <div class="modal fade" id="viewLogsModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Log Events</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <div class="input-group">
+                            <input type="text" class="form-control" id="filterPattern" placeholder="Filter pattern...">
+                            <button class="btn btn-outline-secondary" onclick="filterLogs()">
+                                <i class="fas fa-filter"></i> Filter
+                            </button>
+                        </div>
+                    </div>
+                    <div class="table-responsive" style="max-height: 400px;">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Timestamp</th>
+                                    <th>Message</th>
+                                </tr>
+                            </thead>
+                            <tbody id="logEventsTable">
+                                <!-- Log events will be loaded here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for Alarm History -->
+    <div class="modal fade" id="historyModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Alarm History</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Timestamp</th>
+                                    <th>State</th>
+                                    <th>Reason</th>
+                                </tr>
+                            </thead>
+                            <tbody id="historyTable">
+                                <!-- History will be loaded here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Initialize Bootstrap tooltips
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl)
+        })
+
+        // Create Alarm Form Handler
+/*        document.getElementById('createAlarmForm').addEventListener('submit', async (e) => {
+            e.preventDefault()
+            const formData = {
+                alarm_name: document.getElementById('alarmName').value,
+                asg_name: document.getElementById('asgName').value,
+                threshold: parseFloat(document.getElementById('threshold').value),
+                evaluation_periods: parseInt(document.getElementById('evaluationPeriods').value),
+                period: parseInt(document.getElementById('period').value)
+            }
+
+            try {
+                const response = await fetch('/api/create-alarm', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(formData)
+                })
+                
+                if (response.ok) {
+                    alert('Alarm created successfully!')
+                    refreshAlarms()
+                    e.target.reset()
+                } else {
+                    alert('Failed to create alarm')
+                }
+            } catch (error) {
+                console.error('Error:', error)
+                alert('Error creating alarm')
+            }
+        })
+*/
+
+        // Refresh Alarms List
+        async function refreshAlarms() {
+            try {
+                const response = await fetch('/api/list-alarms')
+                const alarms = await response.json()
+                const tbody = document.getElementById('alarmsTable')
+                tbody.innerHTML = ''
+
+                alarms.forEach(alarm => {
+                    const tr = document.createElement('tr')
+                    tr.innerHTML = `
+                        <td>${alarm.AlarmName}</td>
+                        <td>
+                            <span class="badge bg-${getStateColor(alarm.StateValue)}">
+                                ${alarm.StateValue}
+                            </span>
+                        </td>
+                        <td>${alarm.Threshold}%</td>
+                        <td>
+                            <div class="btn-group btn-group-sm">
+                                <button class="btn btn-primary" onclick="viewHistory('${alarm.AlarmName}')" data-bs-toggle="tooltip" title="View History">
+                                    <i class="fas fa-history"></i>
+                                </button>
+                                <button class="btn btn-warning" onclick="setAlarmState('${alarm.AlarmName}')" data-bs-toggle="tooltip" title="Force State">
+                                    <i class="fas fa-exclamation-triangle"></i>
+                                </button>
+                                <button class="btn btn-danger" onclick="deleteAlarm('${alarm.AlarmName}')" data-bs-toggle="tooltip" title="Delete">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </td>
+                    `
+                    tbody.appendChild(tr)
+                })
+            } catch (error) {
+                console.error('Error:', error)
+                alert('Error loading alarms')
+            }
+        }
+
+        // View Alarm History
+        async function viewHistory(alarmName) {
+            try {
+                const response = await fetch(`/api/alarm-history/${alarmName}`)
+                const history = await response.json()
+                const tbody = document.getElementById('historyTable')
+                tbody.innerHTML = ''
+
+                history.forEach(item => {
+                    const tr = document.createElement('tr')
+                    tr.innerHTML = `
+                        <td>${new Date(item.Timestamp).toLocaleString()}</td>
+                        <td>
+                            <span class="badge bg-${getStateColor(item.StateValue)}">
+                                ${item.StateValue}
+                            </span>
+                        </td>
+                        <td>${item.HistoryData}</td>
+                    `
+                    tbody.appendChild(tr)
+                })
+
+                new bootstrap.Modal(document.getElementById('historyModal')).show()
+            } catch (error) {
+                console.error('Error:', error)
+                alert('Error loading alarm history')
+            }
+        }
+
+        // Set Alarm State
+        async function setAlarmState(alarmName) {
+            const state = prompt('Enter new state (OK, ALARM, INSUFFICIENT_DATA):', 'ALARM')
+            if (!state) return
+
+            const reason = prompt('Enter reason for state change:', 'Manual state change')
+            if (!reason) return
+
+            try {
+                const response = await fetch('/api/set-alarm-state', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        alarm_name: alarmName,
+                        state_value: state.toUpperCase(),
+                        reason: reason
+                    })
+                })
+
+                if (response.ok) {
+                    alert('Alarm state changed successfully!')
+                    refreshAlarms()
+                } else {
+                    alert('Failed to change alarm state')
+                }
+            } catch (error) {
+                console.error('Error:', error)
+                alert('Error changing alarm state')
+            }
+        }
+
+        // Delete Alarm
+        async function deleteAlarm(alarmName) {
+            if (!confirm(`Are you sure you want to delete alarm "${alarmName}"?`)) return
+
+            try {
+                const response = await fetch(`/api/delete-alarm/${alarmName}`, {
+                    method: 'DELETE'
+                })
+
+                if (response.ok) {
+                    alert('Alarm deleted successfully!')
+                    refreshAlarms()
+                } else {
+                    alert('Failed to delete alarm')
+                }
+            } catch (error) {
+                console.error('Error:', error)
+                alert('Error deleting alarm')
+            }
+        }
+
+        // Utility function for state colors
+        function getStateColor(state) {
+            switch (state) {
+                case 'OK': return 'success'
+                case 'ALARM': return 'danger'
+                case 'INSUFFICIENT_DATA': return 'warning'
+                default: return 'secondary'
+            }
+        }
+
+        // Load alarms on page load
+        //document.addEventListener('DOMContentLoaded', refreshAlarms)
+    </script>
+    <script>
+        // Global variables
+        let currentLogGroup = '';
+        let currentLogStream = '';
+
+        // Initialize tooltips
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl)
+        })
+
+        // ALARMS FUNCTIONS
+        // [Previous alarm-related functions remain unchanged]
+
+        // LOGS FUNCTIONS
+        // Funzione di utilità per codificare i path
+        function encodePath(path) {
+            // Se il path inizia con /, rimuoviamo la prima barra e la aggiungiamo dopo l'encoding
+            const hasLeadingSlash = path.startsWith('/');
+            const pathWithoutLeadingSlash = hasLeadingSlash ? path.substring(1) : path;
+            
+            // Codifica il path mantenendo le barre interne
+            const encoded = pathWithoutLeadingSlash
+                .split('/')
+                .map(segment => encodeURIComponent(segment))
+                .join('/');
+            
+            // Ritorna il path con la barra iniziale se necessario
+            return hasLeadingSlash ? '/' + encoded : encoded;
+        }
+
+        // Funzione di utilità per decodificare i path
+        function decodePath(path) {
+            return decodeURIComponent(path);
+        }
+
+        // Modifica anche il modo in cui visualizziamo i gruppi nella tabella
+        async function refreshLogGroups() {
+            try {
+                const filter = document.getElementById('groupFilter').value;
+                const response = await fetch(`/api/log-groups${filter ? `?prefix=${encodePath(filter)}` : ''}`);
+                const groups = await response.json();
+                const tbody = document.getElementById('logGroupsTable');
+                tbody.innerHTML = '';
+
+                groups.forEach(group => {
+                    const tr = document.createElement('tr');
+                    const encodedGroupName = encodePath(group.logGroupName);
+                    // Escaping per l'HTML per evitare XSS
+                    const escapedGroupName = group.logGroupName
+                        .replace(/&/g, '&amp;')
+                        .replace(/</g, '&lt;')
+                        .replace(/>/g, '&gt;')
+                        .replace(/"/g, '&quot;')
+                        .replace(/'/g, '&#039;');
+                    
+                    tr.innerHTML = `
+                        <td>${escapedGroupName}</td>
+                        <td>${new Date(group.creationTime).toLocaleString()}</td>
+                        <td>${group.retentionInDays || 'Never expire'}</td>
+                        <td>
+                            <div class="btn-group btn-group-sm">
+                                <button class="btn btn-info" onclick="viewLogStreams('${escapedGroupName}')" data-bs-toggle="tooltip" title="View Streams">
+                                    <i class="fas fa-stream"></i>
+                                </button>
+                                <button class="btn btn-danger" onclick="deleteLogGroup('${escapedGroupName}')" data-bs-toggle="tooltip" title="Delete">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Error loading log groups');
+            }
+        }
+        async function createLogGroup(e) {
+            e.preventDefault();
+            const formData = {
+                log_group_name: document.getElementById('logGroupName').value,
+                retention_days: parseInt(document.getElementById('retentionDays').value)
+            };
+
+            try {
+                const response = await fetch('/api/log-groups', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(formData)
+                });
+
+                if (response.ok) {
+                    alert('Log group created successfully!');
+                    document.getElementById('createLogGroupForm').reset();
+                    refreshLogGroups();
+                } else {
+                    alert('Failed to create log group');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Error creating log group');
+            }
+        }
+
+        // Funzione di utilità per codificare i path
+        function encodePath(path) {
+            return encodeURIComponent(path).replace(/%2F/g, '/');
+        }
+
+        async function viewLogStreams(groupName) {
+            currentLogGroup = groupName;
+            document.getElementById('currentLogGroup').textContent = groupName;
+            document.getElementById('logStreamsPanel').style.display = 'block';
+            await refreshLogStreams();
+        }
+
+        async function refreshLogStreams() {
+            try {
+                const encodedGroup = encodePath(currentLogGroup);
+                const response = await fetch(`/api/log-groups/${encodedGroup}/streams`);
+                const streams = await response.json();
+                const tbody = document.getElementById('logStreamsTable');
+                tbody.innerHTML = '';
+
+                streams.forEach(stream => {
+                    const tr = document.createElement('tr');
+                    const encodedStream = encodePath(stream.logStreamName);
+                    tr.innerHTML = `
+                        <td>${stream.logStreamName}</td>
+                        <td>${new Date(stream.creationTime).toLocaleString()}</td>
+                        <td>${stream.lastEventTimestamp ? new Date(stream.lastEventTimestamp).toLocaleString() : 'No events'}</td>
+                        <td>
+                            <div class="btn-group btn-group-sm">
+                                <button class="btn btn-primary" onclick="viewLogs('${encodedStream}')" data-bs-toggle="tooltip" title="View Logs">
+                                    <i class="fas fa-search"></i>
+                                </button>
+                                <button class="btn btn-danger" onclick="deleteLogStream('${encodedStream}')" data-bs-toggle="tooltip" title="Delete">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Error loading log streams');
+            }
+        }
+
+        async function createLogStream() {
+            const streamName = document.getElementById('streamName').value;
+            if (!streamName) return;
+
+            try {
+                const encodedGroup = encodePath(currentLogGroup);
+                const response = await fetch(`/api/log-groups/${encodedGroup}/streams`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ log_stream_name: streamName })
+                });
+
+                if (response.ok) {
+                    alert('Log stream created successfully!');
+                    document.getElementById('createStreamForm').reset();
+                    bootstrap.Modal.getInstance(document.getElementById('createStreamModal')).hide();
+                    refreshLogStreams();
+                } else {
+                    alert('Failed to create log stream');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Error creating log stream');
+            }
+        }
+
+        async function deleteLogStream(streamName) {
+            if (!confirm(`Are you sure you want to delete stream "${streamName}"?`)) return;
+
+            try {
+                const encodedGroup = encodePath(currentLogGroup);
+                const encodedStream = encodePath(streamName);
+                const response = await fetch(`/api/log-groups/${encodedGroup}/streams/${encodedStream}`, {
+                    method: 'DELETE'
+                });
+
+                if (response.ok) {
+                    alert('Log stream deleted successfully!');
+                    refreshLogStreams();
+                } else {
+                    alert('Failed to delete log stream');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Error deleting log stream');
+            }
+        }
+
+        async function deleteLogGroup(groupName) {
+            if (!confirm(`Are you sure you want to delete log group "${groupName}"?`)) return;
+
+            try {
+                const encodedGroup = encodePath(groupName);
+                const response = await fetch(`/api/log-groups/${encodedGroup}`, {
+                    method: 'DELETE'
+                });
+
+                if (response.ok) {
+                    alert('Log group deleted successfully!');
+                    refreshLogGroups();
+                    if (currentLogGroup === groupName) {
+                        document.getElementById('logStreamsPanel').style.display = 'none';
+                        currentLogGroup = '';
+                    }
+                } else {
+                    alert('Failed to delete log group');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Error deleting log group');
+            }
+        }
+
+        async function viewLogs(streamName) {
+            currentLogStream = streamName;
+            try {
+                const startTime = new Date();
+                startTime.setHours(startTime.getHours() - 24*31*12); // Last 24 hours
+
+                const encodedGroup = encodePath(currentLogGroup);
+                const encodedStream = encodePath(streamName);
+                const response = await fetch(`/api/log-groups/${encodedGroup}/streams/${encodedStream}/events?start_time=${Math.floor(startTime.getTime() / 1000)}`);
+                const data = await response.json();
+                
+                const tbody = document.getElementById('logEventsTable');
+                tbody.innerHTML = '';
+
+                data.events.forEach(event => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td>${new Date(event.timestamp).toLocaleString()}</td>
+                        <td><pre class="mb-0" style="white-space: pre-wrap;">${event.message}</pre></td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+
+                new bootstrap.Modal(document.getElementById('viewLogsModal')).show();
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Error loading log events');
+            }
+        }
+
+        async function filterLogs() {
+            const pattern = document.getElementById('filterPattern').value;
+            try {
+                const startTime = new Date();
+                startTime.setHours(startTime.getHours() - 24); // Last 24 hours
+
+                const encodedGroup = encodePath(currentLogGroup);
+                const response = await fetch(`/api/log-groups/${encodedGroup}/filter?filter_pattern=${encodeURIComponent(pattern)}&start_time=${Math.floor(startTime.getTime() / 1000)}`);
+                const events = await response.json();
+                
+                const tbody = document.getElementById('logEventsTable');
+                tbody.innerHTML = '';
+
+                events.forEach(event => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td>${new Date(event.timestamp).toLocaleString()}</td>
+                        <td><pre class="mb-0" style="white-space: pre-wrap;">${event.message}</pre></td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Error filtering log events');
+            }
+        }
+
+        // Event Listeners
+//        document.getElementById('createLogGroupForm').addEventListener('submit', createLogGroup);
+        document.getElementById('groupFilter').addEventListener('input', debounce(refreshLogGroups, 500));
+
+        // Utility Functions
+        function debounce(func, wait) {
+            let timeout;
+            return function executedFunction(...args) {
+                const later = () => {
+                    clearTimeout(timeout);
+                    func(...args);
+                };
+                clearTimeout(timeout);
+                timeout = setTimeout(later, wait);
+            };
+        }
+
+        // Initialize both tabs
+        document.addEventListener('DOMContentLoaded', () => {
+            refreshAlarms();
+            refreshLogGroups();
+        });
+    </script>
+</body>
+</html>
