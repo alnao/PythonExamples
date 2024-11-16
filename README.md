@@ -130,6 +130,278 @@ pyinstaller --hidden-import=Services --hidden-import=Services.services  -F Manag
 ```
 
 
+
+## Appunti vari
+In questa sezione appunti vari presi nel tempo
+- corso base base https://www.youtube.com/watch?v=XHzDHJ-BgvU
+- main # https://www.youtube.com/watch?v=NB5LGzmSiCs
+	```
+  if __name__ == '__main__':
+		print("SI")
+  ```
+- Tipizzare e annotation https://www.youtube.com/watch?v=Y9fT4HVdCuQ
+  ```
+  def get_data() -> dict[str,int]:
+	return {'bob':1,'james':2}
+  ```
+- Gestione classi ed ereditarietà
+  ```
+  class Fluit:
+    def __init__(self,name,color):
+      self.name=name
+      self.color=color
+    def detail(self):
+      print ("my "+self.name +" is " + self.color) 
+  my_apple = Fuit("apple","red")
+  my_apple.detail()
+  class Banana(Fuit):
+    def __init__(self):
+      super().__init__("banana","yellow")
+      self.__cost=50 ##__cost is private
+  my_b=Banana()
+  # my_B.__cost #error !
+  print ( my_B,_Banana__cost ) #works! private? no!
+  ```
+- Ordinare una lista di oggetti secondo un campo
+  self.list = sorted( self.list , key=lambda tup: tup["campo"] , reverse=False )
+- Funzioni lambda
+  ```
+	f = lambda a : a*a
+  ```
+- functioni con return multiplo
+  ```
+	def func():
+		return 1,'alberto, True
+	a,b,c=func()
+	print( funct() )
+  ```
+- funzioni inline
+  ```
+	lista=[ e['Name'] for e in self.lista_bucket ]
+	lista=[ e["Key"] if "Key" in e else e["Prefix"] for e in self.lista_files_bucket ]
+  ```
+- stringhe z=5
+  ```
+	s= f"Il quadrato di {z} è {z * z}"		len(s) 		s[3;6]  s[-2]
+	s.startsWith("Il") s.endsWith("25"") s.isalnum() s.isdecimal() 
+	da_fare=", ".join(lista ["pane","latte","melone" ] ) lista=da_fare.split(", ")
+	print(f'{s:#<20})
+  ```
+- cicli
+  ```
+	for i in range(100)
+		print("sorry")
+  ```
+- Dizionari https://www.youtube.com/watch?v=l0DDw4nzS_k
+  ```
+	ita_eng={"Ciao":"Hello","Uova":"Eggs"}		ita_eng.keys()  	.values()
+	ita_eng.get("gatto","Chiave non trovata")
+	ita_eng.setdefault("Birra","Beer") aggiunge valore se non presente
+  ```  
+- Gestione date
+  ```
+  from datetime import datetime, timedelta
+  'createdAt': str (datetime.now() ) 
+  yesterday = datetime.today() - timedelta(days = 1 )
+  str_yesterday = yesterday.strftime("%Y%m%d")
+
+  #convertire TS javascript a umano
+  str_date=str(datetime.fromtimestamp( key['creationTime'] /1000 ) )
+
+  #Recupero data in specifico formato
+  from datetime import datetime 
+  datetime.today().strftime('%Y%m%d %H%M%S')
+  ```
+- random
+  ```
+	import random
+	import string
+	base=["A","T","C","G"]
+	s=rand.choises(baes, k=10) #k=numero di valori
+	pwd="".join( random.choises(spring.printable,k=8) )
+  ```
+- json2csv # pip install pandas
+  ```
+	import pandas as pd
+	pdObj = pd.read_json('20220824101456_SUPERB_ADV.json')
+	print(type(pdObj))
+	pdObj.to_csv('20220824101456_SUPERB_ADV.csv',sep=';',index=False)
+  ```
+- jwt
+  ```
+	import jwt
+    key = "dancingPotatoes_!"
+    auth = 'Deny'
+    code = event['authorizationToken']
+    # Decode JSON Web Token
+    try:
+        jwt.decode(code, key, algorithms="HS256")
+        auth = 'Allow'
+        logger.info('Valid key. Authorised User...')
+    except:
+        auth ='Deny'
+        logger.info('Invalid key. Unauthorised User...')
+  ```
+- glob: libreria per file ma NON Usa reg-expression ma shell expression
+  ```
+	import glob
+	print ( glob.glob ( '?pple.jpg' ))
+	print ( glob.glob ( '*.jsp' ))
+	print ( glob.glob ( '[ab]*.jpg' )) #a oppure b
+	print ( glob.glob ( '[!z]*.jpg' )) #non inizia per z
+	globs = glob.glob ( '**/*.jsp', root_dir='/.../' , recursive=True, include_hidden=True) #parametri vari
+	print ( globs.__next__() )
+	for i, file in enumerate (globs, 1):
+		print (i, files, sep=": )
+  ```
+- py to exe https://www.youtube.com/watch?v=Y0HN9tdLuJo
+  ```
+    pip install auto-py-to-exe
+  ```
+- pandas to dictionary
+  ```
+	import pandas as pd 
+	#df.to_dict: Turn a DataFrame into a Dictionary
+	print ("---- DataFrame into Dictionary ---- ")
+	df = pd.DataFrame({"fruits": ["apple", "orange", "grape"], "price": [1, 2, 3]})
+	print ("---- DataFrame into Dictionary and records ---- ")
+	d2=df.to_dict(orient="records")
+	print (d2)
+	[
+		{'fruits': 'apple', 'price': 1}, 
+		{'fruits': 'orange', 'price': 2}, 
+		{'fruits': 'grape', 'price': 3}
+	]
+  ```
+- visualizzare immagine	https://stackoverflow.com/questions/54103815/opencv-4-java-highgui-imshow
+- boo https://stackoverflow.com/questions/54103815/opencv-4-java-highgui-imshow
+- funzione per pulire il csv da caratteri lowvalue (caratteri di merda nei file fucos  https://stackoverflow.com/questions/7894856/line-contains-null-byte-in-csv-reader-python)
+  ```
+  def fix_nulls(s):
+    for line in s:
+        szRiga = line.replace('\0', ' ')
+        szRiga = szRiga.replace('"', ' ')
+        yield szRiga
+  ```
+- list  comprehension
+  ```
+  frutta=["mele","banana","peri"]
+  for fuit in frutta:
+    print(fuit)
+    lista.append(fuit.upper() )
+  [ print (fuit) for fruit in frutta ] #in una sola riga
+  lista=[ fruit.upper() for fruit in frutta ]
+  condition
+  new_list=[ x for x in fruits if x!='apple']
+  ---- dictionary comprehension
+  lista=['Alberto','Andrea', 'Pietro']
+  lista2=['Programamtore','Impiegato','Pensionato']
+  d={}
+  for (key,value) in zip(lista,lista2)
+    m[key]=value
+  d2={ key:value for (key,value) in zip(lista,lista2) }
+  d3={ lista[i]:lista2[i] for i in range(len(lista)) }
+  d4= { key+"man";val for (key,val) in d3.items() } #.items() è obbligatorio
+  d5= { key+"man" if key != 'Pietro' else 'Paolo':val for (key,val) in d3.items() }
+  d6= { key:[val, None] for (key,val) in enumerate["A","T","C","G"] }
+    keys=["id","username","password"]
+    users=["alnao","alberto.nao"]
+  d7= [ {key:(i if key=="id" else users[i] if key=="useranme" else pwd for key in keys} for i in range(len(users))]
+  ```
+- json https://www.youtube.com/watch?v=7MKJEvTxL0c&list=PLMP9hIwoX2DtrBeIDXggVbo49Uxr6ymxT&index=5
+  ```
+  import requests
+  import json
+  url="https://xxxx"
+  todos=requests.get(url).json()
+  for todo in todos:
+    val=todo["value"]
+    print(val)
+  ```
+- wiki
+  ```
+  import wikipediaapi
+  wiki = wikipediaapi.wikipedia('en')
+  mon=['Jenuary']
+  years=[x for x in range (1992,2022) ]
+  pages=[]
+  for year in years:	
+    for month in months:
+      pages.append("D..."+month
+  existangce=[]
+  for page in pages:
+    page_py=wiki.page(page)
+    existances.append(page_py.exists() )
+    print(page_py.title)
+  ```
+- terminare script https://lorenzoneri.com/come-terminare-uno-script-python/?utm_source=dlvr.it&utm_medium=linkedin&utm_campaign=come-terminare-uno-script-python
+  ```
+  import sys
+  sys.exit()
+  ```
+
+- esempio pandas legge un csv e fa 
+  ```
+	import pandas as pd
+	pd.options.display.max_rows = 999999
+	df = pd.read_csv('data.csv')
+	di = dict(zip(list(df.Duration), list(df.Maxpulse)))
+	#di è un dizionario
+	d = (zip(list(df.Duration), list(df.Maxpulse)))
+	#
+	dii={}
+	for k in d:
+		dii[k[0]]=k[1]
+	print(dii)
+	print(dii['A61'])
+  ```
+- **f-string** da python3.12 
+  ```
+	stringhe speciali con f : interpolazione (string interpolation)
+		variabile=42
+		s=f"Numero = {variabile}"
+		print(s) #Numero = 42
+		s=f"Numero = {variabile + variable2}" #ok!
+	con Py3.12 : eliminate le limitazioni
+		libro={ "titolo":"Sig Anelli", "autore":"Tolkien"}
+		s=f"Libro {libro["Titolo"] ora è possibile}
+		s=f="Scrivo {"\n"} che non era possibile con 3.11 ora"
+		s=f"""Questa string ha 3 doppi appici così è multilinea{
+			libro['autore'].lower() # e ora possibile mettere i commenti
+		} chiudo qua """
+  ```
+- enumerazioni e description (CLASSIFICATION SCHEME) con la classe Enum
+  ```
+	from enum import Enum
+	class ColorePrimario(Enum):
+		ROSSO=1
+		VERDE=2
+		BLU=3
+	class PuntoCardinale(Enum):
+		NORD='N'
+		SUD='S'
+		OVEST='O'
+		EST='E'
+	for direzione in PuntoCardinale:
+		print(f"Nome: {direzione.name}, Valore: {direzione.value}")
+	print(PuntoCardinale.SUD == PuntoCardinale.NORD) #FLASE
+	print(PuntoCardinale.SUD == PuntoCardinale.SUD)
+	print(PuntoCardinale.SUD == PuntoCardinale.SUD2) 
+	print(PuntoCardinale.SUD is PuntoCardinale.NORD) #FALSE
+	print(PuntoCardinale.SUD is PuntoCardinale.SUD2) #TRUE #DUE MEMBRI CON LO STESSO VALORE SONO VISTI COME LO STESSO
+	print(PuntoCardinale.SUD == 'S' ) #FALSE
+	print(PuntoCardinale.SUD.value == 'S' ) #TRUE
+  ```
+- SITI da vedere
+  - Create a GUI app with Tkinter - Step by Step Tutorial https://www.youtube.com/watch?v=itRLRfuL_PQ
+  - Machine Learning FOR BEGINNERS - Supervised, Unsupervised and Reinforcement Learning https://www.youtube.com/watch?v=mMc_PIemSnU
+  - Guida Convert py to exe - from code to software https://www.youtube.com/watch?v=Y0HN9tdLuJo
+  - Come eseguire gli script python all’avvio di Raspberry Pi https://www.moreware.org/wp/blog/2022/05/17/come-eseguire-gli-script-python-allavvio-di-raspberry-pi/
+  - Pickle https://www.youtube.com/watch?v=6Q56r_fVqgw
+  - Flask video https://www.youtube.com/watch?v=pXMwAD9zMeg
+  - Django da tipa video https://www.youtube.com/watch?v=EEiqGjCNLRs
+
+
 # AlNao.it
 Nessun contenuto in questo repository è stato creato con IA o automaticamente, tutto il codice è stato scritto con molta pazienza da Alberto Nao. Se il codice è stato preso da altri siti/progetti è sempre indicata la fonte. Per maggior informazioni visitare il sito [AlNao.it](https://www.alnao.it/).
 
