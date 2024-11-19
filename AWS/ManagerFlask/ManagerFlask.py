@@ -29,6 +29,7 @@ from SDK.auto_scaling import AwsAutoScaling
 from SDK.app_load_balancer import AwsAppLoadBalancer
 from SDK.cloud_watch_alarms import AwsCloudWatchAlarm
 from SDK.cloud_watch_logs import AwsCloudWatchLogs
+from SDK.ecr import AwsEcr
 
 app = Flask(__name__) 
 app.config["SESSION_PERMANENT"] = False
@@ -556,6 +557,28 @@ def cw_logs_list(id,stream):
     session["cw_logs_list"]=session["cw_logs_list"][0:42]
     return render_template("services/cw_logs.html", profile=session.get("profile"), list=session["cw_logs"] , load_l2=False , 
                            detail=session["cw_logs_list"], load_l3=True, sel=id,stream=stream)
+
+#ECR
+@app.route('/ecr') 
+def ecr(): 
+    obj=AwsEcr( session.get("profile") ) 
+    session["ecr"]=obj.list_repositories()
+    return render_template("services/ecr.html", profile=session.get("profile"), list=session["ecr"] , load_l2=False)
+@app.route('/ecr/<repositoryName>') 
+def ecr_detail(repositoryName): 
+    detail=[]
+    for l in session["ecr"]:
+        if l['repositoryName']==repositoryName:
+            detail=l
+    obj=AwsEcr( session.get("profile") ) 
+    d=obj.list_images(repositoryName)
+    detail2=[]
+    load_l3=False
+    for e in d:
+        detail2.append(e)
+        load_l3=True
+    return render_template("services/ecr.html", profile=session.get("profile"), list=session["ecr"] , detail=detail, detail2=detail2, load_l2=True,load_l3=load_l3 , sel=repositoryName)
+
 
 
 

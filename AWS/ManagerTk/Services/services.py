@@ -21,6 +21,7 @@ from Services.auto_scaling import ConsoleAutoScaling
 from Services.app_load_balancer import ConsoleAppLoadBalancer
 from Services.cloud_watch_alarms import ConsoleCloudWatchAlarms
 from Services.cloud_watch_logs import ConsoleCloudWatchLogs
+from Services.ecr import ConsoleECR
 #nota indispensabile che il pacakge SDK sia caricato dopo con l'istruzione qua sotto
 #non sportare questa append sopra altrimenti andrebbe in un loop di import 
 sys.path.append( os.path.dirname( os.path.dirname( os.path.dirname( os.path.abspath(__file__) ) ) ) )
@@ -44,6 +45,7 @@ from SDK.auto_scaling import AwsAutoScaling
 from SDK.app_load_balancer import AwsAppLoadBalancer
 from SDK.cloud_watch_alarms import AwsCloudWatchAlarm
 from SDK.cloud_watch_logs import AwsCloudWatchLogs
+from SDK.ecr import AwsEcr
 #non mettere nessun import dopo perchè os.path sarebbe in errore
 
 if __name__ == '__main__':
@@ -74,6 +76,7 @@ class ServiceManager:
             ,{'title':'ALB','desc':'Lista AppLoadBalancer','automatic':False,'classe':ConsoleAppLoadBalancer,'sdk':AwsAppLoadBalancer }
             ,{'title':'CWAlarms','desc':'Lista Cloud Watch Alarms','automatic':False,'classe':ConsoleCloudWatchAlarms,'sdk':AwsCloudWatchAlarm }
             ,{'title':'CWLogs','desc':'Lista Cloud Watch Logs','automatic':False,'classe':ConsoleCloudWatchLogs,'sdk':AwsCloudWatchLogs }
+            ,{'title':'ECR','desc':'Lista ECR','automatic':False,'classe':ConsoleECR,'sdk':AwsEcr }
         ]
     def get_lista_funzionalita(self):
         return self.lista_funzionalita
