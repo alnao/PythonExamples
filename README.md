@@ -28,7 +28,8 @@ Esempi Python by [AlNao.it](https://www.alnao.it)
   - **CodeWhisperer**
     - 01 **basic**: semplice esempio usato come prima prova
   - **Glue**
-    - 01 **console**: Semplice esempio creato da console manualmente che elabora un file csv con una struttura ben definita (numero,lettera,lungo,gruppo), filtra gli elementi che hanno gruppo = 'A' e salva un nuovo file con la stessa struttura. Non è possibile eseguirlo in locale.
+    - 01 **console**: Semplice esempio creato da console manualmente che elabora un file csv con una struttura ben definita.
+    - 02 **sqlServer**: Esempio creato per importare in database RDS SqlServer il contenuto di un file CSV (funziona anche con file di grandi dimensioni a differenze di una lambda che andrebbe in errore per timeout)
   - **Polly**: text to speech, esempio preso dalla [documentazione ufficiale](https://docs.aws.amazon.com/it_it/polly/latest/dg/examples-python.html)
 
 ## Data Scientist
@@ -50,49 +51,50 @@ Esempi Python by [AlNao.it](https://www.alnao.it)
 - 06 **TraslatorSubtitle**: esempio di immagine per tradurre file subtitle in formato srt, see https://www.youtube.com/watch?v=-l7YocEQtA0
 
 ## From Others Sites
-- Blockchain: esempi di implementazione dell'algoritmo "proof of work" con un unico nodo e un secondo esempio multi-nodo con metodo per la sincronia
-- FaceDetector: https://www.youtube.com/watch?v=i3sLv1sus0I
-- FastApi https://realpython.com/fastapi-python-web-apis/
-- FlaskGeolocalNotes: https://www.youtube.com/watch?v=w-rti-5KHME
-- FlaskLogin: https://www.youtube.com/watch?v=ud_nq9lapF4
-- FlaskLoginGoogle: https://realpython.com/flask-google-login/
-- Ia: https://www.youtube.com/watch?v=CkkjXTER2KE
+- **Blockchain**: esempi di implementazione dell'algoritmo "proof of work" con un unico nodo e un secondo esempio multi-nodo con metodo per la sincronia
+- **FaceDetector**: https://www.youtube.com/watch?v=i3sLv1sus0I
+- **FastApi**: https://realpython.com/fastapi-python-web-apis/
+- **FlaskGeolocalNotes**: https://www.youtube.com/watch?v=w-rti-5KHME
+- **FlaskLogin**: https://www.youtube.com/watch?v=ud_nq9lapF4
+- **FlaskLoginGoogle**: https://realpython.com/flask-google-login/
+- **Ia**: https://www.youtube.com/watch?v=CkkjXTER2KE
 - SimpleGames
-  - ArcadeLib: 
+  - **ArcadeLib**: 
     - Snake see https://www.geeksforgeeks.org/python-arcade-player-movement/
     - Space see https://realpython.com/arcade-python-game-framework/
     - see https://api.arcade.academy/en/latest/examples/platform_tutorial/step_02.html
     - see https://realpython.com/arcade-python-game-framework/
-  - Coffe: https://github.com/uxai/100daysofcode/blob/main/Day%2015/coffee_machine.py
-  - Pong: https://api.arcade.academy/en/latest/examples/sections_demo_2.html#sections-demo-2
-  - PyGame
+  - **Coffe**: https://github.com/uxai/100daysofcode/blob/main/Day%2015/coffee_machine.py
+  - **Pong**: https://api.arcade.academy/en/latest/examples/sections_demo_2.html#sections-demo-2
+  - **PyGame**
     - see https://www.pygame.org/docs/
     - fly game: see https://realpython.com/pygame-a-primer/
     - asteroid: see https://realpython.com/asteroids-game-python/
-  - Rogue Like tutorial see https://rogueliketutorials.com/tutorials/tcod/v2/part-1/
-  - Tetris see https://api.arcade.academy/en/latest/examples/tetris.html#tetris
-  - Vital_messages & shootout: https://www.youtube.com/watch?v=3kdM9wyglnw
+  - **Rogue Like**: tutorial see https://rogueliketutorials.com/tutorials/tcod/v2/part-1/
+  - **Tetris**: see https://api.arcade.academy/en/latest/examples/tetris.html#tetris
+  - **Vital_messages** & shootout: https://www.youtube.com/watch?v=3kdM9wyglnw
   - TODO https://github.com/BlakeDalmas/Python
   - TODO Simple Platformer https://api.arcade.academy/en/latest/examples/platform_tutorial/index.html
   - TODO https://api.arcade.academy/en/latest/sample_games.html
   - TODO https://api.arcade.academy/en/stable/examples/procedural_caves_bsp.html
-- TkinterExample:  https://www.youtube.com/watch?v=5qOnzF7RsNA (Tkinter e "Python Simplified")
-- Youtube Downloader: https://www.youtube.com/watch?v=EMlM6QTzJo0 
-- NotificationCron: https://www.youtube.com/watch?v=7ahUnBhdI5o
-- Traslator: see https://huggingface.co/spaces/Mediocreatmybest/PipelineTranslator/blob/main/app.py
+- **TkinterExample**:  https://www.youtube.com/watch?v=5qOnzF7RsNA (Tkinter e "Python Simplified")
+- **Youtube Downloader**: https://www.youtube.com/watch?v=EMlM6QTzJo0 
+- **NotificationCron**: https://www.youtube.com/watch?v=7ahUnBhdI5o
+- **Traslator**: see https://huggingface.co/spaces/Mediocreatmybest/PipelineTranslator/blob/main/app.py
 
 ## Manage File
-- Csv2fixedWidthFile: esempio di script py che prende un file csv e lo trasforma in un file txt posizionale
+- **CheckASCII**: script che verifica se in un file di testo ci sono carateri non AsciiUtf8
+- **Csv2fixedWidthFile**: esempio di script py che prende un file csv e lo trasforma in un file txt posizionale
   - tracciato.csv necessario con i campi del file posizionale con le informazioni: nome, tipo, lunghezza, valore e descrizione
   - input.csv file di input coni campi 
   - l'ouput viene scritto in un file OUT.txt
-- Marge2txtFile: esempio di script py che esegue marge di due file
+- **Marge2txtFile**: esempio di script py che esegue marge di due file
   -  un file di testo txt (chiamato BAN) e un file csv (chiamato rapporti)
   -  genera un file di testotxt (chiamato OUT.txt) e un file csv di report con quali righe sono state modificate (OUT.log)
-- Sftp_ssh: metodi per la gestione di un server sftp (invio e ricezione dati), esecuzione comando in remoto con ssh
-- UnzipFile: esempio che usa "zipfile" di Py per estrarre il contenuto di un pacchetto zip
-- UploadFileToRestAPI: esempio per l'invio di un file locale ad una API Rest 
-- VideoConcat_ffmpeg: script per eseguire il concat di più video usando ffmpeg (solo su GNU Linux)
+- **Sftp & ssh**: metodi per la gestione di un server sftp (invio e ricezione dati), esecuzione comando in remoto con ssh
+- **UnzipFile**: esempio che usa "zipfile" di Py per estrarre il contenuto di un pacchetto zip
+- **UploadFileToRestAPI**: esempio per l'invio di un file locale ad una API Rest 
+- **VideoConcat ffmpeg**: script per eseguire il concat di più video usando ffmpeg (solo su GNU Linux)
 
 ## Simple
 - **gui**: esempi vari di librerie GUI per Python
@@ -138,6 +140,14 @@ In questa sezione appunti vari presi nel tempo
 	```
   if __name__ == '__main__':
 		print("SI")
+  ```
+- main e recuperare un file dalla stessa cartella dove è presente il file main
+  ```
+  import os
+  if __name__ == '__main__':
+    # Ottiene il percorso della directory dove si trova lo script
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    file_path = os.path.join(current_dir, 'file.txt')
   ```
 - Tipizzare e annotation https://www.youtube.com/watch?v=Y9fT4HVdCuQ
   ```
