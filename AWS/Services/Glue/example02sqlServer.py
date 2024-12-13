@@ -13,7 +13,7 @@ Questo script legge un file csv posizionato in un S3 e inserisce dati in un dast
 Si intende che venga creato da console web
 
 - Creato job "UAT Sqlserver load data"
-- Regola IAM: create regola IAM "UAT-Sqlserver-glue-iam-role" con i permessi **MOLTO** larghi:
+- Regola IAM: create regola IAM dedicata con i permessi **MOLTO** larghi:
     - AmazonEC2FullAccess
     - AmazonS3FullAccess
     - AWSGlueConsoleFullAccess

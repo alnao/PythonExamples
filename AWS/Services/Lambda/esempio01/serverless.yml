@@ -1,0 +1,17 @@
+# "org" ensures this Service is used with the correct Serverless Framework Access Key.
+org: alnao
+# "service" is the name of this project. This will also be added to your AWS resource names.
+service: esempio01
+
+provider:
+  name: aws
+  runtime: python3.12
+  region: eu-west-1
+
+functions:
+  esempio01:
+    handler: handler.hello
+  esempio01withParam:
+    handler: handler.hello
+    environment:
+      PARAM: "Questo è il parametro"
