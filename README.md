@@ -32,6 +32,7 @@ Esempi Python by [AlNao.it](https://www.alnao.it)
     - 02 **sqlServer** e **example03sqlServerWithRunSql**: Esempio creato per importare in database RDS SqlServer il contenuto di un file CSV (funziona anche con file di grandi dimensioni a differenze di una lambda che andrebbe in errore per timeout)
   - **Lambda**: vari esempi di lambda scritte in python con `sls` da installare con il comando `npm install -g serverless`, vedere il [sito ufficiale di serverless](https://app.serverless.com/register) e il [gestore npm](https://www.npmjs.com/package/serverless)
   - **Polly**: text to speech, esempio preso dalla [documentazione ufficiale](https://docs.aws.amazon.com/it_it/polly/latest/dg/examples-python.html)
+  - **S3**: piccola applicazione scritta con boto3-sdk per la gestione dei bucket S3 di un account
 
 ## Data Scientist
 - **Pandas** e altre librerie per la manipolazione dati, see [khuyentran1401 website](https://khuyentran1401.github.io/Efficient_Python_tricks_and_tools_for_data_scientists/README.html)
