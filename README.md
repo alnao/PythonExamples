@@ -80,7 +80,9 @@ Esempi Python by [AlNao.it](https://www.alnao.it)
   - TODO https://api.arcade.academy/en/latest/sample_games.html
   - TODO https://api.arcade.academy/en/stable/examples/procedural_caves_bsp.html
 - **TkinterExample**:  https://www.youtube.com/watch?v=5qOnzF7RsNA (Tkinter e "Python Simplified")
-- **Youtube Downloader**: https://www.youtube.com/watch?v=EMlM6QTzJo0 
+- **Youtube Downloader**: 
+  - pytube.py dal https://www.youtube.com/watch?v=EMlM6QTzJo0 
+  - main.py versione con flask
 - **NotificationCron**: https://www.youtube.com/watch?v=7ahUnBhdI5o
 - **Traslator**: see https://huggingface.co/spaces/Mediocreatmybest/PipelineTranslator/blob/main/app.py
 
