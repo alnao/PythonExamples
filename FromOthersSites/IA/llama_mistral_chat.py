@@ -4,6 +4,9 @@
     # https://huggingface.co/TheBloke/Mistral-7B-Instruct-v0.2-GGUF/tree/main
     # https://huggingface.co/TheBloke/Mistral-7B-Instruct-v0.2-GGUF/blob/main/mistral-7b-instruct-v0.2.Q2_K.gguf
 
+# wget https://huggingface.co/TheBloke/Mistral-7B-Instruct-v0.2-GGUF/resolve/main/mistral-7b-instruct-v0.2.Q2_K.gguf
+#    questo scaricherà il modello Mistral 7B Instruct v0.2 con quantizzazione Q2_K dal repository di TheBloke su Hugging Face. Questa versione è molto compressa (circa 2.83GB) ed è ottimizzata per l'esecuzione su CPU con risorse limitate.
+
 
 from llama_cpp import Llama
 #see documentation https://github.com/abetlen/llama-cpp-python/pkgs/container/llama-cpp-python
