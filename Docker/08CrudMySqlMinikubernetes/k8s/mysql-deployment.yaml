@@ -1,0 +1,36 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: py-esempio08-mysql
+spec:
+  selector:
+    matchLabels:
+      app: py-esempio08-mysql
+  template:
+    metadata:
+      labels:
+        app: py-esempio08-mysql
+    spec:
+      containers:
+      - name: mysql
+        image: mysql:8
+        env:
+        - name: MYSQL_ROOT_PASSWORD
+          value: "password123"
+#        - name: MYSQL_DATABASE
+#          value: "mydb"  # Opzionale, crea direttamente il DB
+        ports:
+        - containerPort: 3306
+        volumeMounts:
+        - name: py-esempio08-mysql-storage
+          mountPath: /var/lib/mysql
+        - name: init-sql
+          mountPath: /docker-entrypoint-initdb.d/init.sql
+          subPath: init.sql
+      volumes:
+      - name: py-esempio08-mysql-storage
+        persistentVolumeClaim:
+          claimName: py-esempio08-mysql-pvc
+      - name: init-sql
+        configMap:
+          name: py-esempio08-mysql-initdb-config

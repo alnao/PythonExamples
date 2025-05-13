@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: py-esempio08-mysql-svc
+spec:
+  selector:
+    app: py-esempio08-mysql
+  ports:
+    - protocol: TCP
+      port: 3306
+      targetPort: 3306
+#  externalName: mysql.minikube.internal

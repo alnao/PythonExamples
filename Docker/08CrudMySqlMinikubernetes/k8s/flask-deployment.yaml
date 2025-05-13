@@ -1,0 +1,44 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: py-esempio08-flask-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: py-esempio08-flask
+  template:
+    metadata:
+      labels:
+        app: py-esempio08-flask
+    spec:
+      containers:
+      - name: py-esempio08-flask
+        image: alnao/py-esempio08-flask-mysql:1.0
+        imagePullPolicy: Always   # Forza il pull dell'immagine ogni volta
+        env:
+        - name: DB_HOST
+          value: "py-esempio08-mysql-svc" #NON SO PERCHé NON FUNZIONA  "py-esempio08-mysql-svc.default.svc.cluster.local" #corrisponde al metadata.name del servizio mysql
+        - name: DB_USER
+          value: "root"
+        - name: DB_PASSWORD
+          value: "password123"
+        - name: DB_NAME
+          value: "testdb"
+        ports:
+        - containerPort: 5000
+# La dnsPolicy è un campo che puoi impostare nei file YAML delle risorse di tipo Pod . Questo campo determina come il Pod viene configurato per l’uso del sistema DNS all’interno del cluster Kubernetes.
+# In altre parole: dice al container come deve comportarsi quando cerca di risolvere i nomi DNS (es. my-service.namespace, google.com, ecc.).
+# NON FUNZIONA il DNS verso l'esterno! 
+      dnsPolicy: "ClusterFirst"
+      dnsConfig:
+        nameservers:
+          - 192.168.49.1
+          - 8.8.8.8
+        searches:
+          - default.svc.cluster.local
+          - svc.cluster.local
+          - cluster.local
+        options:
+          - name: ndots
+            value: "5"

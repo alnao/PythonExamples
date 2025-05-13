@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: py-esempio08-flask-service
+spec:
+  type: NodePort # 👈 Esposizione esterna su una porta >30000
+  selector:
+    app: py-esempio08-flask
+  ports:
+    - protocol: TCP
+      port: 5044
+      targetPort: 5000 #questo è quello esposto dal docker app.py
+#      nodePort: 30080
