@@ -1,0 +1,51 @@
+# docker-compose.yml
+version: '3.8'
+
+services:
+  dynamodb-local:
+    image: amazon/dynamodb-local
+    ports:
+      - "8010:8000"
+    environment:
+      - AWS_ACCESS_KEY_ID=local
+      - AWS_SECRET_ACCESS_KEY=local
+      - AWS_DEFAULT_REGION=eu-west-1
+    volumes:
+      - ./dynamodb-data:/home/dynamodblocal/data
+    command: ["-jar", "DynamoDBLocal.jar", "-sharedDb", "-port", "8000"]
+
+  create-table:
+    build: ./create-table
+    depends_on:
+      - dynamodb-local
+    environment:
+      - DYNAMODB_ENDPOINT=http://dynamodb-local:8000
+      - TABLE_NAME=alnao-persone
+      - AWS_DEFAULT_REGION=eu-west-1
+      - AWS_ACCESS_KEY_ID=local
+      - AWS_SECRET_ACCESS_KEY=local
+#    volumes:
+#      - ../create_table.py:/app/create_table.py  # Montiamo il file esterno
+#    restart: "on-failure:2"  # Riprova fino a 2 volte
+
+  fastapi:
+    build: ./fastapi-microservice
+    ports:
+      - "8011:8001"
+    depends_on:
+      - dynamodb-local
+      - create-table  # Garantisci che la tabella esista prima di partire
+    environment:
+      - DYNAMODB_ENDPOINT=http://dynamodb-local:8000
+      - TABLE_NAME=alnao-persone
+      - AWS_DEFAULT_REGION=eu-west-1
+      - AWS_ACCESS_KEY_ID=local
+      - AWS_SECRET_ACCESS_KEY=local
+  flask-frontend:
+    build: ./flask-microfrontend
+    ports:
+      - "8012:5000"
+    depends_on:
+      - fastapi
+    environment:
+      - API_URL=http://fastapi:8001

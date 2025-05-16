@@ -1,0 +1,15 @@
+replicaCount: 1
+
+image:
+  repository: alnao-fastapi
+  tag: latest
+  pullPolicy: IfNotPresent
+
+service:
+  type: ClusterIP
+  port: 8001
+
+flaskFrontend:
+  image:
+    repository: alnao-flask
+    tag: latest

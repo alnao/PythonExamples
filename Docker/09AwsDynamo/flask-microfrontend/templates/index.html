@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <title>Gestione Persone - Alnao</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap @5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="bg-light">
+
+<div class="container py-5">
+    <h1 class="mb-4">Lista Persone</h1>
+
+    <!-- Tabella -->
+    <div class="table-responsive">
+        <table class="table table-striped table-bordered align-middle">
+            <thead class="table-dark">
+                <tr>
+                    <th>Codice Fiscale</th>
+                    <th>Nome</th>
+                    <th>Cognome</th>
+                    <th>Eta</th>
+                    <th>Data Nascita</th>
+                    <th>Azioni</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if persone %}
+                    {% for persona in persone %}
+                        <tr>
+                            <td>{{ persona.codice_fiscale }}</td>
+                            <td>{{ persona.nome }}</td>
+                            <td>{{ persona.cognome }}</td>
+                            <td>{{ persona.eta }}</td>
+                            <td>{{ persona.data_nascita }}</td>
+                            <td>
+                                <form action="{{ url_for('elimina_persona', codice_fiscale=persona.codice_fiscale) }}" method="POST" style="display:inline;">
+                                    <button type="submit" class="btn btn-danger btn-sm">Elimina</button>
+                                </form>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr><td colspan="6" class="text-center">Nessuna persona trovata.</td></tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Form Inserimento -->
+    <h2 class="mt-5">Aggiungi Persona</h2>
+    <form action="{{ url_for('aggiungi') }}" method="POST">
+        <div class="row g-3">
+            <div class="col-md-4">
+                <label for="cf" class="form-label">Codice Fiscale</label>
+                <input type="text" class="form-control" id="cf" name="cf" required>
+            </div>
+            <div class="col-md-3">
+                <label for="nome" class="form-label">Nome</label>
+                <input type="text" class="form-control" id="nome" name="nome" required>
+            </div>
+            <div class="col-md-3">
+                <label for="cognome" class="form-label">Cognome</label>
+                <input type="text" class="form-control" id="cognome" name="cognome" required>
+            </div>
+            <div class="col-md-2">
+                <label for="eta" class="form-label">Età</label>
+                <input type="number" class="form-control" id="eta" name="eta" required>
+            </div>
+            <div class="col-md-4">
+                <label for="data_nascita" class="form-label">Data di Nascita</label>
+                <input type="date" class="form-control" id="data_nascita" name="data_nascita" required>
+            </div>
+            <div class="col-12 mt-3">
+                <button type="submit" class="btn btn-primary">Aggiungi</button>
+            </div>
+        </div>
+    </form>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap @5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
