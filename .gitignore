@@ -139,3 +139,6 @@ dmypy.json
 .local 
 .jupyter
 .keras
+
+# Robot Framework output directory
+**/robotoutput/

@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DynamoDB Monitor - Alberto</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .header {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .stat-card {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        .stat-number {
+            font-size: 2em;
+            font-weight: bold;
+            color: #2196F3;
+        }
+        .stat-label {
+            color: #666;
+            margin-top: 5px;
+        }
+        .table-container {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        .table-header {
+            background: #2196F3;
+            color: white;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        th {
+            background-color: #f8f9fa;
+            font-weight: bold;
+        }
+        tr:hover {
+            background-color: #f5f5f5;
+        }
+        .json-cell {
+            max-width: 300px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .json-cell:hover {
+            white-space: normal;
+            overflow: visible;
+            background: #fff;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            z-index: 10;
+            position: relative;
+        }
+        .status-success {
+            color: #4CAF50;
+            font-weight: bold;
+        }
+        .status-error {
+            color: #f44336;
+            font-weight: bold;
+        }
+        .refresh-btn {
+            background: white;
+            color: #2196F3;
+            border: 1px solid #2196F3;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .refresh-btn:hover {
+            background: #2196F3;
+            color: white;
+        }
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+        .error {
+            background: #f44336;
+            color: white;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>DynamoDB Monitor - Alberto's Kafka Consumer</h1>
+            <p>Monitoraggio dei messaggi elaborati dal consumer Kafka</p>
+        </div>
+
+        <div class="stats" id="stats">
+            <div class="stat-card">
+                <div class="stat-number" id="total-items">-</div>
+                <div class="stat-label">Messaggi Totali</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="consumers">-</div>
+                <div class="stat-label">Consumer Attivi</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="api-success">-</div>
+                <div class="stat-label">API Success</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="recent-items">-</div>
+                <div class="stat-label">Ultima Ora</div>
+            </div>
+        </div>
+
+        <div class="table-container">
+            <div class="table-header">
+                <h2>Messaggi Elaborati</h2>
+                <button class="refresh-btn" onclick="loadData()">Aggiorna</button>
+            </div>
+            
+            <div id="loading" class="loading">Caricamento dati...</div>
+            <div id="error" class="error" style="display: none;"></div>
+            
+            <table id="data-table" style="display: none;">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Consumer ID</th>
+                        <th>Timestamp</th>
+                        <th>Messaggio Originale</th>
+                        <th>Risultato API</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody id="table-body">
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        async function loadData() {
+            try {
+                document.getElementById('loading').style.display = 'block';
+                document.getElementById('error').style.display = 'none';
+                document.getElementById('data-table').style.display = 'none';
+
+                // Carica statistiche
+                const statsResponse = await fetch('/api/stats');
+                const statsData = await statsResponse.json();
+                
+                if (statsData.success) {
+                    document.getElementById('total-items').textContent = statsData.stats.total_items;
+                    document.getElementById('consumers').textContent = statsData.stats.consumers;
+                    document.getElementById('api-success').textContent = statsData.stats.api_success;
+                    document.getElementById('recent-items').textContent = statsData.stats.recent_items;
+                }
+
+                // Carica dati tabella
+                const response = await fetch('/api/items');
+                const data = await response.json();
+
+                document.getElementById('loading').style.display = 'none';
+
+                if (!data.success) {
+                    throw new Error(data.error);
+                }
+
+                const tbody = document.getElementById('table-body');
+                tbody.innerHTML = '';
+
+                data.items.forEach(item => {
+                    const row = document.createElement('tr');
+                    
+                    const originalMessage = item.original_message_parsed ? 
+                        JSON.stringify(item.original_message_parsed, null, 2) : 
+                        (item.original_message || 'N/A');
+                    
+                    const apiResult = item.api_result_parsed ? 
+                        JSON.stringify(item.api_result_parsed, null, 2) : 
+                        (item.api_result || 'N/A');
+
+                    const statusClass = item.api_status === 'processed' ? 'status-success' : 'status-error';
+
+                    row.innerHTML = `
+                        <td>${item.id || 'N/A'}</td>
+                        <td>${item.consumer_id || 'N/A'}</td>
+                        <td>${item.processed_at_formatted || 'N/A'}</td>
+                        <td class="json-cell" title="${originalMessage}">${originalMessage}</td>
+                        <td class="json-cell" title="${apiResult}">${apiResult}</td>
+                        <td class="${statusClass}">${item.api_status || 'N/A'}</td>
+                    `;
+                    
+                    tbody.appendChild(row);
+                });
+
+                document.getElementById('data-table').style.display = 'table';
+
+            } catch (error) {
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('error').style.display = 'block';
+                document.getElementById('error').textContent = `Errore: ${error.message}`;
+            }
+        }
+
+        // Carica i dati all'avvio
+        loadData();
+
+        // Auto-refresh ogni 30 secondi
+        setInterval(loadData, 30000);
+    </script>
+</body>
+</html>

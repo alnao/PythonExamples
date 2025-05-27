@@ -54,7 +54,7 @@ Esempi Python by [AlNao.it](https://www.alnao.it)
 - 07 **DockerCompose API**: esempio di progettino con api-rest che legge e scrive dati su un database, applicazione e database sono creati assieme con un docker-compose
 - 08 **Crud MySql Minikubernetes**: esempio di progetti con rest api che legge e scrive dati su database mysql, creati assieme con Kubernetes *funzionante* su Minikube
 - 09 **AWS Dynamo**: esempio di progetto che crea una tabella dynamo, un CRUD con fast-api e un piccolo frontend per visualizzare i dati
-
+- 10 **Robot Framework**: esempio di progetto che esegue un test-unit con RobotFramework di una *bellissima* infrastruttura con DynamoDb, Kafka, consumer e un frontend.
 
 ## From Others Sites
 - **Blockchain**: esempi di implementazione dell'algoritmo "proof of work" con un unico nodo e un secondo esempio multi-nodo con metodo per la sincronia

@@ -1,0 +1,188 @@
+version: '3.8'
+
+services:
+  # Zookeeper
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.4.0
+    hostname: zookeeper
+    container_name: zookeeper
+    ports:
+      - "2181:2181"
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    networks:
+      - kafka-network
+
+  # Kafka usando la tua configurazione
+  kafka:
+    image: wurstmeister/kafka:latest
+    hostname: kafka
+    container_name: kafka
+    restart: "no"
+    depends_on:
+      - zookeeper
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_LISTENERS: INTERNAL://:29092,EXTERNAL://:9092
+      KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka:29092,EXTERNAL://localhost:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
+    networks:
+      - kafka-network
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    healthcheck:
+      test: ["CMD", "kafka-topics.sh", "--bootstrap-server", "localhost:29092", "--list"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Inizializzazione topics (incluso il tuo topic per i test)
+  init-kafka:
+    image: wurstmeister/kafka:latest
+    container_name: init-kafka
+    depends_on:
+      - kafka
+    networks:
+      - kafka-network
+    entrypoint: [ 'bash', '-c' ]
+    command: |
+      "
+      echo 'Aspettando che Kafka sia pronto...'
+      # Aspetta che kafka sia raggiungibile
+      until kafka-topics.sh --bootstrap-server kafka:29092 --list > /dev/null 2>&1; do
+        echo 'Kafka non ancora pronto, aspetto...'
+        sleep 2
+      done
+      
+      echo -e 'Creando topics per i tuoi progetti...'
+
+      # Topic per i test Robot Framework
+      kafka-topics.sh --bootstrap-server kafka:29092 --create --if-not-exists --topic test.alberto --replication-factor 1 --partitions 1 --config retention.ms=86400000
+      
+      echo -e 'Topics creati con successo:'
+      kafka-topics.sh --bootstrap-server kafka:29092 --list
+      
+      echo -e 'Inizializzazione completata!'
+      "
+
+  # DynamoDB Local
+  dynamodb-local:
+    image: amazon/dynamodb-local:latest
+    hostname: dynamodb-local
+    container_name: dynamodb-local
+    ports:
+      - "8000:8000"
+    command: ["-jar", "DynamoDBLocal.jar", "-inMemory", "-port", "8000"]
+    networks:
+      - kafka-network
+    environment:
+      - JAVA_OPTS=-Xmx256m -Xms128m
+    restart: unless-stopped
+    mem_limit: 512m
+
+# Inizializzazione DynamoDB
+  init-dynamodb:
+    image: amazon/aws-cli:latest
+    container_name: init-dynamodb
+    depends_on:
+      - dynamodb-local
+    networks:
+      - kafka-network
+    environment:
+      AWS_ACCESS_KEY_ID: "fakeAccessKey"
+      AWS_SECRET_ACCESS_KEY: "fakeSecretKey"
+      AWS_DEFAULT_REGION: "us-east-1"
+    entrypoint: [ 'sh', '-c' ]
+    command: |
+      "
+      echo 'Aspettando che DynamoDB Local sia pronto...'
+
+      # Aspetta che DynamoDB sia raggiungibile
+      until aws dynamodb list-tables --endpoint-url http://dynamodb-local:8000 --region us-east-1 > /dev/null 2>&1; do
+        echo 'DynamoDB non ancora pronto, aspetto...'
+        sleep 2
+      done
+      echo 'Creando tabella alberto-dy2...'
+
+      # Crea la tabella se non esiste
+      aws dynamodb create-table --table-name alberto-dy2 --attribute-definitions AttributeName=id,AttributeType=S --key-schema AttributeName=id,KeyType=HASH --provisioned-throughput ReadCapacityUnits=5,WriteCapacityUnits=5 --endpoint-url http://dynamodb-local:8000 --region us-east-1 || echo 'Tabella già esistente o errore nella creazione'
+
+      echo 'Verifica tabelle esistenti:'
+      aws dynamodb list-tables --endpoint-url http://dynamodb-local:8000 --region us-east-1
+      echo 'Inizializzazione DynamoDB completata!'
+      "
+
+
+  # Kafka UI (alternativa più stabile a Kafdrop)
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    hostname: kafka-ui
+    container_name: kafka-ui
+    ports:
+      - "9000:8080"
+    environment:
+      KAFKA_CLUSTERS_0_NAME: local
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:29092
+      KAFKA_CLUSTERS_0_ZOOKEEPER: zookeeper:2181
+#      DYNAMIC_CONFIG_ENABLED: true
+    depends_on:
+      - kafka
+      - init-kafka
+    networks:
+      - kafka-network
+    restart: unless-stopped
+
+  # Container per comandi CLI Kafka
+  kafka-tools:
+    image: wurstmeister/kafka:latest
+    hostname: kafka-tools
+    container_name: kafka-tools
+    depends_on:
+      - kafka
+    networks:
+      - kafka-network
+    # Container che rimane attivo per eseguire comandi
+    command: sleep infinity
+
+  application-consumer-service:
+    build: ./application
+    depends_on:
+      kafka:
+        condition: service_healthy
+      init-kafka:
+        condition: service_completed_successfully
+      init-dynamodb:
+        condition: service_completed_successfully
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      DYNAMODB_ENDPOINT: "http://dynamodb-local:8000"
+      MAX_WORKERS: 1
+    networks:
+      - kafka-network
+
+  frontend:
+    build: ./frontend
+    container_name: frontend-dynamodb
+    ports:
+      - "5042:5000"
+    environment:
+      DYNAMODB_ENDPOINT: "http://dynamodb-local:8000"
+      DYNAMODB_TABLE: "alberto-dy2"
+      DYNAMODB_REGION: "us-east-1"
+      AWS_ACCESS_KEY_ID: "fakeAccessKey"
+      AWS_SECRET_ACCESS_KEY: "fakeSecretKey"
+    depends_on:
+      - dynamodb-local
+      - init-dynamodb
+    networks:
+      - kafka-network
+    restart: unless-stopped
+
+networks:
+  kafka-network:
+    driver: bridge

@@ -1,4 +1,4 @@
-# Esempio 08 AWS Dynamo
+# Esempio 09 AWS Dynamo
 Un sistema che usa aws dynamo con una tabella chiamata "alnao-persone" con campi nome, cognome, eta, data nascita e codice fiscale.  un microservizio sviluppato con python fastapi che espone delle api crud, e un microfrontend sviluppato con python flask che consuma le api e che usa bootstrap come libreria grafica. vorrei usare tutto con docker e docker-comose e kubernetes e minibube e heml. voglio poterlo usare nel mio computer con tutto docker (anche aws dynamo) e anche vorrei usarlo su un aws remoto.
 
 
@@ -23,7 +23,7 @@ Struttura del progetto base:
 │   ├── Dockerfile
 │   └── requirements.txt
 │
-├── helm/                        # Configurazioni Helm TODO-TBD
+├── helm/                        # TODO Configurazioni Helm TODO-TBD
 │   └── alnao-app/
 │       └── templates/
 │       └── Chart.yaml
