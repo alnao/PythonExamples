@@ -1,0 +1,795 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Risorse AWS</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f4f7f6;
+        }
+        .navbar {
+            background-color: #2c3e50; /* Dark blue for nav */
+        }
+        .navbar-brand, .nav-link {
+            color: #ecf0f1 !important; /* Light gray for text */
+        }
+        .header-section {
+            background-color: #34495e; /* Slightly lighter blue for header */
+            color: #ecf0f1;
+            padding: 3rem 0;
+            margin-bottom: 2rem;
+            border-radius: 0.5rem;
+        }
+        .card {
+            border-radius: 0.75rem;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            margin-bottom: 1.5rem;
+            border: none;
+        }
+        .card-header {
+            background-color: #1abc9c; /* Turquoise for card headers */
+            color: white;
+            font-weight: bold;
+            border-top-left-radius: 0.75rem;
+            border-top-right-radius: 0.75rem;
+        }
+        .table-responsive {
+            margin-top: 1rem;
+        }
+        .table thead {
+            background-color: #ecf0f1;
+        }
+        .table th, .table td {
+            vertical-align: middle;
+        }
+        .empty-state {
+            color: #7f8c8d;
+            font-style: italic;
+            text-align: center;
+            padding: 1rem;
+            background-color: #ecf0f1;
+            border-radius: 0.5rem;
+        }
+        .footer {
+            background-color: #2c3e50;
+            color: #ecf0f1;
+            padding: 1.5rem 0;
+            margin-top: 3rem;
+            border-top-left-radius: 0.5rem;
+            border-top-right-radius: 0.5rem;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark">
+        <div class="container">
+            <a class="navbar-brand" href="#">Dashboard Risorse AWS</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link active" aria-current="page" href="#">Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#vpc">VPC</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#security-groups">Security Groups</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#ecr">ECR</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#eks">EKS</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#ec2">EC2</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#rds">RDS</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#s3">S3</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#cloudfront">CloudFront</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#cloudformation">CloudFormation</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#cloudwatch">CloudWatch</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#lambda">Lambda</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#dynamodb">DynamoDB</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#sqs">SQS</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#sns">SNS</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#api-gateway">API Gateway</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <header class="header-section text-center">
+        <div class="container">
+            <h1 class="display-4">Panoramica Risorse AWS</h1>
+            <p class="lead">Un dashboard per visualizzare le risorse AWS esistenti nel tuo account.</p>
+        </div>
+    </header>
+
+    <main class="container">
+        <!-- VPC Section -->
+        <section id="vpc" class="mb-5">
+            <div class="card">
+                <div class="card-header">
+                    VPC di Default
+                </div>
+                <div class="card-body">
+                    {% if aws_data.default_vpc %}
+                        <p><strong>ID VPC:</strong> {{ aws_data.vpc_id }}</p>
+                        <p><strong>CIDR Block:</strong> {{ aws_data.vpc_cidr_block }}</p>
+
+                        <h5 class="mt-4">Subnet Pubbliche</h5>
+                        {% if aws_data.public_subnets %}
+                            <div class="table-responsive">
+                                <table class="table table-striped table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>ID Subnet</th>
+                                            <th>Nome</th>
+                                            <th>CIDR</th>
+                                            <th>Zona di Disponibilità</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for subnet in aws_data.public_subnets %}
+                                            <tr>
+                                                <td>{{ subnet.SubnetId }}</td>
+                                                <td>
+                                                    {% set subnet_name = 'N/A' %}
+                                                    {% for tag in subnet.Tags %}
+                                                        {% if tag.Key == 'Name' %}
+                                                            {% set subnet_name = tag.Value %}
+                                                        {% endif %}
+                                                    {% endfor %}
+                                                    {{ subnet_name }}
+                                                </td>
+                                                <td>{{ subnet.CidrBlock }}</td>
+                                                <td>{{ subnet.AvailabilityZone }}</td>
+                                            </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        {% else %}
+                            <p class="empty-state">Nessuna subnet pubblica trovata.</p>
+                        {% endif %}
+
+                        <h5 class="mt-4">Subnet Private</h5>
+                        {% if aws_data.private_subnets %}
+                            <div class="table-responsive">
+                                <table class="table table-striped table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>ID Subnet</th>
+                                            <th>Nome</th>
+                                            <th>CIDR</th>
+                                            <th>Zona di Disponibilità</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for subnet in aws_data.private_subnets %}
+                                            <tr>
+                                                <td>{{ subnet.SubnetId }}</td>
+                                                <td>
+                                                    {% set subnet_name = 'N/A' %}
+                                                    {% for tag in subnet.Tags %}
+                                                        {% if tag.Key == 'Name' %}
+                                                            {% set subnet_name = tag.Value %}
+                                                        {% endif %}
+                                                    {% endfor %}
+                                                    {{ subnet_name }}
+                                                </td>
+                                                <td>{{ subnet.CidrBlock }}</td>
+                                                <td>{{ subnet.AvailabilityZone }}</td>
+                                            </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        {% else %}
+                            <p class="empty-state">Nessuna subnet privata trovata.</p>
+                        {% endif %}
+
+                        <h5 class="mt-4">Internet Gateway</h5>
+                        {% if aws_data.internet_gateway %}
+                            <p>ID: {{ aws_data.internet_gateway.InternetGatewayId }}</p>
+                        {% else %}
+                            <p class="empty-state">Nessun Internet Gateway associato alla VPC di default.</p>
+                        {% endif %}
+
+                        <h5 class="mt-4">NAT Gateway</h5>
+                        {% if aws_data.nat_gateway %}
+                            <p>ID: {{ aws_data.nat_gateway.NatGatewayId }}</p>
+                            <p>IP Pubblico: {{ aws_data.nat_gateway.NatGatewayAddresses[0].PublicIp if aws_data.nat_gateway.NatGatewayAddresses else 'N/A' }}</p>
+                        {% else %}
+                            <p class="empty-state">Nessun NAT Gateway disponibile nella VPC di default.</p>
+                        {% endif %}
+
+                    {% else %}
+                        <p class="empty-state">Nessuna VPC di default trovata nella regione specificata.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </section>
+
+        <!-- Security Groups Section -->
+        <section id="security-groups" class="mb-5">
+            <div class="card">
+                <div class="card-header">
+                    Security Groups
+                </div>
+                <div class="card-body">
+                    {% if aws_data.security_groups %}
+                        <div class="table-responsive">
+                            <table class="table table-striped table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>ID Gruppo</th>
+                                        <th>Nome Gruppo</th>
+                                        <th>Descrizione</th>
+                                        <th>VPC ID</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for sg in aws_data.security_groups %}
+                                        <tr>
+                                            <td>{{ sg.GroupId }}</td>
+                                            <td>{{ sg.GroupName }}</td>
+                                            <td>{{ sg.Description }}</td>
+                                            <td>{{ sg.VpcId }}</td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <p class="empty-state">Nessun Security Group trovato.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </section>
+
+        <!-- ECR Repositories Section -->
+        <section id="ecr" class="mb-5">
+            <div class="card">
+                <div class="card-header">
+                    Repository ECR
+                </div>
+                <div class="card-body">
+                    {% if aws_data.ecr_repositories %}
+                        <div class="table-responsive">
+                            <table class="table table-striped table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Nome Repository</th>
+                                        <th>URI Repository</th>
+                                        <th>Data Creazione</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for repo in aws_data.ecr_repositories %}
+                                        <tr>
+                                            <td>{{ repo.repositoryName }}</td>
+                                            <td>{{ repo.repositoryUri }}</td>
+                                            <td>{{ repo.createdAt  }}</td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <p class="empty-state">Nessun repository ECR trovato.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </section>
+
+        <!-- EKS Clusters Section -->
+        <section id="eks" class="mb-5">
+            <div class="card">
+                <div class="card-header">
+                    Cluster EKS
+                </div>
+                <div class="card-body">
+                    {% if aws_data.eks_clusters %}
+                        <div class="table-responsive">
+                            <table class="table table-striped table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Nome Cluster</th>
+                                        <th>ARN Cluster</th>
+                                        <th>Versione Kubernetes</th>
+                                        <th>Stato</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for cluster in aws_data.eks_clusters %}
+                                        <tr>
+                                            <td>{{ cluster.name }}</td>
+                                            <td>{{ cluster.arn }}</td>
+                                            <td>{{ cluster.version }}</td>
+                                            <td>{{ cluster.status }}</td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <p class="empty-state">Nessun cluster EKS trovato.</p>
+                    {% endif %}
+
+                    <h5 class="mt-4">Nodi EKS (Istanze EC2)</h5>
+                    {% if aws_data.eks_nodes %}
+                        <div class="table-responsive">
+                            <table class="table table-striped table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>ID Istanza</th>
+                                        <th>Stato</th>
+                                        <th>Nome Gruppo Nodi</th>
+                                        <th>Nome Cluster</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for node in aws_data.eks_nodes %}
+                                        {% if node.InstanceId %} {# Filtra solo i veri nodi EC2, non i nodegroup info #}
+                                            <tr>
+                                                <td>{{ node.InstanceId }}</td>
+                                                <td>{{ node.LifecycleState }} ({{ node.HealthStatus }})</td>
+                                                <td>{{ node.NodegroupName }}</td>
+                                                <td>{{ node.ClusterName }}</td>
+                                            </tr>
+                                        {% endif %}
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <p class="empty-state">Nessun nodo EKS trovato.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </section>
+
+        <!-- EC2 Instances Section -->
+        <section id="ec2" class="mb-5">
+            <div class="card">
+                <div class="card-header">
+                    Istanze EC2
+                </div>
+                <div class="card-body">
+                    {% if aws_data.ec2_instances %}
+                        <div class="table-responsive">
+                            <table class="table table-striped table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>ID Istanza</th>
+                                        <th>Tipo Istanza</th>
+                                        <th>Stato</th>
+                                        <th>Nome (Tag)</th>
+                                        <th>IP Pubblico</th>
+                                        <th>IP Privato</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for instance in aws_data.ec2_instances %}
+                                        <tr>
+                                            <td>{{ instance.InstanceId }}</td>
+                                            <td>{{ instance.InstanceType }}</td>
+                                            <td>{{ instance.State.Name }}</td>
+                                            <td>
+                                                {% set instance_name = 'N/A' %}
+                                                {% for tag in instance.Tags %}
+                                                    {% if tag.Key == 'Name' %}
+                                                        {% set instance_name = tag.Value %}
+                                                    {% endif %}
+                                                {% endfor %}
+                                                {{ instance_name }}
+                                            </td>
+                                            <td>{{ instance.PublicIpAddress if instance.PublicIpAddress else 'N/A' }}</td>
+                                            <td>{{ instance.PrivateIpAddress if instance.PrivateIpAddress else 'N/A' }}</td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <p class="empty-state">Nessuna istanza EC2 trovata.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </section>
+
+        <!-- RDS Instances Section -->
+        <section id="rds" class="mb-5">
+            <div class="card">
+                <div class="card-header">
+                    Istanze RDS
+                </div>
+                <div class="card-body">
+                    {% if aws_data.rds_instances %}
+                        <div class="table-responsive">
+                            <table class="table table-striped table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Identificatore DB</th>
+                                        <th>Motore</th>
+                                        <th>Classe Istanza</th>
+                                        <th>Stato</th>
+                                        <th>Endpoint</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for instance in aws_data.rds_instances %}
+                                        <tr>
+                                            <td>{{ instance.DBInstanceIdentifier }}</td>
+                                            <td>{{ instance.Engine }} ({{ instance.EngineVersion }})</td>
+                                            <td>{{ instance.DBInstanceClass }}</td>
+                                            <td>{{ instance.DBInstanceStatus }}</td>
+                                            <td>{{ instance.Endpoint.Address if instance.Endpoint else 'N/A' }}:{{ instance.Endpoint.Port if instance.Endpoint else 'N/A' }}</td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <p class="empty-state">Nessuna istanza RDS trovata.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </section>
+
+        <!-- S3 Buckets Section -->
+        <section id="s3" class="mb-5">
+            <div class="card">
+                <div class="card-header">
+                    Bucket S3
+                </div>
+                <div class="card-body">
+                    {% if aws_data.s3_buckets %}
+                        <div class="table-responsive">
+                            <table class="table table-striped table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Nome Bucket</th>
+                                        <th>Data Creazione</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for bucket in aws_data.s3_buckets %}
+                                        <tr>
+                                            <td>{{ bucket.Name }}</td>
+                                            <td>{{ bucket.CreationDate  }}</td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <p class="empty-state">Nessun bucket S3 trovato.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </section>
+
+        <!-- CloudFront Distributions Section -->
+        <section id="cloudfront" class="mb-5">
+            <div class="card">
+                <div class="card-header">
+                    Distribuzioni CloudFront
+                </div>
+                <div class="card-body">
+                    {% if aws_data.cloudfront_distributions %}
+                        <div class="table-responsive">
+                            <table class="table table-striped table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>ID Distribuzione</th>
+                                        <th>Dominio</th>
+                                        <th>Stato</th>
+                                        <th>Abilitato</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for dist in aws_data.cloudfront_distributions %}
+                                        <tr>
+                                            <td>{{ dist.Id }}</td>
+                                            <td>{{ dist.DomainName }}</td>
+                                            <td>{{ dist.Status }}</td>
+                                            <td>{{ 'Sì' if dist.Enabled else 'No' }}</td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <p class="empty-state">Nessuna distribuzione CloudFront trovata.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </section>
+
+        <!-- CloudFormation Stacks Section -->
+        <section id="cloudformation" class="mb-5">
+            <div class="card">
+                <div class="card-header">
+                    Stack CloudFormation
+                </div>
+                <div class="card-body">
+                    {% if aws_data.cloudformation_stacks %}
+                        <div class="table-responsive">
+                            <table class="table table-striped table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Nome Stack</th>
+                                        <th>ID Stack</th>
+                                        <th>Stato</th>
+                                        <th>Data Creazione</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for stack in aws_data.cloudformation_stacks %}
+                                        <tr>
+                                            <td>{{ stack.StackName }}</td>
+                                            <td>{{ stack.StackId }}</td>
+                                            <td>{{ stack.StackStatus }}</td>
+                                            <td>{{ stack.CreationTime  }}</td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <p class="empty-state">Nessuno stack CloudFormation trovato.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </section>
+
+        <!-- CloudWatch Alarms Section -->
+        <section id="cloudwatch" class="mb-5">
+            <div class="card">
+                <div class="card-header">
+                    Allarmi CloudWatch
+                </div>
+                <div class="card-body">
+                    {% if aws_data.cloudwatch_alarms %}
+                        <div class="table-responsive">
+                            <table class="table table-striped table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Nome Allarme</th>
+                                        <th>Stato</th>
+                                        <th>Metrica</th>
+                                        <th>Namespace</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for alarm in aws_data.cloudwatch_alarms %}
+                                        <tr>
+                                            <td>{{ alarm.AlarmName }}</td>
+                                            <td>{{ alarm.StateValue }}</td>
+                                            <td>{{ alarm.MetricName }}</td>
+                                            <td>{{ alarm.Namespace }}</td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <p class="empty-state">Nessun allarme CloudWatch trovato.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </section>
+
+        <!-- Lambda Functions Section -->
+        <section id="lambda" class="mb-5">
+            <div class="card">
+                <div class="card-header">
+                    Funzioni Lambda
+                </div>
+                <div class="card-body">
+                    {% if aws_data.lambda_functions %}
+                        <div class="table-responsive">
+                            <table class="table table-striped table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Nome Funzione</th>
+                                        <th>Runtime</th>
+                                        <th>Memoria (MB)</th>
+                                        <th>Ultima Modifica</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for func in aws_data.lambda_functions %}
+                                        <tr>
+                                            <td>{{ func.FunctionName }}</td>
+                                            <td>{{ func.Runtime }}</td>
+                                            <td>{{ func.Memory }}</td>
+                                            <td>{{ func.LastModified  }}</td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <p class="empty-state">Nessuna funzione Lambda trovata.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </section>
+
+        <!-- DynamoDB Tables Section -->
+        <section id="dynamodb" class="mb-5">
+            <div class="card">
+                <div class="card-header">
+                    Tabelle DynamoDB
+                </div>
+                <div class="card-body">
+                    {% if aws_data.dynamodb_tables %}
+                        <div class="table-responsive">
+                            <table class="table table-striped table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Nome Tabella</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for table_name in aws_data.dynamodb_tables %}
+                                        <tr>
+                                            <td>{{ table_name }}</td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <p class="empty-state">Nessuna tabella DynamoDB trovata.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </section>
+
+        <!-- SQS Queues Section -->
+        <section id="sqs" class="mb-5">
+            <div class="card">
+                <div class="card-header">
+                    Code SQS
+                </div>
+                <div class="card-body">
+                    {% if aws_data.sqs_queues %}
+                        <div class="table-responsive">
+                            <table class="table table-striped table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>URL Coda</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for queue_url in aws_data.sqs_queues %}
+                                        <tr>
+                                            <td>{{ queue_url }}</td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <p class="empty-state">Nessuna coda SQS trovata.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </section>
+
+        <!-- SNS Topics Section -->
+        <section id="sns" class="mb-5">
+            <div class="card">
+                <div class="card-header">
+                    Argomenti SNS
+                </div>
+                <div class="card-body">
+                    {% if aws_data.sns_topics %}
+                        <div class="table-responsive">
+                            <table class="table table-striped table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>ARN Argomento</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for topic_arn in aws_data.sns_topics %}
+                                        <tr>
+                                            <td>{{ topic_arn }}</td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <p class="empty-state">Nessun argomento SNS trovato.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </section>
+
+        <!-- API Gateway REST APIs Section -->
+        <section id="api-gateway" class="mb-5">
+            <div class="card">
+                <div class="card-header">
+                    API Gateway REST APIs
+                </div>
+                <div class="card-body">
+                    {% if aws_data.api_gateway_rest_apis %}
+                        <div class="table-responsive">
+                            <table class="table table-striped table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>ID API</th>
+                                        <th>Nome</th>
+                                        <th>Descrizione</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for api in aws_data.api_gateway_rest_apis %}
+                                        <tr>
+                                            <td>{{ api.id }}</td>
+                                            <td>{{ api.name }}</td>
+                                            <td>{{ api.description if api.description else 'N/A' }}</td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <p class="empty-state">Nessuna API Gateway REST API trovata.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <footer class="footer text-center">
+        <div class="container">
+            <p>&copy; 2025 Dashboard Risorse AWS. Tutti i diritti riservati.</p>
+        </div>
+    </footer>
+
+    <!-- Bootstrap 5 JS Bundle with Popper -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Funzione per formattare le date di Boto3
+        // Boto3 restituisce oggetti datetime, ma Jinja2 potrebbe aver bisogno di una stringa
+        // per una formattazione più specifica se non si usa un filtro custom.
+        // Qui, useremo un filtro Jinja2 personalizzato per la formattazione.
+    </script>
+</body>
+</html>
