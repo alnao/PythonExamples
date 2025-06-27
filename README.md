@@ -106,6 +106,10 @@ Esempi Python by [AlNao.it](https://www.alnao.it)
 - **UploadFileToRestAPI**: esempio per l'invio di un file locale ad una API Rest 
 - **VideoConcat ffmpeg**: script per eseguire il concat di più video usando ffmpeg (solo su GNU Linux)
 
+## RobotFramework
+- 01 Simple: robot che esegue test sulla login su una applicazioni di esempio
+- 02 Database: robot che esegue query CRUD su un Database Mysql
+
 ## Simple
 - **gui**: esempi vari di librerie GUI per Python
 - **mongo**: script per la gestione di una base dati NoSql Mongo
