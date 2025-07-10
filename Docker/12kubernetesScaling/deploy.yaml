@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  creationTimestamp: null
+  labels:
+    app: cpu-burner
+  name: cpu-burner
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: cpu-burner
+  strategy: {}
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: cpu-burner
+    spec:
+      containers:
+      - image: cpu-burner:latest
+        name: cpu-burner
+        imagePullPolicy: Never
+        resources:
+          requests:
+#            cpu: "500m"
+#            cpu: "1"       # Richiede 1 core
+            cpu: "0.5"
+          limits:
+#            cpu: "500m"
+            cpu: "1"       # (opzionale) limita a 1 core massimo
+status: {}

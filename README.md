@@ -48,14 +48,18 @@ Esempi Python by [AlNao.it](https://www.alnao.it)
 ## Docker
 - 01 **simple Pandas**: see [run a python code on aws batch](https://medium.com/codex/run-a-python-code-on-aws-batch-part-1-creation-of-python-script-and-docker-container-1b01dc89eaed)
 - 02 **Flask Login**: [esempio di docker](https://www.youtube.com/watch?v=ud_nq9lapF4) con dentro una piccola applicazione web creata con Flask e db (sqlite), 
-- 03 **Api Persone NODB**: esempio di applicazione per l'esposizione di API, non previsto DB e non prevista concorrenza
-- 04 **Flask login Ldap**: esempio di piccola applicazione Flask con la gestione delle credenziali tramite un server AD e protocollo LDAP
-- 05 **Flask login Saml2-SSO**: esempio di piccola applicazione Flask con la gestione delle credenziali tramite un server AD e protocollo Saml2-SSO
-- 06 **TraslatorSubtitle**: esempio di immagine per tradurre file subtitle in formato srt, see [video](https://www.youtube.com/watch?v=-l7YocEQtA0)
-- 07 **DockerCompose API**: esempio di progettino con api-rest che legge e scrive dati su un database, applicazione e database sono creati assieme con un docker-compose
-- 08 **Crud MySql Minikubernetes**: esempio di progetti con rest api che legge e scrive dati su database mysql, creati assieme con Kubernetes *funzionante* su Minikube
-- 09 **AWS Dynamo**: esempio di progetto che crea una tabella dynamo, un CRUD con fast-api e un piccolo frontend per visualizzare i dati
-- 10 **Robot Framework**: esempio di progetto che esegue un test-unit con RobotFramework di una *bellissima* infrastruttura con DynamoDb, Kafka, consumer e un frontend.
+- 03 **Api Persone NODB**: applicazione per l'esposizione di API, non previsto DB e non previsto sistema di concorrenza: *al riavvio si perde tutto*
+- 04 **Flask login Ldap**: piccola applicazione Flask con la gestione delle credenziali tramite un server AD e protocollo LDAP
+- 05 **Flask login Saml2-SSO**: piccola applicazione Flask con la gestione delle credenziali tramite un server AD e protocollo Saml2-SSO
+- 06 **TraslatorSubtitle**: applicazione per tradurre file subtitle in formato srt, see [video](https://www.youtube.com/watch?v=-l7YocEQtA0)
+- 07 **DockerCompose API**: applicazione con api-rest che legge e scrive dati su un database, app e database sono creati assieme con un docker-compose
+- 08 **Crud MySql Minikubernetes**: applicazione con api-rest che legge e scrive dati su database mysql, creati con Kubernetes *funzionante* su Minikube
+- 09 **AWS Dynamo**: applicazione che crea una tabella dynamo, un CRUD con fast-api e un piccolo frontend per visualizzare i dati
+- 10 **Robot Framework**: applicazione che esegue un test-unit con RobotFramework di una *bellissima* infrastruttura con DynamoDb, Kafka, consumer e un frontend.
+- 11 **llamaAIRaspberry3**: immagine per eseguire una IA con motore **Llama** in un docker, può essere eseguita su PC *o su Rasbperry3b*
+- 12 **KubernetesScaling**: immagine per eseguire lo scaling con kubernetes utilizzando la funzionalità **Horizontal Pod Autoscalers** di K8S
+  - l'immagine permette di mandare la CPU a valori alti con chiamate post
+  - sotto-cartella con un esempio *funzionante* con **Prometheus** che utilizza una custum-metrics "numero task" e **Grafana** per il monitoraggio
 
 ## From Others Sites
 - **Blockchain**: esempi di implementazione dell'algoritmo "proof of work" con un unico nodo e un secondo esempio multi-nodo con metodo per la sincronia

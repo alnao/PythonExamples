@@ -1,0 +1,46 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: task-metrics
+  labels:
+    app: task-metrics # Corrisponde al ServiceMonitor
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: task-metrics  # Corrisponde al ServiceMonitor
+  template:
+    metadata:
+      labels:
+        app: task-metrics # Corrisponde al ServiceMonitor
+    spec:
+      containers:
+        - name: task-metrics
+          image: task-metrics:latest
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 8000
+            - containerPort: 8001
+#          readinessProbe:
+#            httpGet:
+#              path: /current
+#              port: 8000
+#            initialDelaySeconds: 5
+#            periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: task-metrics
+  labels:
+    app: task-metrics          # necessario per il match con ServiceMonitor
+spec:
+  selector:
+    app: task-metrics
+  ports:
+    - port: 8001  
+      targetPort: 8001
+      name: metrics
+    - port: 8000
+      targetPort: 8000
+      name: http
