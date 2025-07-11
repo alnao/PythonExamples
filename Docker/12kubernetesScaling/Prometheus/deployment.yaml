@@ -18,6 +18,10 @@ spec:
         - name: task-metrics
           image: task-metrics:latest
           imagePullPolicy: Never
+#Cosa fa: Il kubelet non tenterà mai di scaricare l'immagine dal registry remoto. Userà solo le immagini che sono già presenti localmente sul nodo.
+#Quando usarlo: quando le immagini sono pre-caricate sui nodi o si ha un controllo molto stretto sulle versioni delle immagini e non si vuole che Kubernetes tenti alcun pull esterno. 
+#Se l'immagine non è presente localmente, il pod andrà in stato di errore (ErrImageNeverPull).
+#Cambiare questa proprietà nel caso di server remoti/reali
           ports:
             - containerPort: 8000
             - containerPort: 8001
@@ -27,6 +31,12 @@ spec:
 #              port: 8000
 #            initialDelaySeconds: 5
 #            periodSeconds: 10
+          lifecycle:
+            preStop:
+              httpGet:
+                path: /shutdown
+                port: 8000
+
 ---
 apiVersion: v1
 kind: Service

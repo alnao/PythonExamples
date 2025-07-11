@@ -7,7 +7,7 @@ RUN apt-get update && \
 WORKDIR /app
 COPY metrics.py .
 
-RUN pip install fastapi uvicorn prometheus_client
+RUN pip install fastapi uvicorn prometheus_client kubernetes
 
 EXPOSE 8000
 EXPOSE 8001

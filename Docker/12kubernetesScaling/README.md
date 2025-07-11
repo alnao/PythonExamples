@@ -1,12 +1,16 @@
 # Esempio 12 Kubernetes Scaling
 Questo esempio dimostra l'utilizzo dell'**HorizontalPodAutoscaler** (HPA) di Kubernetes in due modalità:
-- HPA classico con metrica CPU
-- HPA avanzato con custom metrics tramite **Prometheus** e Grafana
+- HPA classico con metrica CPU: una piccola immagine consuma un valore CPU parametrizzabile e modificabile a run-time
+- HPA avanzato con custom metrics tramite **Prometheus** e Grafana: una piccola immagine espone un valore "numero_task" parametrizzabile e modificabile a run-time
 
 
 Facendo sempre riferimento alla [documentazione ufficiale](https://kubernetes.io/docs/tasks/run-application/horizontal-pod-autoscale/#support-for-cooldown-delay):
 - The HorizontalPodAutoscaler is implemented as a Kubernetes API resource and a controller. The resource determines the behavior of the controller. The horizontal pod autoscaling controller, running within the Kubernetes control plane, periodically adjusts the desired scale of its target (for example, a Deployment) to match observed metrics such as average CPU utilization, average memory utilization, or any other custom metric you specify.
 - Kubernetes implements horizontal pod autoscaling as a control loop that runs intermittently (it is not a continuous process).
+- In Kubernetes, quando un Pod deve essere terminato (ad esempio, a causa di un aggiornamento, uno scale-down, una terminazione manuale o un fallimento del nodo), Kubernetes segue un processo di terminazione ben definito: prima di inviare il `SIGTERM` o durante il `terminationGracePeriodSeconds`, puoi specificare un `preStop hook`, questo è un comando o una richiesta HTTP che viene eseguita prima che il container venga terminato definitivamente.
+- Non esiste un meccanismo diretto per "intercettare" un FailedPreStopHook e impedirgli di terminare il pod. L'obiettivo è prevenire il fallimento dell'hook attraverso una progettazione robusta e monitorare gli eventi per essere avvisati quando accade, così da poter investigare e correggere la causa radice. Concentrati sulla resilienza del tuo preStop hook e su un monitoraggio efficace.
+    - Catturare il FailedPreStopHook in Kubernetes e impedire che il pod muoia è una sfida complessa, perché il fallimento di un preStop hook indica a Kubernetes che il processo di terminazione non sta andando come previsto e, per sua natura, Kubernetes procederà comunque a terminare il pod dopo il terminationGracePeriodSeconds.
+    - Non puoi "catturare" il FailedPreStopHook nel senso di impedire la terminazione del pod una volta che il processo è iniziato. Il preStop hook è l'ultima possibilità del pod di eseguire un'azione prima della terminazione finale. Se fallisce, il pod morirà comunque.
 
 
 Per l'esecuzione di questo esempio è indispensabile aver installato **minukube** assieme a `docker` e `kubectl`.
@@ -54,10 +58,6 @@ L'esempio è nella sotto-cartella dedicata e tutti i comandi sono da eseguire in
     ```
     minikube start --memory=4096 --cpus=4
     minikube addons list
-    #NON SO kubectl create namespace monitoring
-    #NON SO kubectl apply -f https://raw.githubusercontent.com/prometheus-operator/prometheus-operator/main/bundle.yaml
-    #NON SO kubectl apply -k https://github.com/prometheus-operator/prometheus-operator/tree/main/example/prometheus-operator-crd
-    #NON SO minikube addons enable prometheus
     
     curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3
     chmod 700 get_helm.sh
@@ -71,17 +71,24 @@ L'esempio è nella sotto-cartella dedicata e tutti i comandi sono da eseguire in
     --create-namespace \
     --set prometheus.prometheusSpec.serviceMonitorSelectorNilUsesHelmValues=false
     ```
-    Verifica dell'installazione su freelens (tutto verde nel namespace *monitoring*)
-    ```
-    kubectl get pods -n monitoring
-    kubectl get svc -n monitoring
+    - Verifica dell'installazione su freelens (tutto verde nel namespace *monitoring*)
+        ```
+        kubectl get pods -n monitoring
+        kubectl get svc -n monitoring
 
-    kubectl --namespace monitoring get pods -l "release=prometheus"
-    ```
-    Get Grafana 'admin' user password by running:
-    ```
-    kubectl --namespace monitoring get secrets prometheus-grafana -o jsonpath="{.data.admin-password}" | base64 -d ; echo
-    ```
+        kubectl --namespace monitoring get pods -l "release=prometheus"
+        ```
+    - Get Grafana 'admin' user password by running:
+        ```
+        kubectl --namespace monitoring get secrets prometheus-grafana -o jsonpath="{.data.admin-password}" | base64 -d ; echo
+        ```
+    - Per far funzionare l'esempio in locale è possibile installare Prometheus senza Heml ma è sconsigliato *e non funziona*, i passaggi sarebbero
+        ```
+        kubectl create namespace monitoring
+        kubectl apply -f https://raw.githubusercontent.com/prometheus-operator/prometheus-operator/main/bundle.yaml
+        kubectl apply -k https://github.com/prometheus-operator/prometheus-operator/tree/main/example/prometheus-operator-crd
+        minikube addons enable prometheus
+        ```
 
 - Creazione e avvio immagine che esegue il servizio di `metrics.py` e configura l'HPA
     ```
@@ -91,18 +98,29 @@ L'esempio è nella sotto-cartella dedicata e tutti i comandi sono da eseguire in
     kubectl apply -f serviceMonitor.yaml
     kubectl get servicemonitors -A
     ```
+    - Se viene usata la versione con lo scale-down con la API `shutdown` è necessario assegnare al POD i poteri per accedere alle info di Kubernetes con il comando
+        ```
+        kubectl apply -f read-pods-rbac.yaml
+        ```
     - Modifica del valore delle task-metric (da eseguire da dentro i POD)
         ```
         curl localhost:8000/current
         curl localhost:8000/change/80
         ```
-    - In caso di modifica del Python, per ri-eseguire il rilascio
+    - In caso di modifica del Python se il servizio è già attivo, ri-eseguire il rilascio con un TAG specifico
         ```
-        docker build -t task-metrics:latest .
-        minikube image load task-metrics:latest
+        TAG=$(date +%Y%m%d%H%M%S)
+        docker build -t task-metrics:$TAG .
+        minikube image load task-metrics:$TAG
+        echo $TAG
+        kubectl set image deployment/task-metrics task-metrics=task-metrics:$TAG
+        ```
+        usare un tab specifico perchè a volte `latest` non funziona e non carica la nuova immagine:
+        ```
         kubectl rollout restart deployment task-metrics
         ```
-
+        - `kubectl set image` è il modo preferito per aggiornare un'immagine in un deployment, perché innesca automaticamente un rollout.
+        - `kubectl rollout restart` è utile se vuoi forzare un riavvio dei pod senza cambiare la configurazione del deployment. Se l'immagine è già stata aggiornata (anche con lo stesso tag ma ID diverso, e la imagePullPolicy è Always), kubectl rollout restart la tirerà di nuovo.
 - Verifica che Prometheus raccolga le metriche, avviare l'interfaccia grafica di Prometheus `http://localhost:9090`:
     ```
     kubectl port-forward -n monitoring svc/prometheus-operated 9090:9090
@@ -166,21 +184,23 @@ L'esempio è nella sotto-cartella dedicata e tutti i comandi sono da eseguire in
     Clicca Save & Test
     - Creazione dashboard sulla metrica `numero_task`, presente anche un `grafana.json` di esempio da caricare in console
 
-- Rimozione di tutto (tanta bella roba)
+- Rimozione di tutto, *occhio che è tanta bella roba*
     ```
-    helm uninstall prometheus-adapter -n monitoring
     kubectl delete -f hpa.yaml
     kubectl delete -f serviceMonitor.yaml
     kubectl delete -f deployment.yaml   
-    minikube image rm task-metrics:latest
+    kubectl delete -f read-pods-rbac.yaml   
+    docker rmi $(docker images | grep "task-metrics" | awk '{print $3}')
+    minikube image rm $(minikube image ls | grep "task-metrics" | awk '{print $1}')
     helm uninstall prometheus -n monitoring
+    helm uninstall prometheus-adapter -n monitoring
     ```
-- Nota: per le logiche di *scale-down*, nel `hpa.yaml` è configurata la logica di down in modo che non venga mai eseguito:
+- Nel file `hpa.yaml` è presente commentata la configurazione per bloccare lo scale-down, in modo che non venga mai eseguita la terminazione dei pod quando le regole di scaling lo richiederebbero, per attivarle basta sostituire lo `scaleDown` con il valore:
     ```
     scaleDown:
       selectPolicy: Disabled # Questo vieta esplicitamente lo scale-down
     ```
-    oppure è possibile attivare una regola di scale down specifica come presente come commento nel file.
+    
 
 
 # AlNao.it
