@@ -1,0 +1,21 @@
+# Dockerfile per supercrud-controller
+FROM python:3.11-slim
+
+WORKDIR /app
+
+COPY supercrud-controller.py /app/
+
+# Installazione di curl e wget 
+RUN apt-get update && \
+    apt-get install -y git build-essential cmake curl wget libcurl4-openssl-dev
+
+# Installazione delle dipendenze
+RUN pip install --no-cache-dir kopf kubernetes fastapi uvicorn
+
+# Esponi la porta per FastAPI
+EXPOSE 8080
+
+CMD ["python", "supercrud-controller.py"]
+
+# docker build -t supercrud-controller:latest -f supercrud-controller-dockerfile .
+# minikube image load  supercrud-controller

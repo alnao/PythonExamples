@@ -1,0 +1,34 @@
+# Tutti i manifest Kubernetes per il progetto "supeCrud"
+# Include: CustomResourceDefinition
+
+---
+# 1. CRD: Replicatore
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: supercruds.example.alnao.it
+spec:
+  group: example.alnao.it
+  versions:
+    - name: v1
+      served: true
+      storage: true
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              properties:
+                image:
+                  type: string
+                replicas:
+                  type: integer
+  scope: Namespaced
+  names:
+    plural: supercruds
+    singular: supercrud
+    kind: Supercrud
+    shortNames:
+      - super
+

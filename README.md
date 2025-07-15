@@ -1,6 +1,7 @@
 # Python Examples
 Esempi Python by [AlNao.it](https://www.alnao.it)
 
+
 ## AWS
 - Prerequisito: utenza AWS e installazione della AWS-CLI, vedere il [sito ufficiale](), per la configurazione eseguire comando `aws configure`.
 - **CDK**: Per la libreria CDK, installare della libreria, vedere il [sito ufficiale](https://docs.aws.amazon.com/cdk/v2/guide/getting_started.html) eseguire il comando `npm install -g aws-cdk`. Per ogni progetto c'è un README dedicato:
@@ -19,7 +20,6 @@ Esempi Python by [AlNao.it](https://www.alnao.it)
   - 16 **SNS**: creazione di un sistema SNS con una lambda che scoda le notifiche
   - 18 **EFS**: creazione di un disco EFS montato da una EC2 che espone un server apache
   - 20 **ASG** e **ALB**: creazione di un AutoScaling group e Application Load Balancer con EC2 che eseguono un webserver apache senza disco condiviso
-
 - **ManagerTk**: *Applicazione* sviluppata con la libreria tkinter (menu, gestione finestre ed elenchi) per gestire i servizi AWS usando le librerie SDK
 - **ManagerFlask**: *Applicazione* web sviluppata con Flask per gestire i servizi AWS usando le librerie SDK
   - **ManagerFlaskCloudWatch**: *Applicazione* web sviluppata con Flask per la gestione di CloudWatch Alarms & CloudWatch  
@@ -35,15 +35,18 @@ Esempi Python by [AlNao.it](https://www.alnao.it)
   - **Polly**: text to speech, esempio preso dalla [documentazione ufficiale](https://docs.aws.amazon.com/it_it/polly/latest/dg/examples-python.html)
   - **S3**: piccola applicazione scritta con boto3-sdk per la gestione dei bucket S3 di un account
 
+
 ## Data Scientist
 - **Pandas** e altre librerie per la manipolazione dati, see [khuyentran1401 website](https://khuyentran1401.github.io/Efficient_Python_tricks_and_tools_for_data_scientists/README.html)
 - **Spark** vedere file README all'interno della cartella, progetti ispirati al corso [udemy.com/course/apache-spark](https://www.udemy.com/course/apache-spark-programming-in-python-for-beginners)
+
 
 ## Django
 - PythonDjango1example
 - PythonDjango2news
 - PythonDjango3forms
 - PythonDjango4forms
+
 
 ## Docker
 - 01 **simple Pandas**: see [run a python code on aws batch](https://medium.com/codex/run-a-python-code-on-aws-batch-part-1-creation-of-python-script-and-docker-container-1b01dc89eaed)
@@ -60,6 +63,8 @@ Esempi Python by [AlNao.it](https://www.alnao.it)
 - 12 **KubernetesScaling**: immagine per eseguire lo scaling con kubernetes utilizzando la funzionalità **Horizontal Pod Autoscalers** di K8S
   - l'immagine permette di mandare la CPU a valori alti con chiamate post
   - sotto-cartella con un esempio *funzionante* con **Prometheus** che utilizza una custum-metrics "numero task" e **Grafana** per il monitoraggio
+  - sotto-cartella con tre esempi *funzionanti* con **CRD** e librerie *operator* per la gestione dello scaling.
+
 
 ## From Others Sites
 - **Blockchain**: esempi di implementazione dell'algoritmo "proof of work" con un unico nodo e un secondo esempio multi-nodo con metodo per la sincronia
@@ -96,6 +101,7 @@ Esempi Python by [AlNao.it](https://www.alnao.it)
 - **NotificationCron**: https://www.youtube.com/watch?v=7ahUnBhdI5o
 - **Traslator**: see https://huggingface.co/spaces/Mediocreatmybest/PipelineTranslator/blob/main/app.py
 
+
 ## Manage File
 - **CheckASCII**: script che verifica se in un file di testo ci sono carateri non AsciiUtf8
 - **Csv2fixedWidthFile**: esempio di script py che prende un file csv e lo trasforma in un file txt posizionale
@@ -110,9 +116,11 @@ Esempi Python by [AlNao.it](https://www.alnao.it)
 - **UploadFileToRestAPI**: esempio per l'invio di un file locale ad una API Rest 
 - **VideoConcat ffmpeg**: script per eseguire il concat di più video usando ffmpeg (solo su GNU Linux)
 
+
 ## RobotFramework
 - 01 Simple: robot che esegue test sulla login su una applicazioni di esempio
 - 02 Database: robot che esegue query CRUD su un Database Mysql
+
 
 ## Simple
 - **gui**: esempi vari di librerie GUI per Python
@@ -128,6 +136,7 @@ Esempi Python by [AlNao.it](https://www.alnao.it)
 - modules.py: Esempi di modulo in Python
 - scriptWithModules.py: Eempi di script che importa un modulo (modules.py) in Python
 
+
 ## Creazione server
 Vedere la [documentazione ufficiale](https://docs.python.org/es/3.10/library/http.server.html) o pagine di [esempio](https://ryanblunden.com/create-a-http-server-with-one-command-thanks-to-python-29fcfdcd240e?gi=45d07bd349a1).
 Per lanciare il server, il comando è
@@ -135,6 +144,7 @@ Per lanciare il server, il comando è
 python -m http.server 8080
 ```
 e poi il server è pronto alla pagina `http://localhost:8080/`.
+
 
 ## pyinstaller
 Come crare i file eseguibile da un python con **pyinstaller**, vedi [documentazione ufficiale](https://pyinstaller.org/en/stable/) e [video](https://www.youtube.com/watch?v=bqNvkAfTvIc). [Guida all'installazione](https://pyinstaller.org/en/v3.5/installation.html) e comando
@@ -148,7 +158,6 @@ pyinstaller file.py --onefile
 pyinstaller ManagerTk.py --onefile  --hidden-import=Services --hidden-import=Services.services
 pyinstaller --hidden-import=Services --hidden-import=Services.services  -F ManagerTk.py
 ```
-
 
 
 ## Appunti vari

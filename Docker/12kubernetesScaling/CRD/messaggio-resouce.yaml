@@ -1,0 +1,7 @@
+# alnao-example.yaml
+apiVersion: example.alnao.it/v1
+kind: Messaggio
+metadata:
+  name: messaggio
+spec:
+  message: "Ciao dal CRD di Alnao!"

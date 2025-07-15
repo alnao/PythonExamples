@@ -2,7 +2,10 @@
 Questo esempio dimostra l'utilizzo dell'**HorizontalPodAutoscaler** (HPA) di Kubernetes in due modalità:
 - HPA classico con metrica CPU: una piccola immagine consuma un valore CPU parametrizzabile e modificabile a run-time
 - HPA avanzato con custom metrics tramite **Prometheus** e Grafana: una piccola immagine espone un valore "numero_task" parametrizzabile e modificabile a run-time
-
+- Una **Custom Resource Definition**, detta anche **CRD**, ti permette di estendere l'API di Kubernetes creando nuove "risorse" personalizzate, come se fossero risorse native (tipo Pod, Service, Deployment, ecc.), ma definite da te. Una volta creata una CRD, puoi usare kubectl per creare, leggere, aggiornare e cancellare oggetti di quel nuovo tipo.
+    - Esempio base "messaggio"
+    - Esempio "replicatore" con un controller che gestisce lo scaling di una immagine `nginx:alpine`
+    - Autoscaling di una piccola applicazione "SuperCrud" con un **operator** (libreria kopf in python) *funzionante*
 
 Facendo sempre riferimento alla [documentazione ufficiale](https://kubernetes.io/docs/tasks/run-application/horizontal-pod-autoscale/#support-for-cooldown-delay):
 - The HorizontalPodAutoscaler is implemented as a Kubernetes API resource and a controller. The resource determines the behavior of the controller. The horizontal pod autoscaling controller, running within the Kubernetes control plane, periodically adjusts the desired scale of its target (for example, a Deployment) to match observed metrics such as average CPU utilization, average memory utilization, or any other custom metric you specify.
@@ -200,7 +203,145 @@ L'esempio è nella sotto-cartella dedicata e tutti i comandi sono da eseguire in
     scaleDown:
       selectPolicy: Disabled # Questo vieta esplicitamente lo scale-down
     ```
+
+
+## Custom Resource Definition CRD - Messaggio
+Una CRD chiamata *messaggio* e un controller in Python usando Kopf, una libreria molto comoda per scrivere operatori Kubernetes
+- file `kubectl apply -f messaggio-crd.yaml` con dentro la defizione del crd
+- esecuzione della CRD con:
+    ```
+    kubectl apply -f messaggio-crd.yaml
+    ```
+- installazione libreria Kpof
+    ```
+    pip install kopf kubernetes
+    ```
+- lancio del controller
+    ```
+    kopf run messaggio-controller.py
+    ```
+- esecuzione della risorsa Messaggio
+    ```
+    kubectl apply -f messaggio-resouce.yaml 
+    ```
+
+- Cancellazione di tutto
+    ```
+    kubectl delete -f messaggio-resouce.yaml 
+    kubectl delete -f messaggio-crd.yaml 
+    ```
+
+
+## Custom Resource Definition CRD - Replicatore
+La risorsa CRD si chiami Replicatore, il Service creato si chiami replicatore-service, il Pod venga avviato con l’immagine Docker specificata nel campo spec.image.
+Obbiettivo è creare un operator (controller) Kubernetes che gestisca un oggetto chiamato Replicatore e che:
+- CRD: definisce un oggetto Replicatore con due parametri: image: immagine Docker del workload e replicas: numero di repliche da eseguire (scalabilità)
+- Controller in Python (usando kopf) che: Crea un Deployment, Crea un Service dedicato (<nome>-service), Riconfigura il Deployment in base a replicas
+- Dockerfile per il controller
+- Manifest Kubernetes per: Deployment del controller e RBAC completo
+Comandi specifici: 
+- file `replicatore-crd.yaml` con la definizione della CRD "replicatore"
+- file `replicatore-dockerfile` con la definizione dell'immagine "controller" (che esegue kpof come task dentro un POD)
+- file `replicatore-resource.yaml` con la definizione delle regole e del deployment del Replicatore (forse meglio chiamarlo ReplicatoreCluster)
+- esecuzione della CRD con:
+    ```
+    kubectl apply -f replicatore-crd.yaml
+    ```
+- esecuzione del controller in 
+    ```
+    docker build -t replicatore-operator -f ./replicatore-dockerfile  .
+    minikube image load  replicatore-operator
+    ```
+- creazione del Cluster Replicatore 
+    ```
+    kubectl apply -f replicatore-resource.yaml 
+    ```
+- per scalare bisogna modificare il `replicatore-resource.yaml` nella configurazione *alla fine del file*:
+    ``` 
+    spec:
+      image: "nginx:alpine"
+      replicas: 2
+    ```
+- cancellazione di tutto
+    ```
+    kubectl delete -f replicatore-resource.yaml
+    kubectl delete -f replicatore-crd.yaml 
+    ```
+
+
+## Custom Resource Definition CRD - SuperCrud
+*SuperCrud* è un'applicazione distribuita su Kubernetes composta da:
+- Una risorsa CRD (Replicatore) che consente di specificare l'immagine e il numero di repliche iniziali.
+    - file `supercrud-crd.yaml`
+- Un controller (operator) basato su kopf che gestisce un oggetto personalizzato chiamato Replicatore.
+    - file `supercrud-controller.py` e il `supercrud-controller-dockerfile`
+- Un'applicazione web FastAPI che espone API REST CRUD con connessione a un database PostgreSQL centrale.
+    - file `supercrud-applilcation.py` e il `supercrud-applilcation-dockerfile`
+- Un database PostgreSQL persistente, la definizione dei permessi del controller.
+    - file `supercrud-resouces.yaml`
+- API del controller esposte tramite NodePort.
+    - file `supercrud-resouces.yaml` nella definizione del service.
+- API dell'applicazione SuperCrud esposte tramite NodePort.
+    - file `supercrud-controller.py` nella defizione del servce.
+
+
+Comandi per l'esecuzione dell'esempio su Minikube
+- Creazione delle immagini del controller
+    ```
+    docker build -t supercrud-controller:latest -f supercrud-controller-dockerfile .
+    minikube image load  supercrud-controller:latest
+    ```
+- Creazione delle immagini della applicazione Crud
+    ```
+    docker build -t supercrud-application:latest -f supercrud-application-dockerfile .
+    minikube image load  supercrud-application:latest
+    ```
+- Creazione della CRD e delle risorse Kubernetes
+    ```
+    kubectl apply -f supercrud-crd.yaml 
+    kubectl apply -f supercrud-resources.yaml 
+    ```
+    - eventuale comando di rollout per aggiornare l'operator (in caso di modifica dell'immagine senza voler ri-eseguire il deploy totale)
+        ```
+        kubectl rollout restart deployment supercrud-operator
+        ```
+- Eliminazione totoale 
+    ```
+    kubectl delete -f supercrud-resources.yaml 
+    minikube image rm supercrud-controller:latest
+    minikube image rm supercrud-application:latest
+    kubectl delete -f supercrud-crd.yaml 
+    ```
+    - se l'operator non è riuscito ad eliminare tutto bisogna lanciare i comandi
+        ```
+        kubectl delete deployment supercrud-deployment
+        kubectl delete service supercrud-service
+        ```
+- Comando per il test (essendo configurati come NodeGropu di minikube si usa l'ip di minikube)
+    ```
+    minikube ip
+    MINI=$(minikube ip)
+    echo $MINI
+    curl $MINI:30080/status
+    curl $MINI:30080/scale/supercrud/33
     
+    for i in $(seq 12); do 
+        curl $MINI:30081/
+        sleep 5
+    done
+
+    curl $MINI:30080/scale/supercrud/2
+    curl $MINI:30081/
+    curl $MINI:30081/items
+    curl -X POST $MINI:30081/items -H "Content-Type: application/json" -d '{ "name": "AlNao", "description": "Una persona magnifica." }'
+    curl $MINI:30081/items
+    ```
+- Versione con *ingress* al posto di NodeGroup
+    - installazione addons 
+        ```
+        minikube addons enable ingress
+        ```
+    - nel file `supercrud-resources.yaml` è presente il componente commentato *non funzionante*
 
 
 # AlNao.it
