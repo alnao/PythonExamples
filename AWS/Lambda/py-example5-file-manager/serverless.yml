@@ -1,0 +1,68 @@
+# Welcome to Serverless!
+#
+# This file is the main config file for your service.
+# It's very minimal at this point and uses default values.
+# You can always add more config options for more control.
+# We've included some commented out config examples here.
+# Just uncomment any of them to get that config option.
+#
+# For full config options, check the docs:
+#    docs.serverless.com
+#
+# Happy Coding!
+
+service: py-example5-file-manager
+
+frameworkVersion: '2'
+
+provider:
+  name: aws
+  runtime: python3.8
+  lambdaHashingVersion: 20201221
+  profile: serverless-admin
+  region: us-east-1
+  timeout: 10
+  memorySize: 128
+  environment:
+    SUFFISSO: NEW
+    SIZE : 100
+    DESTINATION: alberto-destination
+  iam:
+    role:
+      statements:
+        - Effect: Allow
+          Action:
+            - lambda:*
+            - s3:*
+          Resource: 
+            - "*"
+#        - Effect: Allow
+#          Action:
+#            - s3:PutObject
+#            - s3:PutObjectAcl
+#          Resource: "arn:aws:s3:::alberto-destination/*"
+
+functions:
+  s3_copy_generator:
+    handler: handler.s3_copy_generator
+    events:
+      - s3:
+          bucket: alberto-sorgente
+          event: s3:ObjectCreated:*
+          rules:  
+            - suffix : .txt
+      - s3:
+          bucket: alberto-destination
+          event: s3:ObjectCreated:*
+          rules:  
+            - suffix : .txt
+
+#serverless plugin install -n serverless-python-requirements
+plugins:
+  - serverless-python-requirements
+
+#not used
+custom:
+  bucket: alberto-sorgente
+  pythonRequirements:
+    dockerizePip: true

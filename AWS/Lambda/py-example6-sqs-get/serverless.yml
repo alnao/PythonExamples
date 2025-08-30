@@ -1,0 +1,17 @@
+service: py-example6-sqs-get
+frameworkVersion: '3'
+
+provider:
+  name: aws
+  runtime: python3.8
+  region: eu-west-1
+  iam:
+    role:
+      statements:
+        - Effect: "Allow"
+          Action: "sqs:*"
+          Resource: "*" 
+
+functions:
+  sqsget:
+    handler: handler.lambda_handler

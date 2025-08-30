@@ -1,5 +1,23 @@
-# Python Examples
-Esempi Python by [AlNao.it](https://www.alnao.it)
+# Python Examples ✨
+
+<p align="center">
+  <img src="https://img.shields.io/badge/Python-3.8%2B-blue?style=for-the-badge&logo=python&logoColor=white" alt="Python 3.8+">
+  <img src="https://img.shields.io/badge/AWS-Cloud-orange?style=for-the-badge&logo=amazon-aws&logoColor=white" alt="AWS">
+  <img src="https://img.shields.io/badge/Django-Framework-green?style=for-the-badge&logo=django&logoColor=white" alt="Django">
+  <img src="https://img.shields.io/badge/Docker-Container-blue?style=for-the-badge&logo=docker&logoColor=white" alt="Docker">
+  <img src="https://img.shields.io/badge/Flask-Web-lightgrey?style=for-the-badge&logo=flask&logoColor=white" alt="Flask">
+</p>
+
+## ✨ Panoramica
+
+Benvenuti nella collezione di esempi Python by [AlNao.it](https://www.alnao.it)! 
+- **☁️ Cloud Computing con AWS**: Esempi completi per CDK, Lambda, EC2, S3, DynamoDB e molti altri servizi
+- **🌐 Sviluppo Web**: Applicazioni Flask, Django, API REST e interfacce web moderne
+- **🐳 Containerizzazione**: Progetti Docker e Kubernetes pronti per la produzione
+- **📊 Data Science**: Manipolazione dati con Pandas, Spark e tecniche di analisi avanzate
+- **🎮 Applicazioni GUI**: Interfacce desktop con Tkinter e altre librerie grafiche
+- **🎯 Progetti Pratici**: Dall'automazione di file alla gestione di database NoSQL
+
 
 ## AWS
 - Prerequisito: utenza AWS e installazione della AWS-CLI, vedere il [sito ufficiale](), per la configurazione eseguire comando `aws configure`.
@@ -19,11 +37,11 @@ Esempi Python by [AlNao.it](https://www.alnao.it)
   - 16 **SNS**: creazione di un sistema SNS con una lambda che scoda le notifiche
   - 18 **EFS**: creazione di un disco EFS montato da una EC2 che espone un server apache
   - 20 **ASG** e **ALB**: creazione di un AutoScaling group e Application Load Balancer con EC2 che eseguono un webserver apache senza disco condiviso
-
-- **ManagerTk**: *Applicazione* sviluppata con la libreria tkinter (menu, gestione finestre ed elenchi) per gestire i servizi AWS usando le librerie SDK
-- **ManagerFlask**: *Applicazione* web sviluppata con Flask per gestire i servizi AWS usando le librerie SDK
-  - **ManagerFlaskCloudWatch**: *Applicazione* web sviluppata con Flask per la gestione di CloudWatch Alarms & CloudWatch  
-- **PanoramicResources**: *Applicazione* dashboard semplice per visualizzare le risorse AWS
+- **Lambda**: vari esempi di lambda scritte in python con `sam`, vedere il README specifico e il [sito ufficiale di serverless](https://app.serverless.com/register). 
+- **ManagerFlask**: *Applicazione web* sviluppata con Flask per gestire i servizi AWS usando le librerie SDK
+  - **ManagerFlaskCloudWatch**: *Applicazione web* sviluppata con Flask per la gestione di CloudWatch Alarms & CloudWatch  
+- **ManagerTk**: *Applicazione* sviluppata con la libreria tkinter (menu, gestione finestre ed elenchi) per gestire i servizi AWS usando le librerie SDK/boto
+- **PanoramicResources**: *Dashboard semplice per visualizzare le risorse AWS
 - **SDK**: Per la libreria SDK, l'installazione e la configurazione vedere il [sito ufficiale](https://boto3.amazonaws.com/v1/documentation/api/latest/guide/quickstart.html) e il comando `pip install boto3`. Classi per la gestione dei servizi: profiles, SSM parameter, Bucket S3, Ec2, CloudFront, Lambda, Event bridge, Step function, Dynamo, RDS e tanti altri.
 - **Services**
   - **CodeWhisperer**
@@ -31,7 +49,6 @@ Esempi Python by [AlNao.it](https://www.alnao.it)
   - **Glue**
     - 01 **console**: Semplice esempio creato da console manualmente che elabora un file csv con una struttura ben definita.
     - 02 **sqlServer** e **example03sqlServerWithRunSql**: Esempio creato per importare in database RDS SqlServer il contenuto di un file CSV (funziona anche con file di grandi dimensioni a differenze di una lambda che andrebbe in errore per timeout)
-  - **Lambda**: vari esempi di lambda scritte in python con `sls` da installare con il comando `npm install -g serverless`, vedere il [sito ufficiale di serverless](https://app.serverless.com/register) e il [gestore npm](https://www.npmjs.com/package/serverless)
   - **Polly**: text to speech, esempio preso dalla [documentazione ufficiale](https://docs.aws.amazon.com/it_it/polly/latest/dg/examples-python.html)
   - **S3**: piccola applicazione scritta con boto3-sdk per la gestione dei bucket S3 di un account
 
@@ -412,20 +429,37 @@ In questa sezione appunti vari presi nel tempo
 	print(PuntoCardinale.SUD == 'S' ) #FALSE
 	print(PuntoCardinale.SUD.value == 'S' ) #TRUE
   ```
-- SITI da vedere
+- Siti interessanti di riferimento:
   - Create a GUI app with Tkinter - Step by Step Tutorial https://www.youtube.com/watch?v=itRLRfuL_PQ
   - Machine Learning FOR BEGINNERS - Supervised, Unsupervised and Reinforcement Learning https://www.youtube.com/watch?v=mMc_PIemSnU
   - Guida Convert py to exe - from code to software https://www.youtube.com/watch?v=Y0HN9tdLuJo
   - Come eseguire gli script python all’avvio di Raspberry Pi https://www.moreware.org/wp/blog/2022/05/17/come-eseguire-gli-script-python-allavvio-di-raspberry-pi/
   - Pickle https://www.youtube.com/watch?v=6Q56r_fVqgw
-  - Flask video https://www.youtube.com/watch?v=pXMwAD9zMeg
-  - Django da tipa video https://www.youtube.com/watch?v=EEiqGjCNLRs
+  - Flask https://www.youtube.com/watch?v=pXMwAD9zMeg
+  - Django https://www.youtube.com/watch?v=EEiqGjCNLRs
 
 
-# AlNao.it
-Nessun contenuto in questo repository è stato creato con IA o automaticamente, tutto il codice è stato scritto con molta pazienza da Alberto Nao. Se il codice è stato preso da altri siti/progetti è sempre indicata la fonte. Per maggior informazioni visitare il sito [AlNao.it](https://www.alnao.it/).
+
+# &lt; AlNao /&gt;
+Tutti i codici sorgente e le informazioni presenti in questo repository sono frutto di un attento e paziente lavoro di sviluppo da parte di AlNao, che si è impegnato a verificarne la correttezza nella misura massima possibile. Qualora parte del codice o dei contenuti sia stato tratto da fonti esterne, la relativa provenienza viene sempre citata, nel rispetto della trasparenza e della proprietà intellettuale. 
+
+
+Alcuni contenuti e porzioni di codice presenti in questo repository sono stati realizzati anche grazie al supporto di strumenti di intelligenza artificiale, il cui contributo ha permesso di arricchire e velocizzare la produzione del materiale. Ogni informazione e frammento di codice è stato comunque attentamente verificato e validato, con l’obiettivo di garantire la massima qualità e affidabilità dei contenuti offerti. 
+
+
+Per ulteriori dettagli, approfondimenti o richieste di chiarimento, si invita a consultare il sito [AlNao.it](https://www.alnao.it/).
+
 
 ## License
+Made with ❤️ by <a href="https://www.alnao.it">AlNao</a>
+&bull; 
 Public projects 
-<a href="https://it.wikipedia.org/wiki/GNU_General_Public_License"  valign="middle"><img src="https://img.shields.io/badge/License-GNU-blue" style="height:22px;"  valign="middle"></a> 
+<a href="https://www.gnu.org/licenses/gpl-3.0"  valign="middle"> <img src="https://img.shields.io/badge/License-GPL%20v3-blue?style=plastic" alt="GPL v3" valign="middle" /></a>
 *Free Software!*
+
+
+Il software è distribuito secondo i termini della GNU General Public License v3.0. L'uso, la modifica e la ridistribuzione sono consentiti, a condizione che ogni copia o lavoro derivato sia rilasciato con la stessa licenza. Il contenuto è fornito "così com'è", senza alcuna garanzia, esplicita o implicita.
+
+
+The software is distributed under the terms of the GNU General Public License v3.0. Use, modification, and redistribution are permitted, provided that any copy or derivative work is released under the same license. The content is provided "as is", without any warranty, express or implied.
+
