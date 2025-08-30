@@ -1,0 +1,39 @@
+# adapter-values.yaml
+prometheus:
+      #url: http://prometheus-operated.monitoring.svc.cluster.local
+        #url: http://prometheus-kube-prometheus-prometheus.monitoring.svc.cluster.local
+    # url vuoto http://prometheus-prometheus-kube-prometheus-prometheus-0.prometheus-operated.monitoring.svc.cluster.local
+    # url corretto non risolto prometheus-kube-prometheus-prometheus
+    # url: 10.96.100.95  IP ma non giusto usarlo
+  url: http://prometheus-prometheus-kube-prometheus-prometheus-0.prometheus-operated.monitoring.svc.cluster.local
+  port: 9090
+rules:
+  default: false
+  custom:
+    - seriesQuery: 'numero_task{pod!=""}'
+      resources:
+        overrides:
+          pod: { resource: "pod" }
+          namespace: { resource: "namespace" }
+      name:
+        matches: "numero_task"
+        as: "custom_numero_task"
+      metricsQuery: 'avg(numero_task{<<.LabelMatchers>>}) by (<<.GroupBy>>)'
+rbac:
+  create: true
+serviceAccount:
+  create: true
+
+logLevel: 10
+
+#rules:
+#  default: false
+#  custom:
+#    - seriesQuery: 'numero_task{pod!=""}'
+#      resources:
+#        overrides:
+#          pod: { resource: "pod" }
+#      name:
+#        matches: "numero_task"
+#        as: "custom_numero_task"
+#      metricsQuery: 'avg(numero_task{<<.LabelMatchers>>}) by (<<.GroupBy>>)'

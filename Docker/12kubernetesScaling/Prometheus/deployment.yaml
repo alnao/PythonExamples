@@ -1,0 +1,56 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: task-metrics
+  labels:
+    app: task-metrics # Corrisponde al ServiceMonitor
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: task-metrics  # Corrisponde al ServiceMonitor
+  template:
+    metadata:
+      labels:
+        app: task-metrics # Corrisponde al ServiceMonitor
+    spec:
+      containers:
+        - name: task-metrics
+          image: task-metrics:latest
+          imagePullPolicy: Never
+#Cosa fa: Il kubelet non tenterà mai di scaricare l'immagine dal registry remoto. Userà solo le immagini che sono già presenti localmente sul nodo.
+#Quando usarlo: quando le immagini sono pre-caricate sui nodi o si ha un controllo molto stretto sulle versioni delle immagini e non si vuole che Kubernetes tenti alcun pull esterno. 
+#Se l'immagine non è presente localmente, il pod andrà in stato di errore (ErrImageNeverPull).
+#Cambiare questa proprietà nel caso di server remoti/reali
+          ports:
+            - containerPort: 8000
+            - containerPort: 8001
+#          readinessProbe:
+#            httpGet:
+#              path: /current
+#              port: 8000
+#            initialDelaySeconds: 5
+#            periodSeconds: 10
+          lifecycle:
+            preStop:
+              httpGet:
+                path: /shutdown
+                port: 8000
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: task-metrics
+  labels:
+    app: task-metrics          # necessario per il match con ServiceMonitor
+spec:
+  selector:
+    app: task-metrics
+  ports:
+    - port: 8001  
+      targetPort: 8001
+      name: metrics
+    - port: 8000
+      targetPort: 8000
+      name: http

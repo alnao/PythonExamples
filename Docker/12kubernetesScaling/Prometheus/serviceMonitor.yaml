@@ -1,0 +1,20 @@
+# serviceMonitor.yaml - versione corretta
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: task-metrics-monitor
+  namespace: monitoring  # o il namespace corretto
+  labels:
+    release: prometheus # deve corrispondere al tuo Prometheus verifica con "kubectl get prometheus -A"
+spec:
+  namespaceSelector:
+    matchNames:
+      - default  # namespace dove è deployata la tua app
+  selector:
+    matchLabels:
+      app: task-metrics
+      app: custom-metrics-apiserver # CAMBIATO: Deve corrispondere al label del tuo Deployment/Service
+  endpoints:
+  - port: metrics
+    interval: 30s
+    path: /metrics
