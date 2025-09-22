@@ -3,52 +3,63 @@
 ## 🚀 Panoramica
 
 Questo esempio implementa un sistema **RAG (Retrieval-Augmented Generation)** completo utilizzando i servizi AWS, con particolare focus su **Amazon Bedrock** per l'intelligenza artificiale. Il sistema permette di caricare documenti, indicizzarli semanticamente e interrogarli in linguaggio naturale, combinando la potenza dei modelli di embedding e chat di AWS Bedrock.
-
-### 🔧 Architettura del Sistema
-
-```mermaid
-graph TB
-    subgraph "Client Layer"
-        A[🌐 Frontend Web<br/>HTML/JavaScript]
-    end
-    
-    subgraph "Application Layer"
-        B[⚡ FastAPI Backend<br/>Python REST API]
-    end
-    
-    subgraph "AI Layer"
-        C[🤖 Amazon Bedrock<br/>Titan Embed + Llama 3.2]
-    end
-    
-    subgraph "Storage Layer"
-        D[🗄️ ChromaDB<br/>Vector Database]
-        E[☁️ Amazon S3<br/>Document Storage]
-    end
-    
-    A -.->|HTTP Requests| B
-    B -.->|Embedding & Chat| C
-    B -.->|Vector Search| D
-    B -.->|File Upload/Download| E
-    
-    style A fill:#e1f5fe
-    style B fill:#f3e5f5
-    style C fill:#fff3e0
-    style D fill:#e8f5e8
-    style E fill:#fff8e1
-```
-
-**🔄 Flusso di Lavoro:**
-1. **📄 Ingestione**: Upload documento → Chunking → Embedding (Bedrock) → Storage (ChromaDB + S3)
-2. **🔍 Query**: Domanda utente → Embedding → Ricerca vettoriale → Generazione risposta (Bedrock)
-3. **💾 Persistenza**: Documenti originali su S3, embeddings su ChromaDB locale
-
-### 🎯 Funzionalità Principali
-
 - **📄 Ingestione Documenti**: Caricamento e indicizzazione automatica di file di testo
 - **🔍 Ricerca Semantica**: Query in linguaggio naturale sui documenti indicizzati
 - **🤖 Generazione AI**: Risposte generate usando modelli Bedrock (Llama 3.2)
 - **💾 Persistenza**: Salvataggio documenti su S3 e embeddings su ChromaDB
 - **🌐 Interfaccia Web**: Frontend interattivo per testing delle API
+
+Per attivare **Bedrock** bisogna accedere alla console web e attivare i modelli nella funzionalità `Model access` e attivare
+- Titan Text Embeddings V2
+- Llama 3.2 3B Instruct
+- Pixtral Large (25.02)
+- Starting Oct 8 2025, Amazon Bedrock will simplify access to all serverless foundation models, and any new models, by automatically enabling them for every AWS account, eliminating the need to manually activate access through the Bedrock console. Account administrators retain full control over model access through IAM policies  and Service Control Policies (SCPs)  to restrict model access as needed.
+
+
+
+### 🔧 Architettura del Sistema
+
+Il sistema è progettato con un'architettura **multi-layer**:
+
+```
+example01/
+├── example01.py           # 🐍 Main FastAPI application (il file backend)
+├── check_model.py         # 🔍 Bedrock model checker (script di esempio per verificare che il modello è abilitato)
+├── bedrock_rag_stack.sh   # 🚀 Infrastructure deployment (script di rilascio/deprovisioning delle risorse)
+├── user_data.sh           # ⚙️ EC2 initialization (script user data che viene eseguito dall'avvio dell'EC2)
+├── policy.json            # 🔐 IAM permissions (il nome del bucket da aggiornare manualmente)
+├── README.md              # 📖 Project documentation
+├── web/
+│   ├── index.html         # 🌐 Web interface
+│   └── index.js           # ⚡ Frontend logic
+├── chroma/                # 🗄️ Vector database (auto-created in fase di esecuzione)
+└── venv/                  # 🐍 Python environment (auto-created in fase di esecuzione)
+```
+
+**⚡ Application Layer** 
+- **FastAPI Backend**: Server Python ad alte prestazioni con API REST
+- **CORS Enabled**: Supporto completo per chiamate cross-origin
+- **Async Processing**: Gestione asincrona delle richieste per migliori performance
+
+**🤖 AI Layer**
+- **Amazon Bedrock**: Servizio AI completamente gestito di AWS
+- **Titan Embed v2**: Modello di embedding con 1024 dimensioni per ricerca semantica
+- **Llama 3.2 3B**: Modello di generazione testo ottimizzato per l'EU
+
+**💾 Storage Layer**
+- **ChromaDB**: Database vettoriale locale per ricerche semantiche ultra-veloci
+- **Amazon S3**: Storage sicuro e scalabile per documenti originali
+- **Persistenza Locale**: Embeddings memorizzati localmente per accesso immediato
+
+**🔄 Flusso di Lavoro:**
+1. **📄 Ingestione**: Upload documento → Chunking intelligente → Embedding (Bedrock) → Storage (ChromaDB + S3)
+2. **🔍 Query**: Domanda utente → Embedding della query → Ricerca vettoriale → Generazione risposta (Bedrock)
+3. **💾 Persistenza**: Documenti originali sicuri su S3, embeddings ottimizzati su ChromaDB locale
+
+**🌐 Frontend Layer**
+- **Interfaccia Web Interattiva**: Sviluppata in HTML5 e JavaScript vanilla per massima compatibilità
+- **Testing API**: Interfaccia grafica per testare tutte le funzionalità senza tool esterni
+- **Responsive Design**: Ottimizzata per desktop e dispositivi mobili
 
 ## 🏗️ Componenti Tecnici
 
@@ -156,6 +167,38 @@ pip install fastapi uvicorn[standard] boto3 pydantic-settings python-multipart c
 
 # Avvia il servizio
 nohup venv/bin/uvicorn example01:app --host 0.0.0.0 --port 8000 > fastapi.log 2>&1 &
+```
+
+### Rimozione dello Stack
+
+Per rimuovere completamente l'infrastruttura creata, utilizza il comando destroy dello script:
+
+```bash
+# Rimuove tutte le risorse create
+./bedrock_rag_stack.sh destroy ragdemo eu-central-1
+```
+
+Il comando esegue automaticamente:
+- ✅ Terminazione istanze EC2
+- ✅ Eliminazione Security Groups
+- ✅ Svuotamento e rimozione bucket S3
+- ✅ Rimozione IAM role, policy e instance profile
+- ✅ Pulizia file temporanei
+
+**Verifica risorse rimanenti:**
+```bash
+# Lista instance profiles
+aws iam list-instance-profiles
+
+# Verifica istanze EC2
+aws ec2 describe-instances --filters "Name=tag:PROJECT_NAME,Values=ragdemo" \
+  --query "Reservations[].Instances[].{ID:InstanceId,State:State.Name,Name:Tags[?Key=='Name'].Value|[0]}"
+
+# Verifica bucket S3
+aws s3 ls | grep ragdemo
+
+# Verifica IAM roles
+aws iam list-roles --query "Roles[?contains(RoleName,'ragdemo')].RoleName"
 ```
 
 ## 🧪 Testing del Sistema

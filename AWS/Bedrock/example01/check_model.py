@@ -1,3 +1,7 @@
+# questo script verifica se il modello di embedding Titan embed è accessibile
+# eseguirlo da terminale con: python check_model.py 
+# assicurarsi di avere le variabili d'ambiente AWS configurate
+
 import boto3
 import json
 bedrock = boto3.client('bedrock-runtime', region_name='eu-central-1')
