@@ -11,7 +11,7 @@ from chromadb.utils import embedding_functions
 
 class Settings(BaseSettings):
     AWS_REGION: str = "eu-central-1"
-    S3_BUCKET: str = "ragdemo-bucket"
+    S3_BUCKET: str = "ragdemo-alnao-bucket"
     CHROMA_DIR: str = "./chroma"
     BEDROCK_EMBEDDING_MODEL: str = "amazon.titan-embed-text-v2:0"
     BEDROCK_CHAT_MODEL: str = "meta.llama3-70b-instruct-v1:0"  # adjust to what you enabled
