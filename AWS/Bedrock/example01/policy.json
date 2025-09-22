@@ -15,8 +15,8 @@
         "s3:*"
       ],
       "Resource": [
-        "arn:aws:s3:::$BUCKET_NAME",
-        "arn:aws:s3:::$BUCKET_NAME/*"
+        "arn:aws:s3:::ragdemo-alnao-bucket",
+        "arn:aws:s3:::ragdemo-alnao-bucket/*"
       ]
     },
     {

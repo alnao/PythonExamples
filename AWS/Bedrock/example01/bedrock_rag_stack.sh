@@ -138,7 +138,9 @@ EOF
     
     # 5. Launch EC2 instance
     echo "Launching EC2 instance: $EC2_NAME"
-    AMI_ID=$(aws $AWS_PROFILE ec2 describe-images --region $REGION --owners amazon --filters "Name=name,Values=amzn2-ami-hvm-*-x86_64-gp2" --query 'Images[0].ImageId' --output text)
+    #AMI_ID=$(aws $AWS_PROFILE ec2 describe-images --region $REGION --owners amazon --filters "Name=name,Values=amzn2-ami-hvm-*-x86_64-gp2" --query 'Images[0].ImageId' --output text)
+    #AMI_ID=$(aws ec2 describe-images --owners amazon --filters "Name=name,Values=amzn2-ami-hvm-2.0.*-x86_64-gp2" --region $REGION --query 'Images | sort_by(@, &CreationDate)[-1].ImageId' --output text)
+    AMI_ID=$(aws ec2 describe-images --owners 099720109477 --filters "Name=name,Values=ubuntu/images/hvm-ssd/ubuntu-jammy-22.04-amd64-server-*" --region $REGION --query 'Images | sort_by(@, &CreationDate)[-1].ImageId' --output text)
     INSTANCE_ID=$(aws $AWS_PROFILE ec2 run-instances --image-id $AMI_ID --count 1 \
         --instance-type $INSTANCE_TYPE --key-name $KEY_NAME \
         --security-group-ids $SG_ID --iam-instance-profile Name=$ROLE_NAME --region $REGION \
@@ -159,38 +161,96 @@ function destroy_stack() {
     echo "Destroying Bedrock/RAG stack in $REGION..."
 
     # 1. Terminate EC2 instances with PROJECT_NAME tag
-    INSTANCE_IDS=$(aws $AWS_PROFILE ec2 describe-instances --region $REGION --filters "Name=tag:PROJECT_NAME,Values=$PROJECT_NAME" "Name=instance-state-name,Values=running,stopped" --query "Reservations[].Instances[].InstanceId" --output text)
-    if [ ! -z "$INSTANCE_IDS" ]; then
+    echo "1. Checking for EC2 instances to terminate..."
+    INSTANCE_IDS=$(aws $AWS_PROFILE ec2 describe-instances --region $REGION --filters "Name=tag:PROJECT_NAME,Values=$PROJECT_NAME" "Name=instance-state-name,Values=running,stopped" --query "Reservations[].Instances[].InstanceId" --output text 2>/dev/null || echo "")
+    if [ ! -z "$INSTANCE_IDS" ] && [ "$INSTANCE_IDS" != "None" ]; then
         echo "Terminating EC2 Instances: $INSTANCE_IDS"
-        aws $AWS_PROFILE ec2 terminate-instances --instance-ids $INSTANCE_IDS --region $REGION
+        aws $AWS_PROFILE ec2 terminate-instances --instance-ids $INSTANCE_IDS --region $REGION 2>/dev/null || echo "Warning: Failed to terminate some instances"
+        
+        # Wait for instances to be terminated
+        echo "Waiting for EC2 instances to be terminated..."
+        aws $AWS_PROFILE ec2 wait instance-terminated --instance-ids $INSTANCE_IDS --region $REGION 2>/dev/null || echo "Warning: Timeout waiting for instance termination"
+        echo "EC2 instances terminated successfully."
+    else
+        echo "No EC2 instances found to terminate."
     fi
 
     # 2. Delete Security Groups with PROJECT_NAME tag
-    SG_IDS=$(aws $AWS_PROFILE ec2 describe-security-groups --region $REGION --filters "Name=tag:PROJECT_NAME,Values=$PROJECT_NAME" --query "SecurityGroups[].GroupId" --output text)
-    for SG_ID in $SG_IDS; do
-        if [ ! -z "$SG_ID" ]; then
-            echo "Deleting Security Group $SG_ID"
-            aws $AWS_PROFILE ec2 delete-security-group --group-id $SG_ID --region $REGION
-        fi
-    done
+    echo "2. Checking for Security Groups to delete..."
+    SG_IDS=$(aws $AWS_PROFILE ec2 describe-security-groups --region $REGION --filters "Name=tag:PROJECT_NAME,Values=$PROJECT_NAME" --query "SecurityGroups[].GroupId" --output text 2>/dev/null || echo "")
+    if [ ! -z "$SG_IDS" ] && [ "$SG_IDS" != "None" ]; then
+        for SG_ID in $SG_IDS; do
+            if [ ! -z "$SG_ID" ] && [ "$SG_ID" != "None" ]; then
+                echo "Deleting Security Group $SG_ID"
+                aws $AWS_PROFILE ec2 delete-security-group --group-id $SG_ID --region $REGION 2>/dev/null || echo "Warning: Failed to delete Security Group $SG_ID (might be in use)"
+            fi
+        done
+    else
+        echo "No Security Groups found to delete."
+    fi
 
     # 3. Delete S3 bucket and its contents
-    echo "Deleting S3 bucket: $BUCKET_NAME"
-    aws $AWS_PROFILE s3 rm s3://$BUCKET_NAME --recursive
-    aws $AWS_PROFILE s3api delete-bucket --bucket $BUCKET_NAME --region $REGION
+    echo "3. Checking S3 bucket: $BUCKET_NAME"
+    if aws $AWS_PROFILE s3api head-bucket --bucket $BUCKET_NAME --region $REGION 2>/dev/null; then
+        echo "Deleting S3 bucket contents and bucket: $BUCKET_NAME"
+        aws $AWS_PROFILE s3 rm s3://$BUCKET_NAME --recursive 2>/dev/null || echo "Warning: Failed to delete some S3 objects"
+        aws $AWS_PROFILE s3api delete-bucket --bucket $BUCKET_NAME --region $REGION 2>/dev/null || echo "Warning: Failed to delete S3 bucket (might not be empty)"
+    else
+        echo "S3 bucket $BUCKET_NAME not found or already deleted."
+    fi
 
     # 4. Detach and delete IAM policy, role and instance profile
-    echo "Detaching and deleting IAM policy/role/instance profile"
-    aws $AWS_PROFILE iam detach-role-policy --role-name $ROLE_NAME --policy-arn arn:aws:iam::$(aws $AWS_PROFILE sts get-caller-identity --query Account --output text):policy/$POLICY_NAME
-    aws $AWS_PROFILE iam remove-role-from-instance-profile --instance-profile-name $ROLE_NAME --role-name $ROLE_NAME
-    aws $AWS_PROFILE iam delete-instance-profile --instance-profile-name $ROLE_NAME
-    aws $AWS_PROFILE iam delete-policy --policy-arn arn:aws:iam::$(aws $AWS_PROFILE sts get-caller-identity --query Account --output text):policy/$POLICY_NAME
-    aws $AWS_PROFILE iam delete-role --role-name $ROLE_NAME
+    echo "4. Cleaning up IAM resources..."
+    
+    # Check if role exists before proceeding
+    if aws $AWS_PROFILE iam get-role --role-name $ROLE_NAME 2>/dev/null >/dev/null; then
+        echo "Role $ROLE_NAME exists, proceeding with cleanup..."
+        
+        # Remove inline policies from role first
+        echo "Checking for inline policies..."
+        INLINE_POLICIES=$(aws $AWS_PROFILE iam list-role-policies --role-name $ROLE_NAME --query 'PolicyNames' --output text 2>/dev/null || echo "")
+        if [ ! -z "$INLINE_POLICIES" ] && [ "$INLINE_POLICIES" != "None" ]; then
+            for POLICY in $INLINE_POLICIES; do
+                if [ ! -z "$POLICY" ] && [ "$POLICY" != "None" ]; then
+                    echo "Deleting inline policy: $POLICY"
+                    aws $AWS_PROFILE iam delete-role-policy --role-name $ROLE_NAME --policy-name $POLICY 2>/dev/null || echo "Warning: Failed to delete inline policy $POLICY"
+                fi
+            done
+        else
+            echo "No inline policies found."
+        fi
+        
+        # Detach managed policies
+        echo "Detaching managed policies..."
+        POLICY_ARN="arn:aws:iam::$(aws $AWS_PROFILE sts get-caller-identity --query Account --output text):policy/$POLICY_NAME"
+        aws $AWS_PROFILE iam detach-role-policy --role-name $ROLE_NAME --policy-arn $POLICY_ARN 2>/dev/null || echo "Managed policy not attached or doesn't exist"
+        
+        # Remove role from instance profile
+        echo "Removing role from instance profile..."
+        aws $AWS_PROFILE iam remove-role-from-instance-profile --instance-profile-name $ROLE_NAME --role-name $ROLE_NAME 2>/dev/null || echo "Role not in instance profile or profile doesn't exist"
+        
+        # Delete the role
+        echo "Deleting IAM role: $ROLE_NAME"
+        aws $AWS_PROFILE iam delete-role --role-name $ROLE_NAME 2>/dev/null || echo "Warning: Failed to delete role $ROLE_NAME"
+    else
+        echo "IAM Role $ROLE_NAME not found or already deleted."
+    fi
+    
+    # Delete instance profile
+    echo "Deleting instance profile..."
+    aws $AWS_PROFILE iam delete-instance-profile --instance-profile-name $ROLE_NAME 2>/dev/null || echo "Instance profile doesn't exist or already deleted"
+    
+    # Delete the managed policy
+    echo "Deleting managed policy..."
+    POLICY_ARN="arn:aws:iam::$(aws $AWS_PROFILE sts get-caller-identity --query Account --output text):policy/$POLICY_NAME"
+    aws $AWS_PROFILE iam delete-policy --policy-arn $POLICY_ARN 2>/dev/null || echo "Managed policy doesn't exist or already deleted"
 
     # 5. Delete temp files
-    rm -f $ROLE_ARN_FILE /tmp/trust-policy.json
+    echo "5. Cleaning up temporary files..."
+    rm -f $ROLE_ARN_FILE /tmp/trust-policy.json 2>/dev/null || echo "Temp files already cleaned up"
 
-    echo "Stack destroyed!"
+    echo "✅ Stack destruction completed!"
+    echo "Note: Some warnings above are normal if resources were already deleted."
 }
 
 if [[ "$ACTION" == "create" ]]; then
