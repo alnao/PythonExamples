@@ -4,6 +4,13 @@
 
 Questo esempio implementa un sistema **RAG (Retrieval-Augmented Generation)** completo utilizzando i servizi AWS, con particolare focus su **Amazon Bedrock** per l'intelligenza artificiale. Il sistema permette di caricare documenti, indicizzarli semanticamente e interrogarli in linguaggio naturale, combinando la potenza dei modelli di embedding e chat di AWS Bedrock.
 - **📄 Ingestione Documenti**: Caricamento e indicizzazione automatica di file di testo
+  - **📄 Testi**: `.txt`, `.md`, `.csv`, `.json`, `.xml`, `.html`, `.css`, `.js`, `.py`, `.java`, `.cpp`, `.c`, `.h`
+  - **📋 Documenti**: `.pdf` (con OCR per PDF scannerizzati), `.docx`, `.xlsx`, `.xls`, `.pptx`, `.ppt`
+  - **🖼️ Immagini**: `.jpg`, `.jpeg`, `.png`, `.gif`, `.bmp`, `.webp`, `.tiff` (descrizione AI tramite Claude 3)
+  - **🤖 Elaborazione Intelligente**: 
+    - Estrazione testo con PyPDF2 + OCR (Tesseract) per PDF
+    - Descrizione AI delle immagini tramite Claude 3 Sonnet su Bedrock
+    - Parsing nativo per documenti Office
 - **🔍 Ricerca Semantica**: Query in linguaggio naturale sui documenti indicizzati
 - **🤖 Generazione AI**: Risposte generate usando modelli Bedrock (Llama 3.2)
 - **💾 Persistenza**: Salvataggio documenti su S3 e embeddings su ChromaDB
@@ -30,8 +37,9 @@ Il sistema è progettato con un'architettura **multi-layer**:
 ├── policy.json            # 🔐 IAM permissions (il nome del bucket da aggiornare manualmente)
 ├── README.md              # 📖 Project documentation
 ├── web/
+│   ├── admin.html         # 🌐 Web interface amministrativa che permette di far *dimenticare* le cose all'IA
 │   ├── index.html         # 🌐 Web interface
-│   └── index.js           # ⚡ Frontend logic
+│   └── index.js           # ⚡ Frontend logic per la web interface
 ├── chroma/                # 🗄️ Vector database (auto-created in fase di esecuzione)
 └── venv/                  # 🐍 Python environment (auto-created in fase di esecuzione)
 ```
@@ -75,9 +83,12 @@ Il sistema è progettato con un'architettura **multi-layer**:
   ./bedrock_rag_stack.sh create ragdemo eu-central-1
   ```
 
+  Attenzione: lo script *user data* può impiegare diversi minuti per installare tutti i pacchetti e le librerie necessarie al funzionamento.
+
   Per verificare che è tutto ok, da dentro l'istanza, si possono analizzare i log con il comando
   ```bash
   sudo tail -n 50 /var/log/cloud-init-output.log
+  sudo tail -f -n 50 /var/log/cloud-init-output.log
   ```
 
   Lo script automatizza:
@@ -89,42 +100,42 @@ Il sistema è progettato con un'architettura **multi-layer**:
 
 - Opzione 2: **Installazione Manuale** tramite CLI o console web
   1. Prerequisiti AWS: Verifica modelli Bedrock disponibili da console web oppure con il comando
-    ```bash
-    aws bedrock list-foundation-models --region eu-central-1 \
-      --query "modelSummaries[?contains(modelId, 'embed')].{ModelId:modelId,Status:modelLifecycle.status}" \
-      --output table
-    ```
+      ```bash
+      aws bedrock list-foundation-models --region eu-central-1 \
+        --query "modelSummaries[?contains(modelId, 'embed')].{ModelId:modelId,Status:modelLifecycle.status}" \
+        --output table
+      ```
   2. Setup Infrastruttura
-    ```bash
-    # Crea bucket S3
-    aws s3 mb s3://ragdemo-alnao-bucket --region eu-central-1
+      ```bash
+      # Crea bucket S3
+      aws s3 mb s3://ragdemo-alnao-bucket --region eu-central-1
 
-    # Crea IAM policy
-    aws iam create-policy --policy-name ragdemo-policy \
-      --policy-document file://policy.json
+      # Crea IAM policy
+      aws iam create-policy --policy-name ragdemo-policy \
+        --policy-document file://policy.json
 
-    # Crea IAM role
-    aws iam create-role --role-name ragdemo-role \
-      --assume-role-policy-document file://trust-policy.json
+      # Crea IAM role
+      aws iam create-role --role-name ragdemo-role \
+        --assume-role-policy-document file://trust-policy.json
 
-    # Associa policy al role
-    aws iam attach-role-policy --role-name ragdemo-role \
-      --policy-arn arn:aws:iam::ACCOUNT:policy/ragdemo-policy
-    ```
+      # Associa policy al role
+      aws iam attach-role-policy --role-name ragdemo-role \
+        --policy-arn arn:aws:iam::ACCOUNT:policy/ragdemo-policy
+      ```
   3. Setup EC2
-    ```bash
-    # Launch istanza Ubuntu 22.04
-    aws ec2 run-instances --image-id ami-xxxxxxxxx \
-      --instance-type t3.micro --key-name your-key \
-      --iam-instance-profile Name=ragdemo-role \
-      --block-device-mappings '[{"DeviceName":"/dev/sda1","Ebs":{"VolumeSize":20,"VolumeType":"gp3"}}]' \
-      --user-data file://user_data.sh
-    ```
-    nota: viene creato un EBS bello grande perchè la dimensione di default (8Gb) potrebbe non essere sufficiente.
+      ```bash
+      # Launch istanza Ubuntu 22.04
+      aws ec2 run-instances --image-id ami-xxxxxxxxx \
+        --instance-type t3.micro --key-name your-key \
+        --iam-instance-profile Name=ragdemo-role \
+        --block-device-mappings '[{"DeviceName":"/dev/sda1","Ebs":{"VolumeSize":20,"VolumeType":"gp3"}}]' \
+        --user-data file://user_data.sh
+      ```
+      nota: viene creato un EBS bello grande perchè la dimensione di default (8Gb) potrebbe non essere sufficiente.
   4. Installazione Applicazione: non serve perchè l'istruzione del passo prima esegue l'user data che installa tutto, per verificare è possibile collegarsi all'istanza con il comando
-    ```bash
-    ssh -i your-key.pem ubuntu@IP_PUBBLICO
-    ```
+      ```bash
+      ssh -i your-key.pem ubuntu@IP_PUBBLICO
+      ```
 - **Cleanup**: Rimozione dello Stack
   Per rimuovere completamente l'infrastruttura creata, utilizzare il comando destroy dello script:
 
@@ -147,6 +158,7 @@ Il sistema è progettato con un'architettura **multi-layer**:
 
     # Verifica IAM roles
     aws iam list-roles --query "Roles[?contains(RoleName,'ragdemo')].RoleName"
+    aws iam list-roles --query "Roles[*].RoleName"
     ```
 
 ## 🧪 Testing del Sistema
@@ -170,7 +182,8 @@ Il sistema è progettato con un'architettura **multi-layer**:
     -d '{"prompt": "Explain machine learning in simple terms"}'
   ```
 - Interfaccia Web
-  Accesso al sito `http://IP_PUBBLICO` per utilizzare l'interfaccia grafica interattiva.
+  - Accesso al sito `http://IP_PUBBLICO` per utilizzare l'interfaccia grafica interattiva con la possilità di caricare documento o porre domande all'IA.
+  - Disponbibile anche una pagina amministrativa `http://IP_PUBBLICO/admin.html` per visulizzare tutti i file caricati tutto ciò che l'IA ha imparato (chunk/documenti), con la possiblità di far *dimenticare* all'IA quanto imparato da un documento.
 
 ## 💰 Analisi dei Costi
 - Costi AWS per 10 Utenti/Giorno

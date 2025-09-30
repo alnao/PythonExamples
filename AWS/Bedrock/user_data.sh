@@ -37,6 +37,7 @@ cd app/AWS/Bedrock/web
 # Copia la pagina HTML dal repository
 sudo cp index.html /var/www/html/
 sudo cp index.js /var/www/html/
+sudo cp admin.html /var/www/html/
 
 cd ..
 # Installa Python e dipendenze
