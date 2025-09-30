@@ -22,8 +22,7 @@ Benvenuti nella collezione di esempi Python by [AlNao.it](https://www.alnao.it)!
 
 ## AWS
 - Prerequisito: utenza AWS e installazione della AWS-CLI, vedere il [sito ufficiale](), per la configurazione eseguire comando `aws configure`.
-- **Bedrock**:
-  - 01 **simple**: un sistema **RAG (Retrieval-Augmented Generation)** completo utilizzando i servizi AWS, con particolare focus su **Amazon Bedrock** per l'intelligenza artificiale. Il sistema permette di caricare documenti, indicizzarli semanticamente e interrogarli in linguaggio naturale, combinando la potenza dei modelli di embedding e chat di AWS Bedrock.
+- **Bedrock**: un sistema **RAG (Retrieval-Augmented Generation)** completo utilizzando i servizi AWS, con particolare focus su **Amazon Bedrock** per l'intelligenza artificiale. Il sistema permette di caricare documenti, indicizzarli semanticamente e interrogarli in linguaggio naturale, combinando la potenza dei modelli di embedding e chat di AWS Bedrock.
 - **CDK**: Per la libreria CDK, installare della libreria, vedere il [sito ufficiale](https://docs.aws.amazon.com/cdk/v2/guide/getting_started.html) eseguire il comando `npm install -g aws-cdk`. Per ogni progetto c'è un README dedicato:
   - 01 **bucketS3**: creazione di un bucket
   - 02 **EC2**: creazione di una istanza EC2
