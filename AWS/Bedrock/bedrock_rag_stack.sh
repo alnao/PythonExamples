@@ -20,13 +20,8 @@ SG_NAME="$PROJECT_NAME-security-group"
 EC2_NAME="$PROJECT_NAME-ec2"
 KEY_NAME="alberto-nao-francoforte"  # Change with your EC2 Key Pair name
 INSTANCE_TYPE="t3.micro"  # Free tier eligible
-
 VPC_ID=$(aws $AWS_PROFILE ec2 describe-vpcs --region $REGION --query 'Vpcs[0].VpcId' --output text)
-
-# Helper for AWS Profile (optional)
 AWS_PROFILE=""
-
-# Paths for temp files
 POLICY_FILE=./policy.json #POLICY_FILE="/tmp/${POLICY_NAME}.json"
 USER_DATA_FILE=./user_data.sh
 ROLE_ARN_FILE="/tmp/role_${PROJECT_NAME}.arn"
@@ -146,6 +141,7 @@ EOF
         --security-group-ids $SG_ID --iam-instance-profile Name=$ROLE_NAME --region $REGION \
         --tag-specifications "ResourceType=instance,Tags=[{Key=Name,Value=$EC2_NAME},{Key=PROJECT_NAME,Value=$PROJECT_NAME}]" \
         --user-data file://$USER_DATA_FILE \
+        --block-device-mappings '[{"DeviceName":"/dev/sda1","Ebs":{"VolumeSize":20,"VolumeType":"gp3"}}]' \
         --query 'Instances[0].InstanceId' --output text)
     #echo $INSTANCE_ID > $INSTANCE_ID_FILE
 
