@@ -3,7 +3,7 @@ Resources:
     Type: AWS::S3::Bucket
     Properties:
       AccessControl: Private
-      BucketName: formazione-alberto-cf
+      BucketName: prova-alberto-cf
       PublicAccessBlockConfiguration:
         BlockPublicAcls: false
         BlockPublicPolicy: false
@@ -17,12 +17,12 @@ Resources:
     UpdateReplacePolicy: Delete
     DeletionPolicy: Delete
     Metadata:
-      aws:cdk:path: Cdk04CloudFrontStack/formazione-alberto-cf/Resource
-  formazionealbertocfPolicyF24954BB:
+      aws:cdk:path: Cdk04CloudFrontStack/prova-alberto-cf/Resource
+  prova-alberto-cfPolicyF24954BB:
     Type: AWS::S3::BucketPolicy
     Properties:
       Bucket:
-        Ref: formazionealbertocf77BC6017
+        Ref: prova-alberto-cf77BC6017
       PolicyDocument:
         Statement:
           - Action: s3:*
@@ -96,8 +96,8 @@ Resources:
                     - /*
         Version: "2012-10-17"
     Metadata:
-      aws:cdk:path: Cdk04CloudFrontStack/formazione-alberto-cf/Policy/Resource
-  formazionealbertocfAutoDeleteObjectsCustomResourceF0E3B6F5:
+      aws:cdk:path: Cdk04CloudFrontStack/prova-alberto-cf/Policy/Resource
+  prova-alberto-cfAutoDeleteObjectsCustomResourceF0E3B6F5:
     Type: Custom::S3AutoDeleteObjects
     Properties:
       ServiceToken:
@@ -111,7 +111,7 @@ Resources:
     UpdateReplacePolicy: Delete
     DeletionPolicy: Delete
     Metadata:
-      aws:cdk:path: Cdk04CloudFrontStack/formazione-alberto-cf/AutoDeleteObjectsCustomResource/Default
+      aws:cdk:path: Cdk04CloudFrontStack/prova-alberto-cf/AutoDeleteObjectsCustomResource/Default
   CustomS3AutoDeleteObjectsCustomResourceProviderRole3B1BD092:
     Type: AWS::IAM::Role
     Properties:

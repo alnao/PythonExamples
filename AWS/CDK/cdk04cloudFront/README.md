@@ -26,7 +26,7 @@ Per l'installazione e la configurazione della CLI e del tool CDK, vedere il file
     ```
 - Comandi per il test della step funcion eseguendola
     ```
-    aws s3 cp index.html s3://formazione-alberto-cf/index.html
+    aws s3 cp index.html s3://prova-alberto-cf/index.html
     curl https://xxxxxxxxx.cloudfront.net
     ```
 - Confronto tra sviluppo e ambiente target
@@ -35,7 +35,7 @@ Per l'installazione e la configurazione della CLI e del tool CDK, vedere il file
     ```
 - Distruzione dello stack con rimozione di tutte le risorse
     ```    
-    aws s3 rm s3://formazione-alberto-cf/index.html
+    aws s3 rm s3://prova-alberto-cf/index.html
     cdk destroy
     ```
 

@@ -44,8 +44,8 @@ Per l'installazione e la configurazione della CLI e del tool CDK, vedere il file
     ```
 - Comandi per il test della funzionalita
     ```
-    aws s3 cp requirements.txt s3://formazione-alberto/INPUT/requirements.txt
-    aws s3 ls formazione-alberto/INPUT/
+    aws s3 cp requirements.txt s3://prova-alberto/INPUT/requirements.txt
+    aws s3 ls prova-alberto/INPUT/
     
     aws logs filter-log-events --log-group-name "/aws/lambda/cdk06event-bridge" --query events[].[timestamp,message] --output text
 

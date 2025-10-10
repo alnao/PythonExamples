@@ -12,8 +12,8 @@ class Cdk04CloudFrontStack(Stack):
     def __init__(self, scope: Construct, construct_id: str, **kwargs) -> None:
         super().__init__(scope, construct_id, **kwargs)
 
-        bucket = s3.Bucket(self, "formazione-alberto-cf",
-            bucket_name="formazione-alberto-cf", 
+        bucket = s3.Bucket(self, "prova-alberto-cf",
+            bucket_name="prova-alberto-cf", 
             #see https://www.reddit.com/r/aws/comments/12tqqpw/aws_cdk_api_s3_putbucketpolicy_access_denied_and/
             access_control=s3.BucketAccessControl.PRIVATE,
             #access_control=s3.BucketAccessControl.PUBLIC_READ,

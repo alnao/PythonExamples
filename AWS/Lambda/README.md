@@ -1,8 +1,8 @@
 
 <p align="center">
-  <img src="https://img.shields.io/badge/AWS-%23FF9900?style=plastic&logo=AmazonAWS&logoColor=black" style="height:28px;" />
-  <img src="https://img.shields.io/badge/Lambda-%23FF9900?style=plastic&logo=AWSlambda&logoColor=black" style="height:28px;" />
-  <img src="https://img.shields.io/badge/Python-14354C?style=plastic&logo=Python&logoColor=white" style="height:28px;" />
+  <img src="https://img.shields.io/badge/Python-3.8%2B-blue?style=for-the-badge&logo=python&logoColor=white" alt="Python 3.8+" height=60/>
+  <img src="https://img.shields.io/badge/AWS-Cloud-orange?style=for-the-badge&logo=amazon-aws&logoColor=white" alt="AWS" height=60/>
+  <img src="https://img.shields.io/badge/AWS-Lambda-%23FF9900?style=for-the-badge&logo=AWSlambda&logoColor=black" height=60/>
 </p>
 
 # Aws Lambda Examples
@@ -42,7 +42,7 @@ $ sls
 - **py-example5-file-manager**: Gestione di file S3 con trigger automatico. Lambda che si attiva quando viene caricato un file in un bucket S3 e lo elabora.
 - **py-example6-sqs-get**: Lettura di messaggi da una coda SQS. Mostra come configurare una Lambda per processare messaggi da Amazon SQS.
 - **py-example6-sqs-post**: Invio di messaggi ad una coda SQS. Esempio di come una Lambda può pubblicare messaggi in una coda SQS.
-- **py-example-g1**: Esempio di funzione serverless per Google Cloud Functions usando il Serverless Framework.
+- **py-example7-g1**: Esempio di funzione serverless per Google Cloud Functions usando il Serverless Framework.
 
 
 ## Comandi Comuni per Tutti gli Esempi
@@ -80,7 +80,7 @@ $ sls
 
 
 # &lt; AlNao /&gt;
-Tutti i codici sorgente e le informazioni presenti in questo repository sono frutto di un attento e paziente lavoro di sviluppo da parte di AlNao, che si è impegnato a verificarne la correttezza nella misura massima possibile. Qualora parte del codice o dei contenuti sia stato tratto da fonti esterne, la relativa provenienza viene sempre citata, nel rispetto della trasparenza e della proprietà intellettuale. 
+Tutti i codici sorgente e le informazioni presenti in questo repository sono frutto di un attento e paziente lavoro di sviluppo da parte di AlNao, che si è impegnato a verificarne la correttezza nella massima misura possibile. Qualora parte del codice o dei contenuti sia stato tratto da fonti esterne, la relativa provenienza viene sempre citata, nel rispetto della trasparenza e della proprietà intellettuale. 
 
 
 Alcuni contenuti e porzioni di codice presenti in questo repository sono stati realizzati anche grazie al supporto di strumenti di intelligenza artificiale, il cui contributo ha permesso di arricchire e velocizzare la produzione del materiale. Ogni informazione e frammento di codice è stato comunque attentamente verificato e validato, con l’obiettivo di garantire la massima qualità e affidabilità dei contenuti offerti. 

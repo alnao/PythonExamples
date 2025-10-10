@@ -12,7 +12,7 @@ from pyspark.sql.types import StringType
 Comandi AWS-CLI per creare ed eseguire lo script
 * Deploy del file python 
     ```
-    aws s3 cp ./example01console.py s3://formazione-alberto/CODE/glue/example01console.py
+    aws s3 cp ./example01console.py s3://prova-alberto/CODE/glue/example01console.py
     ```
 * Creazione regola IAM
     ```
@@ -21,7 +21,7 @@ Comandi AWS-CLI per creare ed eseguire lo script
     ```
 * Creazione un nuovo job:
     ```
-    aws glue create-job --name glue-esempio01 --role glue-esempio01-role --command Name=glueetl,PythonVersion=3,ScriptLocation=s3://formazione-alberto/CODE/glue/example01console.py
+    aws glue create-job --name glue-esempio01 --role glue-esempio01-role --command Name=glueetl,PythonVersion=3,ScriptLocation=s3://prova-alberto/CODE/glue/example01console.py
     ```
 * Elenco i jobs:
     ```
@@ -44,7 +44,7 @@ Comandi AWS-CLI per creare ed eseguire lo script
     aws iam delete-role --role-name glue-esempio01-role
     ```
 """
-bucket="formazione-alberto"
+bucket="prova-alberto"
 path_in="/INPUT/prova.csv"
 path_out="/OUTPUT/prova_out.csv"
 

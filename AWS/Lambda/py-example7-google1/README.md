@@ -1,46 +1,53 @@
-# Aws Lambda example5-sqs-post
+# Aws Lambda example7-google1
 Questo esempio illustra come realizzare una funzione AWS Lambda in Python utilizzando il Serverless Framework versione 3.
 
-
-Note: in python code there are comments about Image library to create a thumbnail
-
-To use serverless-python-requirement (like npm install)
-
+Creazione con comando e template https://www.serverless.com/framework/docs/providers/aws/cli-reference/create
 ```
-$ serverless plugin install -n serverless-python-requirements
+$ sls create --template google-python --path py-example-g1
+$ cd py-example-g1/
+$ sls plugin install -n serverless-google-cloudfunctions
 ```
 
-For vesion2 of serverless must use a version2 of pacakge
+Modifica al file `serverless.yml` (modificata versione )
 ```
-npm install -g serverless@2.72.3
-```
-
-To create 
-
-```
-$ sls create --template aws-python3 --path py-example6-sqs-post
+frameworkVersion='3'
 ```
 
-Check `yml` file to bucket roles , destination is created inside yml, it doen't work if bucket is create manually!
-
-To deploy
-
+Eseguire il deploy la prima volta con 
 ```
 $ sls deploy -v
 ```
-
-
-To invoke
+oppure deploy successivi della sola funzione specifica con
 ```
-$ sls invoke -f sqspost
+$ sls deploy function -f py-example-g1
+```
+il secondo è più veloce perchè deploya solo la funzione specifica.
+Esito del deploy indica tutte le info
+Dopo il deploy lanciare da console oppure lanciare da CLI con
+```
+$ sls invoke -f py-example-g1 -l
 ```
 
+## Per le credenziali di acesso seguire la guida ufficaile
+https://serverless.com/framework/docs/providers/google/guide/credentials/
 
-To destroy ALL components (with entpy S3 bucket)
-
+## Per tutte le lambda create
+Gestione dei log da AWS lambda dentro il Pannello di controllo nelle chiamate ed esecuzioni e su monitoraggio si vedono i log in CloudWatch Logs InsightsInfo
+Oppure da riga di comando con
+```
+$ sls logs -f <nome> --startTime 5h
+```
+per vedere le ultime 5 ore oppure in tail con il comando
+```
+$ sls logs -f <nome> -t 
+```
+Per rimuovere tutto basta lanciare il comando da dentro la cartella della lambda
 ```
 $ sls remove
 ```
+questo comando rimuove la lambda, i bucket s3, i log e le dipendenze (non l'utenza IAM serverless-admin)
+
+
 
 
 

@@ -39,7 +39,7 @@ class Cdk06EventBridgeStack(Stack):
                 source=["aws.s3"],
                 detail={
                     "bucket": {
-                        "name": ["formazione-alberto"]
+                        "name": ["prova-alberto"]
                     },
                     "object": {
                         "key": [{

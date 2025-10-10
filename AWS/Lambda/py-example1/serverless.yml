@@ -11,21 +11,23 @@
 #
 # Happy Coding!
 
-service: lambda-example1-py
+service: lambda-py-example1
 # app and org for use with dashboard.serverless.com
 #app: your-app-name
 #org: your-org-name
 
 # You can pin your service to only deploy with a specific Serverless version
 # Check out our docs for more details
-frameworkVersion: '2'
+frameworkVersion: '3'
 
 provider:
   name: aws
   runtime: python3.9
   lambdaHashingVersion: 20201221
-  profile: serverless-admin
-  region: us-east-1
+  profile: default
+  region: eu-central-1
+  stage: dev
+
 
 # you can overwrite defaults here
 #  stage: dev

@@ -18,14 +18,15 @@ service: py-example2-timeout
 
 # You can pin your service to only deploy with a specific Serverless version
 # Check out our docs for more details
-frameworkVersion: '2'
+frameworkVersion: '3'
 
 provider:
   name: aws
-  runtime: python3.8
+  runtime: python3.9
   lambdaHashingVersion: 20201221
-  profile: serverless-admin
-  region: us-east-1
+  profile: default
+  region: eu-central-1
+  stage: dev
   memorySize: 258
   timeout: 3
 
@@ -66,10 +67,13 @@ provider:
 functions:
   hello-shot-timeout:
     handler: handler.hello
+    memorySize: 258
+    timeout: 3
   hello-long-timeout:
     handler: handler.hello
     memorySize: 128
     timeout: 6
+
 #    The following are a few example events you can configure
 #    NOTE: Please make sure to change your handler code to work with those events
 #    Check the event documentation for details

@@ -24,7 +24,7 @@ from Services.cloud_watch_logs import ConsoleCloudWatchLogs
 from Services.ecr import ConsoleECR
 #nota indispensabile che il pacakge SDK sia caricato dopo con l'istruzione qua sotto
 #non sportare questa append sopra altrimenti andrebbe in un loop di import 
-sys.path.append( os.path.dirname( os.path.dirname( os.path.dirname( os.path.abspath(__file__) ) ) ) )
+sys.path.append( os.path.dirname( os.path.dirname( os.path.dirname( os.path.dirname( os.path.abspath(__file__) ) ) ) ) )
 from SDK.profiles import AwsProfiles 
 from SDK.ssm_parameter import AwsSSMparameterStore
 from SDK.bucketS3 import AwsBucketS3 

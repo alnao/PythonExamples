@@ -13,10 +13,10 @@ Per l'installazione e la configurazione della CLI e del tool CDK, vedere il file
     ```
 - Deploy del progetto
     ```
-    aws s3 cp ./invert_csv_data.py s3://formazione-alberto/CODE/glue/invert_csv_data.py
+    aws s3 cp ./invert_csv_data.py s3://prova-alberto/CODE/glue/invert_csv_data.py
     cdk ls
     cdk synth > Cdk13GlueJobStack-template.yaml
-    cdk deploy --parameters BucketName=formazione-alberto 
+    cdk deploy --parameters BucketName=prova-alberto 
     ```
 - Comando verifica dello stack
     ```

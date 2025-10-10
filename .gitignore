@@ -3,6 +3,8 @@ OUT.log
 .vscode
 flask_session/
 
+.serverless
+
 *sqlite_db*
 
 # Byte-compiled / optimized / DLL files

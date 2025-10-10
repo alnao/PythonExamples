@@ -18,14 +18,15 @@ service: py-example4-enviroments-variables
 
 # You can pin your service to only deploy with a specific Serverless version
 # Check out our docs for more details
-frameworkVersion: '2'
+frameworkVersion: '3'
 
 provider:
   name: aws
   runtime: python3.8
   lambdaHashingVersion: 20201221
-  profile: serverless-admin
-  region: us-east-1
+  profile: default
+  region: eu-central-1
+  stage: dev
   environment:
     variable1: value1
     FIRST_NAME: "Alberto"

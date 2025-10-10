@@ -1,3 +1,16 @@
+"""
+Nota questo script funziona solo se si trova in una cartella chiamata ManagerFlask
+    e la cartella ManagerFlask si trova in una cartella chiamata AWS
+    e nella cartella AWS è presente la cartella SDK con le librerie SDK
+
+Per eseguirlo:
+   - installare python3 e pip3
+   - installare le librerie flask e flask_session con il requirements.txt
+       pip3 install -r requirements.txt
+   - lanciare lo script:
+       python3 ManagerFlask.py
+"""
+
 from flask import Flask, render_template,session , send_file ,redirect , request, url_for, g , flash
 from flask_session import Session
 import sys
@@ -8,7 +21,7 @@ from datetime import datetime
 from werkzeug.utils import secure_filename
 #parent_directory = os.path.abspath('..')
 #parent_directory = os.path.dirname(os.path.realpath(__file__))
-sys.path.append( os.path.dirname( os.path.dirname( os.path.abspath(__file__) ) ) )
+sys.path.append( os.path.dirname ( os.path.dirname( os.path.dirname( os.path.abspath(__file__) ) ) ))
 from SDK.bucketS3 import AwsBucketS3
 from SDK.profiles import AwsProfiles
 from SDK.cloud_front import AwsCloudFront

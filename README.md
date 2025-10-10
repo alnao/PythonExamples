@@ -1,11 +1,11 @@
 # Python Examples ✨
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Python-3.8%2B-blue?style=for-the-badge&logo=python&logoColor=white" alt="Python 3.8+">
-  <img src="https://img.shields.io/badge/AWS-Cloud-orange?style=for-the-badge&logo=amazon-aws&logoColor=white" alt="AWS">
+  <img src="https://img.shields.io/badge/Python-3.8%2B-blue?style=for-the-badge&logo=python&logoColor=white" alt="Python 3.8+" height=60/>
+  <img src="https://img.shields.io/badge/AWS-Cloud-orange?style=for-the-badge&logo=amazon-aws&logoColor=white" alt="AWS" height=60/>
   <!--<img src="https://img.shields.io/badge/Django-Framework-green?style=for-the-badge&logo=django&logoColor=white" alt="Django">-->
-  <img src="https://img.shields.io/badge/Docker-Container-blue?style=for-the-badge&logo=docker&logoColor=white" alt="Docker">
-  <img src="https://img.shields.io/badge/Flask-Web-lightgrey?style=for-the-badge&logo=flask&logoColor=white" alt="Flask">
+  <img src="https://img.shields.io/badge/Docker-Container-blue?style=for-the-badge&logo=docker&logoColor=white" alt="Docker" height=60/>
+  <!--<img src="https://img.shields.io/badge/Flask-Web-lightgrey?style=for-the-badge&logo=flask&logoColor=white" alt="Flask" height=60/>-->
 </p>
 
 ## ✨ Panoramica
@@ -21,7 +21,11 @@ Benvenuti nella collezione di esempi Python by [AlNao.it](https://www.alnao.it)!
 
 
 ## AWS
-- Prerequisito: utenza AWS e installazione della AWS-CLI, vedere il [sito ufficiale](), per la configurazione eseguire comando `aws configure`.
+- Per eseguire correttamente gli esempi relativi ai servizi AWS, è necessario avere:
+  - Account AWS attivo e avere installata la [AWS Command Line Interface](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html).
+  - Credenziali configurate con il comando `aws configure` (con Access Key, Secret Key, regione)
+  - Permessi adeguati: L’utente AWS deve avere i permessi necessari per i servizi utilizzati (S3, Lambda, EC2, DynamoDB, ecc.).
+  - Tool e librerie: Python 3.8+, pip e boto3, Node.js e npm, Docker
 - **Bedrock**: un sistema **RAG (Retrieval-Augmented Generation)** completo utilizzando i servizi AWS, con particolare focus su **Amazon Bedrock** per l'intelligenza artificiale. Il sistema permette di caricare documenti, indicizzarli semanticamente e interrogarli in linguaggio naturale, combinando la potenza dei modelli di embedding e chat di AWS Bedrock.
 - **CDK**: Per la libreria CDK, installare della libreria, vedere il [sito ufficiale](https://docs.aws.amazon.com/cdk/v2/guide/getting_started.html) eseguire il comando `npm install -g aws-cdk`. Per ogni progetto c'è un README dedicato:
   - 01 **bucketS3**: creazione di un bucket
@@ -39,25 +43,21 @@ Benvenuti nella collezione di esempi Python by [AlNao.it](https://www.alnao.it)!
   - 16 **SNS**: creazione di un sistema SNS con una lambda che scoda le notifiche
   - 18 **EFS**: creazione di un disco EFS montato da una EC2 che espone un server apache
   - 20 **ASG** e **ALB**: creazione di un AutoScaling group e Application Load Balancer con EC2 che eseguono un webserver apache senza disco condiviso
-- **Lambda**: vari esempi di lambda scritte in python con `sam`, vedere il README specifico e il [sito ufficiale di serverless](https://app.serverless.com/register). 
-- **ManagerFlask**: *Applicazione web* sviluppata con Flask per gestire i servizi AWS usando le librerie SDK
+- **Glue**
+  - 01 **console**: Semplice esempio creato da console manualmente che elabora un file csv con una struttura ben definita.
+  - 02 **sqlServer** e **example03sqlServerWithRunSql**: Esempio creato per importare in database RDS SqlServer il contenuto di un file CSV (funziona anche con file di grandi dimensioni a differenze di una lambda che andrebbe in errore per timeout)
+- **Lambda**: vari esempi di lambda scritte in python con, vedere il README nella cartella e il [sito ufficiale di serverless](https://www.serverless.com/). 
+- **Managers**
+  - **ManagerFlask**: *Applicazione web* sviluppata con Flask per gestire i servizi AWS usando le librerie SDK
   - **ManagerFlaskCloudWatch**: *Applicazione web* sviluppata con Flask per la gestione di CloudWatch Alarms & CloudWatch  
-- **ManagerTk**: *Applicazione* sviluppata con la libreria tkinter (menu, gestione finestre ed elenchi) per gestire i servizi AWS usando le librerie SDK/boto
-- **PanoramicResources**: *Dashboard semplice per visualizzare le risorse AWS
-=======
-- **ManagerTk**: *Applicazione* sviluppata con la libreria tkinter (menu, gestione finestre ed elenchi) per gestire i servizi AWS usando le librerie SDK
-- **ManagerFlask**: *Applicazione* web sviluppata con Flask per gestire i servizi AWS usando le librerie SDK
-  - **ManagerFlaskCloudWatch**: *Applicazione* web sviluppata con Flask per la gestione di CloudWatch Alarms & CloudWatch  
-- **PanoramicResources**: *Applicazione* dashboard semplice per visualizzare le risorse AWS
+  - **ManagerTk**: *Applicazione* sviluppata con la libreria tkinter (menu, gestione finestre ed elenchi) per gestire i servizi AWS usando le librerie SDK/boto
+  - **PanoramicResources**: *Dashboard semplice per visualizzare le risorse AWS
+- **Polly**: text to speech, esempio preso dalla [documentazione ufficiale](https://docs.aws.amazon.com/it_it/polly/latest/dg/examples-python.html), funzionante anche con la lingua italiana selezionando la voce `Bianca (Famale, Italian)`. Per eseguirlo basta lanciare `python server.py e` e poi procedere alla pagina `http://localhost:8000/index.html` che permette di eseguire.
+  - **Amazon Polly**: è un servizio AWS specificamente dedicato alla sintesi vocale, ovvero alla generazione di audio (voce) a partire da testo. Polly non genera immagini né video a partire da testo. Polly può essere usato per generare tracce audio da inserire in video o slideshow, ma la generazione di immagini/video rimane esterna.
+  - Soluzioni di terze parti: Puoi comunque integrare servizi esterni (come Runway, Pika, Synthesia, ecc.) sulle infrastrutture AWS, ma non sono prodotti AWS nativi. 
+  - Amazon Rekognition: È un servizio per l’analisi di immagini e video (riconoscimento facciale, oggetti, moderazione), ma non genera contenuti multimediali.
 - **SDK**: Per la libreria SDK, l'installazione e la configurazione vedere il [sito ufficiale](https://boto3.amazonaws.com/v1/documentation/api/latest/guide/quickstart.html) e il comando `pip install boto3`. Classi per la gestione dei servizi: profiles, SSM parameter, Bucket S3, Ec2, CloudFront, Lambda, Event bridge, Step function, Dynamo, RDS e tanti altri.
-- **Services**
-  - **CodeWhisperer**
-    - 01 **basic**: semplice esempio usato come prima prova
-  - **Glue**
-    - 01 **console**: Semplice esempio creato da console manualmente che elabora un file csv con una struttura ben definita.
-    - 02 **sqlServer** e **example03sqlServerWithRunSql**: Esempio creato per importare in database RDS SqlServer il contenuto di un file CSV (funziona anche con file di grandi dimensioni a differenze di una lambda che andrebbe in errore per timeout)
-  - **Polly**: text to speech, esempio preso dalla [documentazione ufficiale](https://docs.aws.amazon.com/it_it/polly/latest/dg/examples-python.html)
-  - **S3**: piccola applicazione scritta con boto3-sdk per la gestione dei bucket S3 di un account
+  
 
 
 ## Data Scientist
@@ -465,7 +465,7 @@ In questa sezione appunti vari presi nel tempo
 
 
 # &lt; AlNao /&gt;
-Tutti i codici sorgente e le informazioni presenti in questo repository sono frutto di un attento e paziente lavoro di sviluppo da parte di AlNao, che si è impegnato a verificarne la correttezza nella misura massima possibile. Qualora parte del codice o dei contenuti sia stato tratto da fonti esterne, la relativa provenienza viene sempre citata, nel rispetto della trasparenza e della proprietà intellettuale. 
+Tutti i codici sorgente e le informazioni presenti in questo repository sono frutto di un attento e paziente lavoro di sviluppo da parte di AlNao, che si è impegnato a verificarne la correttezza nella massima misura possibile. Qualora parte del codice o dei contenuti sia stato tratto da fonti esterne, la relativa provenienza viene sempre citata, nel rispetto della trasparenza e della proprietà intellettuale. 
 
 
 Alcuni contenuti e porzioni di codice presenti in questo repository sono stati realizzati anche grazie al supporto di strumenti di intelligenza artificiale, il cui contributo ha permesso di arricchire e velocizzare la produzione del materiale. Ogni informazione e frammento di codice è stato comunque attentamente verificato e validato, con l’obiettivo di garantire la massima qualità e affidabilità dei contenuti offerti. 

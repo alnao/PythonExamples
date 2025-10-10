@@ -1,3 +1,18 @@
+"""
+Nota questo script funziona solo se si trova in una cartella chiamata ManagerTk
+    e la cartella Managers si trova in una cartella chiamata AWS
+    e nella cartella AWS è presente la cartella SDK con le librerie SDK
+    casomai modificare il file services.py per cambiare il path di import che purtroppo non funziona con i path relativi
+
+Per eseguirlo:
+   - installare python3 e pip3
+   - installare le librerie flask e flask_session con il requirements.txt
+       pip3 install -r requirements.txt
+   - lanciare lo script:
+       python3 ManagerTk.py
+"""
+
+
 import tkinter as tk
 import os
 import sys

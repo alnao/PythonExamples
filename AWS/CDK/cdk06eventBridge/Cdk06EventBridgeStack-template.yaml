@@ -75,7 +75,7 @@ Resources:
         detail:
           bucket:
             name:
-              - formazione-alberto
+              - prova-alberto
           object:
             key:
               - prefix: INPUT

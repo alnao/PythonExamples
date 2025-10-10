@@ -10,7 +10,7 @@ class Cdk03WebsiteS3Stack(Stack):
     def __init__(self, scope: Construct, construct_id: str, **kwargs) -> None:
         super().__init__(scope, construct_id, **kwargs)
         bucket = s3.Bucket(self, "MyBucket",
-            bucket_name="formazione-alberto-website", # specify a unique bucket name
+            bucket_name="prova-alberto-website", # specify a unique bucket name
             versioned=True, # enable versioning for the bucket
             encryption=s3.BucketEncryption.S3_MANAGED, # use S3-managed encryption
             #access_control=s3.BucketAccessControl.PUBLIC_READ,

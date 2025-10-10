@@ -1,3 +1,17 @@
+"""
+Nota questo script funziona anche senza la cartella SDK, in quanto usa solo boto3.
+Serve solo per la gestione di CloudWatch Alarm e CloudWatch Logs.
+
+Per eseguirlo:
+    - installare python3 e pip3
+    - installare le librerie flask e flask_session con il requirements.txt
+        pip3 install -r requirements.txt
+    - lanciare lo script:
+        python3 app.py
+    - aprire il browser alla pagina:
+        http://localhost:5001
+"""
+
 from flask import Flask, render_template, jsonify, request
 from cloudwatch_manager import CloudWatchAlarmManager,CloudWatchLogsManager
 import logging

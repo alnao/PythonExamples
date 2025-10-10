@@ -6,7 +6,15 @@ from botocore.exceptions import NoCredentialsError, ClientError
 
 """
 Questo script Flask fornisce una dashboard semplice per visualizzare le risorse AWS. 
-Creato con l'IA:
+
+Per eseguirlo:
+   - installare python3 e pip3
+   - installare le librerie flask e flask_session con il requirements.txt
+       pip3 install -r requirements.txt
+   - lanciare lo script:
+       python3 ManagerSimple.py
+
+Creato con l'IA claude di Anthropic:
 - fammi un nuovo script che mi crea variabili d'ambiente con le informazioni: vpc di default, subnets e igw, natg, tutti i security group, tutte le role iam non di default, tutti gli ECR, tutti eks cluster, tutti gli eks nodes, tutte le ec2, tutti gli RDS,
 - facciamo così: fammi un nuovo script che mi crea variabili d'ambiente con le informazioni: vpc di default, subnets e igw, natg, tutti i security group, tutti gli ECR, tutti eks cluster, tutti gli eks nodes, tutte le ec2, tutti gli RDS,
 - nello script aggiungi S3, cloudfront, cloudformation, cloudwatch e altri 5 servizi a tua scelta
