@@ -97,7 +97,8 @@ Benvenuti nella collezione di esempi Python by [AlNao.it](https://www.alnao.it)!
 - **FlaskGeolocalNotes**: https://www.youtube.com/watch?v=w-rti-5KHME
 - **FlaskLogin**: https://www.youtube.com/watch?v=ud_nq9lapF4
 - **FlaskLoginGoogle**: https://realpython.com/flask-google-login/
-- **Ia**: [How To Build A Chat Bot That Learns From The User In Python Tutorial](https://www.youtube.com/watch?v=CkkjXTER2KE)
+- **IA**: [How To Build A Chat Bot That Learns From The User In Python Tutorial](https://www.youtube.com/watch?v=CkkjXTER2KE)
+- **IA_LargeLanguageModel** libro [Build a Large Language Model (From Scratch)" by Sebastian Raschka](https://github.com/rasbt/LLMs-from-scratch)
 - **PlaywrightWebScraping**: site downloader, download all PDF, jump captcha with proxy [Web Scraping with Playwright + CAPTCHA Bypass For Beginners](https://www.youtube.com/watch?v=RGR5Xj0Qqfs)
 - SimpleGames
   - **ArcadeLib**: 
