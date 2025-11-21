@@ -11,7 +11,7 @@
 ## ✨ Panoramica
 
 Benvenuti nella collezione di esempi Python by [AlNao.it](https://www.alnao.it)! 
-- **☁️ Cloud Computing con AWS**: Esempi completi per CDK, Lambda, EC2, S3, DynamoDB e molti altri servizi
+- **☁️ Cloud Computing con AWS ed Azure**: Esempi completi per CDK-SDK per i servizi Cloud di AWS e di Azure
 - **🌐 Sviluppo Web**: Applicazioni Flask, Django, API REST e interfacce web moderne
 - **🐳 Containerizzazione**: Progetti Docker e Kubernetes pronti per la produzione
 - **📊 Data Science**: Manipolazione dati con Pandas, Spark e tecniche di analisi avanzate
@@ -51,13 +51,17 @@ Benvenuti nella collezione di esempi Python by [AlNao.it](https://www.alnao.it)!
   - **ManagerFlask**: *Applicazione web* sviluppata con Flask per gestire i servizi AWS usando le librerie SDK
   - **ManagerFlaskCloudWatch**: *Applicazione web* sviluppata con Flask per la gestione di CloudWatch Alarms & CloudWatch  
   - **ManagerTk**: *Applicazione* sviluppata con la libreria tkinter (menu, gestione finestre ed elenchi) per gestire i servizi AWS usando le librerie SDK/boto
-  - **PanoramicResources**: *Dashboard semplice per visualizzare le risorse AWS
+  - **PanoramicResources**: semplice *Dashboard* per visualizzare delle risorse di un account AWS
 - **Polly**: text to speech, esempio preso dalla [documentazione ufficiale](https://docs.aws.amazon.com/it_it/polly/latest/dg/examples-python.html), funzionante anche con la lingua italiana selezionando la voce `Bianca (Famale, Italian)`. Per eseguirlo basta lanciare `python server.py e` e poi procedere alla pagina `http://localhost:8000/index.html` che permette di eseguire.
   - **Amazon Polly**: è un servizio AWS specificamente dedicato alla sintesi vocale, ovvero alla generazione di audio (voce) a partire da testo. Polly non genera immagini né video a partire da testo. Polly può essere usato per generare tracce audio da inserire in video o slideshow, ma la generazione di immagini/video rimane esterna.
   - Soluzioni di terze parti: Puoi comunque integrare servizi esterni (come Runway, Pika, Synthesia, ecc.) sulle infrastrutture AWS, ma non sono prodotti AWS nativi. 
   - Amazon Rekognition: È un servizio per l’analisi di immagini e video (riconoscimento facciale, oggetti, moderazione), ma non genera contenuti multimediali.
 - **SDK**: Per la libreria SDK, l'installazione e la configurazione vedere il [sito ufficiale](https://boto3.amazonaws.com/v1/documentation/api/latest/guide/quickstart.html) e il comando `pip install boto3`. Classi per la gestione dei servizi: profiles, SSM parameter, Bucket S3, Ec2, CloudFront, Lambda, Event bridge, Step function, Dynamo, RDS e tanti altri.
   
+
+## Azure
+- **Managers**
+  - **PanoramicResources**: semplice *Dashboard* per visualizzare delle risorse di un account Azure
 
 
 ## Data Scientist

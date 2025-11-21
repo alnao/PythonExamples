@@ -1,32 +1,29 @@
-# AWS Resources Manager - Simple Dashboard
+# Azure Resources Manager - Simple Dashboard
 
-Dashboard semplice per visualizzare le risorse AWS del tuo account utilizzando Flask e Bootstrap.
+Dashboard semplice per visualizzare le risorse Azure del tuo account utilizzando Flask e Bootstrap.
 
 ## Funzionalità
 
-- **Selezione dinamica di regione e profilo AWS**
-- **Visualizzazione delle risorse AWS principali:**
-  - VPC di default e componenti di rete (subnets, IGW, NAT Gateway)
-  - Security Groups
-  - Repository ECR
-  - Cluster EKS e nodi
-  - Istanze EC2
-  - Database RDS
-  - Bucket S3
-  - Distribuzioni CloudFront
-  - Stack CloudFormation
-  - Allarmi CloudWatch
-  - Funzioni Lambda
-  - Tabelle DynamoDB
-  - Code SQS
-  - Topic SNS
-  - API Gateway REST APIs
+- **Selezione dinamica della subscription Azure**
+- **Visualizzazione delle risorse Azure principali:**
+  - Resource Groups
+  - Virtual Machines
+  - Virtual Networks
+  - Storage Accounts
+  - SQL Servers e Databases
+  - App Services
+  - Container Instances
+  - Container Registries
+  - Key Vaults
+  - Cosmos DB Accounts
+  - Network Security Groups
+  - Public IP Addresses
 
 ## Prerequisiti
 
 - Python 3.7+
-- Credenziali AWS configurate (file ~/.aws/credentials o variabili d'ambiente)
-- Account AWS con i permessi appropriati per leggere le risorse
+- Azure CLI installato e configurato
+- Account Azure con i permessi appropriati per leggere le risorse
 
 ## Installazione
 
@@ -36,50 +33,42 @@ Dashboard semplice per visualizzare le risorse AWS del tuo account utilizzando F
    pip install -r requirements.txt
    ```
 
-## Configurazione AWS
+## Configurazione Azure
 
-Assicurati di avere le credenziali AWS configurate. Puoi farlo in diversi modi:
+Assicurati di avere le credenziali Azure configurate. Puoi farlo in diversi modi:
 
-### Metodo 1: AWS CLI
+### Metodo 1: Azure CLI (Raccomandato)
 ```bash
-aws configure
+az login
 ```
 
-### Metodo 2: File di credenziali
-Crea il file `~/.aws/credentials`:
-```ini
-[default]
-aws_access_key_id = YOUR_ACCESS_KEY
-aws_secret_access_key = YOUR_SECRET_KEY
-
-[profile-name]
-aws_access_key_id = YOUR_ACCESS_KEY
-aws_secret_access_key = YOUR_SECRET_KEY
-```
-
-### Metodo 3: Variabili d'ambiente
+### Metodo 2: Service Principal
+Crea le variabili d'ambiente:
 ```bash
-export AWS_ACCESS_KEY_ID=your_access_key
-export AWS_SECRET_ACCESS_KEY=your_secret_key
-export AWS_DEFAULT_REGION=eu-central-1
+export AZURE_CLIENT_ID=your_client_id
+export AZURE_CLIENT_SECRET=your_client_secret
+export AZURE_TENANT_ID=your_tenant_id
+export AZURE_SUBSCRIPTION_ID=your_subscription_id
 ```
+
+### Metodo 3: Managed Identity
+Se esegui l'applicazione su una VM Azure o App Service, puoi usare Managed Identity.
 
 ## Avvio dell'applicazione
 
 ```bash
-python ManagerSimple.py
+python3 ManagerSimple.py
 ```
 
-L'applicazione sarà disponibile all'indirizzo: http://localhost:5042
+L'applicazione sarà disponibile all'indirizzo: http://localhost:5043
 
 ## Utilizzo
 
-1. Apri il browser e vai a http://localhost:5042
-2. Nella sezione "Configurazione AWS", seleziona:
-   - La regione AWS desiderata
-   - Il profilo AWS da utilizzare
+1. Apri il browser e vai a http://localhost:5043
+2. Nella sezione "Configurazione Azure", seleziona:
+   - La subscription Azure da utilizzare
 3. Clicca su "Aggiorna" per ricaricare le risorse con la nuova configurazione
-4. Esplora le diverse sezioni per visualizzare le tue risorse AWS
+4. Esplora le diverse sezioni per visualizzare le tue risorse Azure
 
 ## Struttura del progetto
 
@@ -94,31 +83,53 @@ PanoramicResources/
 
 ## Sicurezza
 
-- **Non committare mai le tue credenziali AWS nel codice**
-- Usa sempre profili AWS o variabili d'ambiente
-- Assicurati che l'account AWS abbia solo i permessi minimi necessari
+- **Non committare mai le tue credenziali Azure nel codice**
+- Usa sempre Azure CLI authentication o variabili d'ambiente
+- Assicurati che l'account Azure abbia solo i permessi minimi necessari (Reader role)
 - Non esporre questa applicazione su reti pubbliche senza autenticazione
 
 ## Troubleshooting
 
 ### Errore "No credentials found"
-- Verifica che le credenziali AWS siano configurate correttamente
-- Controlla che il profilo selezionato esista
+- Verifica di aver eseguito `az login`
+- Controlla che le credenziali Azure siano configurate correttamente
 
 ### Errore "Access Denied"
-- Verifica che l'utente AWS abbia i permessi per accedere alle risorse
-- Alcune operazioni richiedono permessi specifici (es. IAM, CloudFormation)
+- Verifica che l'utente/service principal abbia i permessi per accedere alle risorse
+- Assicurati di avere almeno il ruolo "Reader" sulla subscription
 
 ### Nessuna risorsa visualizzata
-- Controlla che la regione selezionata sia corretta
-- Verifica che ci siano effettivamente risorse nella regione selezionata
+- Controlla che la subscription selezionata sia corretta
+- Verifica che ci siano effettivamente risorse nella subscription
+- Controlla i log dell'applicazione per eventuali errori
+
+### Errore nell'importazione dei moduli
+- Assicurati di aver installato tutte le dipendenze:
+  ```bash
+  pip install -r requirements.txt
+  ```
+
+## Permessi necessari
+
+Per visualizzare tutte le risorse, l'account deve avere almeno il ruolo **Reader** a livello di subscription oppure sui singoli resource groups.
 
 ## Note
 
 - Questo è uno strumento di visualizzazione in sola lettura
-- Non vengono effettuate modifiche alle risorse AWS
+- Non vengono effettuate modifiche alle risorse Azure
 - L'applicazione è ottimizzata per un uso locale/sviluppo
-- Per l'uso in produzione, considera l'aggiunta di autenticazione e HTTPS
+- Per l'uso in produzione, considera l'aggiunta di:
+  - Autenticazione (Azure AD)
+  - HTTPS
+  - Rate limiting
+  - Caching delle risorse
+
+## Differenze rispetto alla versione AWS
+
+- Usa Azure SDK invece di Boto3
+- Autenticazione tramite Azure CLI o Service Principal
+- Organizzazione basata su Subscriptions e Resource Groups
+- Servizi Azure equivalenti (VM invece di EC2, Storage Accounts invece di S3, ecc.)
 
 
 

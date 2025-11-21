@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Risorse Azure</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome Icons -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f4f7f6;
+        }
+        .navbar {
+            background-color: #0078d4; /* Azure Blue */
+            position: fixed;
+            top: 0;
+            width: 100%;
+            z-index: 1030;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .navbar-brand, .nav-link {
+            color: #ffffff !important;
+        }
+        body {
+            padding-top: 70px;
+        }
+        .back-to-top {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background-color: #0078d4;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            font-size: 18px;
+            cursor: pointer;
+            display: none;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            transition: all 0.3s ease;
+            z-index: 1000;
+        }
+        .back-to-top:hover {
+            background-color: #005a9e;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.3);
+        }
+        .back-to-top.show {
+            display: block;
+            animation: fadeInUp 0.3s ease;
+        }
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        .card {
+            border-radius: 0.75rem;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            margin-bottom: 1.5rem;
+            border: none;
+        }
+        .card-header {
+            background-color: #0078d4;
+            color: white;
+            font-weight: bold;
+            border-top-left-radius: 0.75rem;
+            border-top-right-radius: 0.75rem;
+        }
+        .table-responsive {
+            margin-top: 1rem;
+        }
+        .table thead {
+            background-color: #ecf0f1;
+        }
+        .table th, .table td {
+            vertical-align: middle;
+        }
+        .empty-state {
+            color: #7f8c8d;
+            font-style: italic;
+            text-align: center;
+            padding: 1rem;
+            background-color: #ecf0f1;
+            border-radius: 0.5rem;
+        }
+        .footer {
+            background-color: #0078d4;
+            color: #ffffff;
+            padding: 1.5rem 0;
+            margin-top: 3rem;
+            border-top-left-radius: 0.5rem;
+            border-top-right-radius: 0.5rem;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark mb-3">
+        <div class="container">
+            <a class="navbar-brand" href="#">Dashboard Risorse Azure</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+        </div>
+    </nav>
+
+    <main class="container">
+        <!-- Settings Section -->
+        <section id="settings" class="mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <i class="fas fa-cog"></i> Configurazione Azure
+                </div>
+                <div class="card-body">
+                    <form action="/update_settings" method="POST">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <label for="subscription" class="form-label">Subscription:</label>
+                                <select class="form-select" id="subscription" name="subscription">
+                                    {% for sub in subscriptions %}
+                                    <option value="{{ sub.id }}" {% if sub.id == azure_data.current_subscription %}selected{% endif %}>
+                                        {{ sub.name }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-6 d-flex align-items-end">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-sync-alt"></i> Aggiorna
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </section>
+
+        <!-- Error Handling -->
+        {% if azure_data.error %}
+        <section id="error" class="mb-4">
+            <div class="alert alert-danger" role="alert">
+                <h4 class="alert-heading"><i class="fas fa-exclamation-triangle"></i> Errore di Configurazione</h4>
+                <p>{{ azure_data.error }}</p>
+                <hr>
+                <p class="mb-0">
+                    Assicurati di aver eseguito <code>az login</code> oppure di aver configurato le credenziali Azure.
+                </p>
+            </div>
+        </section>
+        {% endif %}
+
+        <!-- Resource Groups Section -->
+        <section id="resource-groups" class="mb-5">
+            <div class="card">
+                <div class="card-header">
+                    <i class="fas fa-folder"></i> Resource Groups
+                </div>
+                <div class="card-body">
+                    {% if azure_data.resource_groups %}
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Nome</th>
+                                    <th>Location</th>
+                                    <th>ID</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for rg in azure_data.resource_groups %}
+                                <tr>
+                                    <td>{{ rg.name }}</td>
+                                    <td>{{ rg.location }}</td>
+                                    <td><small>{{ rg.id }}</small></td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="empty-state">Nessun Resource Group trovato.</div>
+                    {% endif %}
+                </div>
+            </div>
+        </section>
+
+        <!-- Virtual Machines Section -->
+        <section id="virtual-machines" class="mb-5">
+            <div class="card">
+                <div class="card-header">
+                    <i class="fas fa-server"></i> Virtual Machines
+                </div>
+                <div class="card-body">
+                    {% if azure_data.virtual_machines %}
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Nome</th>
+                                    <th>Location</th>
+                                    <th>VM Size</th>
+                                    <th>OS Type</th>
+                                    <th>Resource Group</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for vm in azure_data.virtual_machines %}
+                                <tr>
+                                    <td>{{ vm.name }}</td>
+                                    <td>{{ vm.location }}</td>
+                                    <td>{{ vm.vm_size }}</td>
+                                    <td>{{ vm.os_type }}</td>
+                                    <td>{{ vm.resource_group }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="empty-state">Nessuna Virtual Machine trovata.</div>
+                    {% endif %}
+                </div>
+            </div>
+        </section>
+
+        <!-- Virtual Networks Section -->
+        <section id="virtual-networks" class="mb-5">
+            <div class="card">
+                <div class="card-header">
+                    <i class="fas fa-network-wired"></i> Virtual Networks
+                </div>
+                <div class="card-body">
+                    {% if azure_data.virtual_networks %}
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Nome</th>
+                                    <th>Location</th>
+                                    <th>Address Space</th>
+                                    <th>Resource Group</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for vnet in azure_data.virtual_networks %}
+                                <tr>
+                                    <td>{{ vnet.name }}</td>
+                                    <td>{{ vnet.location }}</td>
+                                    <td>{{ ', '.join(vnet.address_space) }}</td>
+                                    <td>{{ vnet.resource_group }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="empty-state">Nessuna Virtual Network trovata.</div>
+                    {% endif %}
+                </div>
+            </div>
+        </section>
+
+        <!-- Storage Accounts Section -->
+        <section id="storage-accounts" class="mb-5">
+            <div class="card">
+                <div class="card-header">
+                    <i class="fas fa-database"></i> Storage Accounts
+                </div>
+                <div class="card-body">
+                    {% if azure_data.storage_accounts %}
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Nome</th>
+                                    <th>Location</th>
+                                    <th>SKU</th>
+                                    <th>Kind</th>
+                                    <th>Resource Group</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for sa in azure_data.storage_accounts %}
+                                <tr>
+                                    <td>{{ sa.name }}</td>
+                                    <td>{{ sa.location }}</td>
+                                    <td>{{ sa.sku }}</td>
+                                    <td>{{ sa.kind }}</td>
+                                    <td>{{ sa.resource_group }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="empty-state">Nessuno Storage Account trovato.</div>
+                    {% endif %}
+                </div>
+            </div>
+        </section>
+
+        <!-- SQL Servers Section -->
+        <section id="sql-servers" class="mb-5">
+            <div class="card">
+                <div class="card-header">
+                    <i class="fas fa-database"></i> SQL Servers
+                </div>
+                <div class="card-body">
+                    {% if azure_data.sql_servers %}
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Nome</th>
+                                    <th>Location</th>
+                                    <th>Version</th>
+                                    <th>Resource Group</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for server in azure_data.sql_servers %}
+                                <tr>
+                                    <td>{{ server.name }}</td>
+                                    <td>{{ server.location }}</td>
+                                    <td>{{ server.version }}</td>
+                                    <td>{{ server.resource_group }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="empty-state">Nessun SQL Server trovato.</div>
+                    {% endif %}
+                </div>
+            </div>
+        </section>
+
+        <!-- SQL Databases Section -->
+        <section id="sql-databases" class="mb-5">
+            <div class="card">
+                <div class="card-header">
+                    <i class="fas fa-table"></i> SQL Databases
+                </div>
+                <div class="card-body">
+                    {% if azure_data.sql_databases %}
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Nome</th>
+                                    <th>Server</th>
+                                    <th>Location</th>
+                                    <th>Resource Group</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for db in azure_data.sql_databases %}
+                                <tr>
+                                    <td>{{ db.name }}</td>
+                                    <td>{{ db.server }}</td>
+                                    <td>{{ db.location }}</td>
+                                    <td>{{ db.resource_group }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="empty-state">Nessun SQL Database trovato.</div>
+                    {% endif %}
+                </div>
+            </div>
+        </section>
+
+        <!-- App Services Section -->
+        <section id="app-services" class="mb-5">
+            <div class="card">
+                <div class="card-header">
+                    <i class="fas fa-globe"></i> App Services
+                </div>
+                <div class="card-body">
+                    {% if azure_data.app_services %}
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Nome</th>
+                                    <th>Location</th>
+                                    <th>State</th>
+                                    <th>URL</th>
+                                    <th>Resource Group</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for app in azure_data.app_services %}
+                                <tr>
+                                    <td>{{ app.name }}</td>
+                                    <td>{{ app.location }}</td>
+                                    <td>{{ app.state }}</td>
+                                    <td><a href="https://{{ app.default_host_name }}" target="_blank">{{ app.default_host_name }}</a></td>
+                                    <td>{{ app.resource_group }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="empty-state">Nessun App Service trovato.</div>
+                    {% endif %}
+                </div>
+            </div>
+        </section>
+
+        <!-- Container Instances Section -->
+        <section id="container-instances" class="mb-5">
+            <div class="card">
+                <div class="card-header">
+                    <i class="fas fa-box"></i> Container Instances
+                </div>
+                <div class="card-body">
+                    {% if azure_data.container_instances %}
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Nome</th>
+                                    <th>Location</th>
+                                    <th>OS Type</th>
+                                    <th>State</th>
+                                    <th>Resource Group</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for ci in azure_data.container_instances %}
+                                <tr>
+                                    <td>{{ ci.name }}</td>
+                                    <td>{{ ci.location }}</td>
+                                    <td>{{ ci.os_type }}</td>
+                                    <td>{{ ci.state }}</td>
+                                    <td>{{ ci.resource_group }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="empty-state">Nessun Container Instance trovato.</div>
+                    {% endif %}
+                </div>
+            </div>
+        </section>
+
+        <!-- Container Registries Section -->
+        <section id="container-registries" class="mb-5">
+            <div class="card">
+                <div class="card-header">
+                    <i class="fas fa-archive"></i> Container Registries
+                </div>
+                <div class="card-body">
+                    {% if azure_data.container_registries %}
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Nome</th>
+                                    <th>Location</th>
+                                    <th>SKU</th>
+                                    <th>Login Server</th>
+                                    <th>Resource Group</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for reg in azure_data.container_registries %}
+                                <tr>
+                                    <td>{{ reg.name }}</td>
+                                    <td>{{ reg.location }}</td>
+                                    <td>{{ reg.sku }}</td>
+                                    <td>{{ reg.login_server }}</td>
+                                    <td>{{ reg.resource_group }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="empty-state">Nessun Container Registry trovato.</div>
+                    {% endif %}
+                </div>
+            </div>
+        </section>
+
+        <!-- Key Vaults Section -->
+        <section id="key-vaults" class="mb-5">
+            <div class="card">
+                <div class="card-header">
+                    <i class="fas fa-key"></i> Key Vaults
+                </div>
+                <div class="card-body">
+                    {% if azure_data.key_vaults %}
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Nome</th>
+                                    <th>Location</th>
+                                    <th>Vault URI</th>
+                                    <th>Resource Group</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for kv in azure_data.key_vaults %}
+                                <tr>
+                                    <td>{{ kv.name }}</td>
+                                    <td>{{ kv.location }}</td>
+                                    <td>{{ kv.vault_uri }}</td>
+                                    <td>{{ kv.resource_group }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="empty-state">Nessun Key Vault trovato.</div>
+                    {% endif %}
+                </div>
+            </div>
+        </section>
+
+        <!-- Cosmos DB Accounts Section -->
+        <section id="cosmos-accounts" class="mb-5">
+            <div class="card">
+                <div class="card-header">
+                    <i class="fas fa-database"></i> Cosmos DB Accounts
+                </div>
+                <div class="card-body">
+                    {% if azure_data.cosmos_accounts %}
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Nome</th>
+                                    <th>Location</th>
+                                    <th>Kind</th>
+                                    <th>Resource Group</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for account in azure_data.cosmos_accounts %}
+                                <tr>
+                                    <td>{{ account.name }}</td>
+                                    <td>{{ account.location }}</td>
+                                    <td>{{ account.kind }}</td>
+                                    <td>{{ account.resource_group }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="empty-state">Nessun Cosmos DB Account trovato.</div>
+                    {% endif %}
+                </div>
+            </div>
+        </section>
+
+        <!-- Network Security Groups Section -->
+        <section id="network-security-groups" class="mb-5">
+            <div class="card">
+                <div class="card-header">
+                    <i class="fas fa-shield-alt"></i> Network Security Groups
+                </div>
+                <div class="card-body">
+                    {% if azure_data.network_security_groups %}
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Nome</th>
+                                    <th>Location</th>
+                                    <th>Resource Group</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for nsg in azure_data.network_security_groups %}
+                                <tr>
+                                    <td>{{ nsg.name }}</td>
+                                    <td>{{ nsg.location }}</td>
+                                    <td>{{ nsg.resource_group }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="empty-state">Nessun Network Security Group trovato.</div>
+                    {% endif %}
+                </div>
+            </div>
+        </section>
+
+        <!-- Public IP Addresses Section -->
+        <section id="public-ips" class="mb-5">
+            <div class="card">
+                <div class="card-header">
+                    <i class="fas fa-network-wired"></i> Public IP Addresses
+                </div>
+                <div class="card-body">
+                    {% if azure_data.public_ips %}
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Nome</th>
+                                    <th>Location</th>
+                                    <th>IP Address</th>
+                                    <th>Resource Group</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for pip in azure_data.public_ips %}
+                                <tr>
+                                    <td>{{ pip.name }}</td>
+                                    <td>{{ pip.location }}</td>
+                                    <td>{{ pip.ip_address if pip.ip_address else 'N/A' }}</td>
+                                    <td>{{ pip.resource_group }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="empty-state">Nessun Public IP Address trovato.</div>
+                    {% endif %}
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Back to Top Button -->
+    <button class="back-to-top" id="backToTop" title="Torna all'inizio">
+        <i class="fas fa-chevron-up"></i>
+    </button>
+
+    <footer class="footer text-center">
+        <div class="container">
+            <p>&copy; 2025 Dashboard Risorse Azure. Tutti i diritti riservati.</p>
+        </div>
+    </footer>
+
+    <!-- Bootstrap 5 JS Bundle with Popper -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Gestione del pulsante Back to Top
+        document.addEventListener('DOMContentLoaded', function() {
+            const backToTopButton = document.getElementById('backToTop');
+            
+            window.addEventListener('scroll', function() {
+                if (window.pageYOffset > 300) {
+                    backToTopButton.classList.add('show');
+                } else {
+                    backToTopButton.classList.remove('show');
+                }
+            });
+            
+            backToTopButton.addEventListener('click', function() {
+                window.scrollTo({
+                    top: 0,
+                    behavior: 'smooth'
+                });
+            });
+        });
+    </script>
+</body>
+</html>
