@@ -191,27 +191,27 @@ pyinstaller --hidden-import=Services --hidden-import=Services.services  -F Manag
 
 ## Appunti vari
 In questa sezione appunti vari presi nel tempo
-- corso base base https://www.youtube.com/watch?v=XHzDHJ-BgvU
-- main # https://www.youtube.com/watch?v=NB5LGzmSiCs
-	```
+- corso base base see https://www.youtube.com/watch?v=XHzDHJ-BgvU
+- main (see https://www.youtube.com/watch?v=NB5LGzmSiCs)
+	```python
   if __name__ == '__main__':
 		print("SI")
   ```
 - main e recuperare un file dalla stessa cartella dove è presente il file main
-  ```
+  ```python
   import os
   if __name__ == '__main__':
     # Ottiene il percorso della directory dove si trova lo script
     current_dir = os.path.dirname(os.path.abspath(__file__))
     file_path = os.path.join(current_dir, 'file.txt')
   ```
-- Tipizzare e annotation https://www.youtube.com/watch?v=Y9fT4HVdCuQ
-  ```
+- Tipizzare e annotation (see https://www.youtube.com/watch?v=Y9fT4HVdCuQ)
+  ```python
   def get_data() -> dict[str,int]:
 	return {'bob':1,'james':2}
   ```
 - Gestione classi ed ereditarietà
-  ```
+  ```python
   class Fluit:
     def __init__(self,name,color):
       self.name=name
@@ -228,44 +228,97 @@ In questa sezione appunti vari presi nel tempo
   # my_B.__cost #error !
   print ( my_B,_Banana__cost ) #works! private? no!
   ```
+- Args & kargs (see https://www.youtube.com/watch?v=FFpDsC6B2qw)
+  ```python
+  # *args -> extra position arguments -> tuple
+  # **kargs -> extra keywords arguments -> dictionary
+  def tea_order(customer_name, tea_type, *args, **kargs):
+      print(customer_name, " ordered a ", tea_type , " tea")
+      for arg in args:
+          print( " - add ",  arg)
+      for key,value in kargs.items():
+          print( " - add ", key, ":", value)
+  tea_order("Alice","green")
+  tea_order("Bob","black", "oat" , sweeter="honey")
+  # Using unpacking operators * and ** to pass arguments
+  extra1=("lemon", "ginger")
+  extra2={"sweetener":"sugar", "milk":"whole"}
+  tea_order("Charlie","herbal", *extra1, **extra2)
+  tea_order("Diana","herbal", "lemon", "ginger" ,sweetener="sugar", milk="whole")
+  ```
+- Decorator (see https://www.youtube.com/watch?v=3tyaO-OE0K0)
+  ```python
+  import time
+  from datetime import datetime, timedelta
+  def time_dec(base_fn): 
+    def enchanted_fn(*args,**kargs): #**kargs means any/some parameters with keywords (example tea_type="green")
+      start_time=time.time()
+      result = base_fn(*args,**kargs)
+      end_time=time.time()
+      delta_time = end_time - start_time
+      print (f"Task time {delta_time} seconds ")
+      return result
+    return enchanted_fn
+  @time_dec #mode1
+  def braw_tea():
+    print("Brewing tea...")
+    sleep(2)
+    print("Tea is ready)
+  braw_tea();     
+  # braw_tea=time_dec(braw_tea); # mode2 separete decorator and function code!
+  braw_tea()
+  
+  @time_dec  
+  def make_matcha():
+    print("Making matcha")
+    return f"Drink mucha by {datetime.now()-timedelta(minutes=30)}"
+
+  @time_dec  
+  def braw_tea_with_type(tea_type,quantity)
+    print(f"Brewing {tea_type} {quantity} tea..")
+    time.sleep(2 * quantity)
+    print("Tea is ready")
+  braw_tea_with_type(tea_type="green",quantity=2)
+  
+  ```
 - Ordinare una lista di oggetti secondo un campo
   self.list = sorted( self.list , key=lambda tup: tup["campo"] , reverse=False )
 - Funzioni lambda
-  ```
+  ```python
 	f = lambda a : a*a
   ```
 - functioni con return multiplo
-  ```
+  ```python
 	def func():
 		return 1,'alberto, True
 	a,b,c=func()
 	print( funct() )
   ```
 - funzioni inline
-  ```
+  ```python
 	lista=[ e['Name'] for e in self.lista_bucket ]
 	lista=[ e["Key"] if "Key" in e else e["Prefix"] for e in self.lista_files_bucket ]
   ```
 - stringhe z=5
-  ```
+  ```python
 	s= f"Il quadrato di {z} è {z * z}"		len(s) 		s[3;6]  s[-2]
 	s.startsWith("Il") s.endsWith("25"") s.isalnum() s.isdecimal() 
 	da_fare=", ".join(lista ["pane","latte","melone" ] ) lista=da_fare.split(", ")
 	print(f'{s:#<20})
   ```
 - cicli
-  ```
+  ```python
 	for i in range(100)
 		print("sorry")
   ```
 - Dizionari https://www.youtube.com/watch?v=l0DDw4nzS_k
-  ```
+  ```python
 	ita_eng={"Ciao":"Hello","Uova":"Eggs"}		ita_eng.keys()  	.values()
 	ita_eng.get("gatto","Chiave non trovata")
 	ita_eng.setdefault("Birra","Beer") aggiunge valore se non presente
   ```  
 - Gestione date
-  ```
+  ```python
   from datetime import datetime, timedelta
   'createdAt': str (datetime.now() ) 
   yesterday = datetime.today() - timedelta(days = 1 )
@@ -279,7 +332,7 @@ In questa sezione appunti vari presi nel tempo
   datetime.today().strftime('%Y%m%d %H%M%S')
   ```
 - random
-  ```
+  ```python
 	import random
 	import string
 	base=["A","T","C","G"]
@@ -287,14 +340,14 @@ In questa sezione appunti vari presi nel tempo
 	pwd="".join( random.choises(spring.printable,k=8) )
   ```
 - json2csv # pip install pandas
-  ```
+  ```python
 	import pandas as pd
 	pdObj = pd.read_json('20220824101456_SUPERB_ADV.json')
 	print(type(pdObj))
 	pdObj.to_csv('20220824101456_SUPERB_ADV.csv',sep=';',index=False)
   ```
 - jwt
-  ```
+  ```python
 	import jwt
     key = "dancingPotatoes_!"
     auth = 'Deny'
@@ -309,7 +362,7 @@ In questa sezione appunti vari presi nel tempo
         logger.info('Invalid key. Unauthorised User...')
   ```
 - glob: libreria per file ma NON Usa reg-expression ma shell expression
-  ```
+  ```python
 	import glob
 	print ( glob.glob ( '?pple.jpg' ))
 	print ( glob.glob ( '*.jsp' ))
@@ -321,11 +374,11 @@ In questa sezione appunti vari presi nel tempo
 		print (i, files, sep=": )
   ```
 - py to exe https://www.youtube.com/watch?v=Y0HN9tdLuJo
-  ```
+  ```python
     pip install auto-py-to-exe
   ```
 - pandas to dictionary
-  ```
+  ```python
 	import pandas as pd 
 	#df.to_dict: Turn a DataFrame into a Dictionary
 	print ("---- DataFrame into Dictionary ---- ")
@@ -342,7 +395,7 @@ In questa sezione appunti vari presi nel tempo
 - visualizzare immagine	https://stackoverflow.com/questions/54103815/opencv-4-java-highgui-imshow
 - boo https://stackoverflow.com/questions/54103815/opencv-4-java-highgui-imshow
 - funzione per pulire il csv da caratteri lowvalue (caratteri di merda nei file fucos  https://stackoverflow.com/questions/7894856/line-contains-null-byte-in-csv-reader-python)
-  ```
+  ```python
   def fix_nulls(s):
     for line in s:
         szRiga = line.replace('\0', ' ')
@@ -350,7 +403,7 @@ In questa sezione appunti vari presi nel tempo
         yield szRiga
   ```
 - list  comprehension
-  ```
+  ```python
   frutta=["mele","banana","peri"]
   for fuit in frutta:
     print(fuit)
@@ -375,7 +428,7 @@ In questa sezione appunti vari presi nel tempo
   d7= [ {key:(i if key=="id" else users[i] if key=="useranme" else pwd for key in keys} for i in range(len(users))]
   ```
 - json https://www.youtube.com/watch?v=7MKJEvTxL0c&list=PLMP9hIwoX2DtrBeIDXggVbo49Uxr6ymxT&index=5
-  ```
+  ```python
   import requests
   import json
   url="https://xxxx"
@@ -385,7 +438,7 @@ In questa sezione appunti vari presi nel tempo
     print(val)
   ```
 - wiki
-  ```
+  ```python
   import wikipediaapi
   wiki = wikipediaapi.wikipedia('en')
   mon=['Jenuary']
@@ -401,13 +454,13 @@ In questa sezione appunti vari presi nel tempo
     print(page_py.title)
   ```
 - terminare script https://lorenzoneri.com/come-terminare-uno-script-python/?utm_source=dlvr.it&utm_medium=linkedin&utm_campaign=come-terminare-uno-script-python
-  ```
+  ```python
   import sys
   sys.exit()
   ```
 
 - esempio pandas legge un csv e fa 
-  ```
+  ```python
 	import pandas as pd
 	pd.options.display.max_rows = 999999
 	df = pd.read_csv('data.csv')
@@ -422,7 +475,7 @@ In questa sezione appunti vari presi nel tempo
 	print(dii['A61'])
   ```
 - **f-string** da python3.12 
-  ```
+  ```python
 	stringhe speciali con f : interpolazione (string interpolation)
 		variabile=42
 		s=f"Numero = {variabile}"
@@ -437,7 +490,7 @@ In questa sezione appunti vari presi nel tempo
 		} chiudo qua """
   ```
 - enumerazioni e description (CLASSIFICATION SCHEME) con la classe Enum
-  ```
+  ```python
 	from enum import Enum
 	class ColorePrimario(Enum):
 		ROSSO=1
