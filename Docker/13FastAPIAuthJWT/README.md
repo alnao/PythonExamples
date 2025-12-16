@@ -1,39 +1,59 @@
-# Docker esempio 02 flask example
-Sempice applicazione flask (web e API) che viene seguita dentro ad un docker 
+# Esempio 13 FastAPI with AuthJWT
 
+Esempio minimale di autenticazione JWT con FastAPI, pronto per essere eseguito in Docker.
 
-Riferimenti di esempio:
-- https://www.freecodecamp.org/news/how-to-dockerize-a-flask-app/
-- https://www.digitalocean.com/community/tutorials/how-to-build-and-deploy-a-flask-application-using-docker-on-ubuntu-20-04
-- https://medium.com/geekculture/how-to-dockerize-your-flask-application-2d0487ecefb8
+Nota: le credenziali sono salvate dentro ad un dizionario `fake_users_db` in-memory e non un database esterno, prevedere un database esterno se necessario!
 
-Nota: è necessario il host nel comando  app.run(host="0.0.0.0", port=5000, debug=True)
+## Struttura
 
+- `app/main.py`: API FastAPI con:
+  - `/register`: registra un utente in un finto DB in memoria
+  - `/token`: login OAuth2 password flow e generazione access token JWT
+  - `/me`: endpoint protetto che restituisce l'utente corrente
+- `Dockerfile`: immagine Python 3.11 con FastAPI e Uvicorn.
+- `requirements.txt`: dipendenze Python.
 
-# Comandi per la creazione l'esecuzione in sistema locale 
+## Avvio locale (senza Docker)
+
 ```bash
-$ docker build . -t flask-login
-$ docker run -it --rm -d -p 5001:5001 flask-login 
-$ docker ps --latest
-
-$ firefox http://localhost:5001
-
-$ docker stop $(docker ps -q)
-$ docker rm $(docker ps -a -q)
+cd Docker/13FastAPIAuthJWT
+python -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+uvicorn app.main:app --reload
 ```
 
+Vai su `http://127.0.0.1:8000/docs` per provare le API.
 
-Per eseguire bash dentro alla immagine in esecuzione
+## Build ed esecuzione con Docker
+
 ```bash
-$ docker exec -t -i $(docker ps -q) /bin/bash
+cd Docker/13FastAPIAuthJWT
+docker build -t fastapi-auth-jwt .
+docker run --rm -p 8000:8000 fastapi-auth-jwt
 ```
 
+Poi apri `http://127.0.0.1:8000/docs`.
 
-Altri comandi specifici:
-- https://www.docker.com/blog/how-to-use-the-official-nginx-docker-image/
-    - docker run -it --rm -d -p 8087:80 --name web nginx
--  https://www.baeldung.com/ops/assign-port-docker-container
-    - docker run -d -p 5001:80 --name httpd-container httpd
+
+## Test generale
+```bash
+
+# Registra un utente:
+curl -X POST "http://127.0.0.1:8000/register" -H "Content-Type: application/json" -d '{"username":"alnao","password":"Password123!","full_name":"Al Nao"}'
+
+# Ottieni il token:
+response=$(curl -X POST "http://127.0.0.1:8000/token" -H "Content-Type: application/x-www-form-urlencoded" -d "username=alnao&password=Password123!")
+token=$(echo $response | jq -r .access_token)
+echo "Token ottenuto: $token"
+
+# Esecuzione api ME e service
+
+curl "http://127.0.0.1:8000/me" -H "Authorization: Bearer $token"
+
+curl "http://127.0.0.1:8000/service" -H "Authorization: Bearer $token"
+#JSON con orario del server e messaggio di saluto personalizzato.
+```
 
 
 

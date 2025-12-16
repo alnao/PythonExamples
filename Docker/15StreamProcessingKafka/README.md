@@ -1,39 +1,29 @@
-# Docker esempio 02 flask example
-Sempice applicazione flask (web e API) che viene seguita dentro ad un docker 
+# 15StreamProcessingKafka
 
+Esempio di stream processing con Kafka in Docker Compose:
 
-Riferimenti di esempio:
-- https://www.freecodecamp.org/news/how-to-dockerize-a-flask-app/
-- https://www.digitalocean.com/community/tutorials/how-to-build-and-deploy-a-flask-application-using-docker-on-ubuntu-20-04
-- https://medium.com/geekculture/how-to-dockerize-your-flask-application-2d0487ecefb8
+- uno **producer** Python che invia messaggi JSON su un topic
+- un **consumer** Python che legge e stampa i messaggi
+- stack `Zookeeper + Kafka` basato sulle immagini Bitnami.
 
-Nota: è necessario il host nel comando  app.run(host="0.0.0.0", port=5000, debug=True)
+## Avvio con Docker Compose
 
-
-# Comandi per la creazione l'esecuzione in sistema locale 
 ```bash
-$ docker build . -t flask-login
-$ docker run -it --rm -d -p 5001:5001 flask-login 
-$ docker ps --latest
-
-$ firefox http://localhost:5001
-
-$ docker stop $(docker ps -q)
-$ docker rm $(docker ps -a -q)
+cd Docker/15StreamProcessingKafka
+docker compose up --build
 ```
 
+Vedrai nei log:
 
-Per eseguire bash dentro alla immagine in esecuzione
-```bash
-$ docker exec -t -i $(docker ps -q) /bin/bash
-```
+- il producer che invia messaggi con frequenza casuale tra 10 e 100 secondi
+- il consumer che legge gli stessi messaggi.
 
+## Dettagli
 
-Altri comandi specifici:
-- https://www.docker.com/blog/how-to-use-the-official-nginx-docker-image/
-    - docker run -it --rm -d -p 8087:80 --name web nginx
--  https://www.baeldung.com/ops/assign-port-docker-container
-    - docker run -d -p 5001:80 --name httpd-container httpd
+- Topic di default: `demo-topic`
+- Bootstrap servers: `kafka:9092` (configurato in `docker-compose.yml`)
+- Modificabili via variabili d'ambiente: `KAFKA_BOOTSTRAP_SERVERS`, `KAFKA_TOPIC`, `KAFKA_GROUP_ID`.
+
 
 
 
@@ -61,4 +51,5 @@ Il software è distribuito secondo i termini della GNU General Public License v3
 
 
 The software is distributed under the terms of the GNU General Public License v3.0. Use, modification, and redistribution are permitted, provided that any copy or derivative work is released under the same license. The content is provided "as is", without any warranty, express or implied.
+
 

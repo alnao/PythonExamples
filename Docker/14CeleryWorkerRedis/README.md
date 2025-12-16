@@ -1,39 +1,48 @@
-# Docker esempio 02 flask example
-Sempice applicazione flask (web e API) che viene seguita dentro ad un docker 
+# Esempio 14 CeleryWorkerRedis
 
+Esempio di architettura `web + worker + broker` con Flask, Celery e Redis in Docker Compose.
 
-Riferimenti di esempio:
-- https://www.freecodecamp.org/news/how-to-dockerize-a-flask-app/
-- https://www.digitalocean.com/community/tutorials/how-to-build-and-deploy-a-flask-application-using-docker-on-ubuntu-20-04
-- https://medium.com/geekculture/how-to-dockerize-your-flask-application-2d0487ecefb8
+## Servizi
 
-Nota: è necessario il host nel comando  app.run(host="0.0.0.0", port=5000, debug=True)
+- `redis`: broker e backend di Celery.
+- `web`: applicazione Flask che accoda job asincroni.
+- `worker`: worker Celery che esegue i job.
 
+## Avvio con Docker Compose
 
-# Comandi per la creazione l'esecuzione in sistema locale 
 ```bash
-$ docker build . -t flask-login
-$ docker run -it --rm -d -p 5001:5001 flask-login 
-$ docker ps --latest
-
-$ firefox http://localhost:5001
-
-$ docker stop $(docker ps -q)
-$ docker rm $(docker ps -a -q)
+cd Docker/14CeleryWorkerRedis
+docker compose up --build
 ```
 
+L'app Flask sarà disponibile su `http://127.0.0.1:5001`.
 
-Per eseguire bash dentro alla immagine in esecuzione
+## Esempi di chiamate
+
+1. **Verifica che l'app sia su**
+
 ```bash
-$ docker exec -t -i $(docker ps -q) /bin/bash
+curl http://127.0.0.1:5001/
 ```
 
+2. **Accoda un job**
 
-Altri comandi specifici:
-- https://www.docker.com/blog/how-to-use-the-official-nginx-docker-image/
-    - docker run -it --rm -d -p 8087:80 --name web nginx
--  https://www.baeldung.com/ops/assign-port-docker-container
-    - docker run -d -p 5001:80 --name httpd-container httpd
+```bash
+curl -X POST http://127.0.0.1:5001/enqueue -H "Content-Type: application/json" -d '{"duration": 10}'
+```
+
+Risposta di esempio:
+
+```json
+{"task_id": "c0e3d8..."}
+```
+
+3. **Controlla lo stato/risultato**
+
+```bash
+curl http://127.0.0.1:5001/result/<task_id>
+```
+
 
 
 

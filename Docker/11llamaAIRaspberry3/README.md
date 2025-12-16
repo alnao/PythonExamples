@@ -13,21 +13,21 @@ Per altri modelli:
 
 ## Comandi
 - Cleanup
-  ```
+  ```bash
   docker stop tinyllama-container 2>/dev/null || true
   docker rm tinyllama-container 2>/dev/null || true
   docker rmi tinyllama-pi 2>/dev/null || true
   ```
 - Build con verbose
-  ```
+  ```bash
   docker build -t tinyllama-pi . --progress=plain
   ```
 - Avvio immagine
-  ```
+  ```bash
   docker run --name tinyllama-container -p 8080:8080 -p 5000:5000 tinyllama-pi
   ```
   oppure se già avviato in precedenza
-  ```
+  ```bash
   docker start tinyllama-container
   ```
 - Apri nel browser per accedere al frontend:
@@ -35,21 +35,21 @@ Per altri modelli:
   http://localhost:5000  
   ```
 - Monitoraggio
-  ```
+  ```bash
   docker logs -f tinyllama-container
   ```
 - Test health check
-  ```
+  ```bash
   curl http://localhost:5000/api/health
   ```
 - Test completamento tramite proxy Flask
-  ```
+  ```bash
   curl -X POST http://localhost:5000/api/completion \
     -H "Content-Type: application/json" \
     -d '{"prompt": "Ciao, come stai?", "n_predict": 50}'
   ```
 - Test diretto dell'API llama.cpp
-  ```
+  ```bash
   curl -X POST http://localhost:8080/completion \
     -H "Content-Type: application/json" \
     -d '{"prompt": "Scrivi una breve storia", "n_predict": 100}'
@@ -60,7 +60,7 @@ Per altri modelli:
 
   ```
 - Test con parametri avanzati:
-  ```
+  ```bash
   curl -X POST http://localhost:8080/completion \
     -H "Content-Type: application/json" \
     -d '{
@@ -74,13 +74,28 @@ Per altri modelli:
 
 
 
-# AlNao.it
-Nessun contenuto in questo repository è stato creato con IA o automaticamente, tutto il codice è stato scritto con molta pazienza da Alberto Nao. Se il codice è stato preso da altri siti/progetti è sempre indicata la fonte. Per maggior informazioni visitare il sito [AlNao.it](https://www.alnao.it/).
+
+
+# &lt; AlNao /&gt;
+Tutti i codici sorgente e le informazioni presenti in questo repository sono frutto di un attento e paziente lavoro di sviluppo da parte di AlNao, che si è impegnato a verificarne la correttezza nella massima misura possibile. Qualora parte del codice o dei contenuti sia stato tratto da fonti esterne, la relativa provenienza viene sempre citata, nel rispetto della trasparenza e della proprietà intellettuale. 
+
+
+Alcuni contenuti e porzioni di codice presenti in questo repository sono stati realizzati anche grazie al supporto di strumenti di intelligenza artificiale, il cui contributo ha permesso di arricchire e velocizzare la produzione del materiale. Ogni informazione e frammento di codice è stato comunque attentamente verificato e validato, con l’obiettivo di garantire la massima qualità e affidabilità dei contenuti offerti. 
+
+
+Per ulteriori dettagli, approfondimenti o richieste di chiarimento, si invita a consultare il sito [AlNao.it](https://www.alnao.it/).
+
 
 ## License
+Made with ❤️ by <a href="https://www.alnao.it">AlNao</a>
+&bull; 
 Public projects 
-<a href="https://it.wikipedia.org/wiki/GNU_General_Public_License"  valign="middle"><img src="https://img.shields.io/badge/License-GNU-blue" style="height:22px;"  valign="middle"></a> 
+<a href="https://www.gnu.org/licenses/gpl-3.0"  valign="middle"> <img src="https://img.shields.io/badge/License-GPL%20v3-blue?style=plastic" alt="GPL v3" valign="middle" /></a>
 *Free Software!*
 
 
+Il software è distribuito secondo i termini della GNU General Public License v3.0. L'uso, la modifica e la ridistribuzione sono consentiti, a condizione che ogni copia o lavoro derivato sia rilasciato con la stessa licenza. Il contenuto è fornito "così com'è", senza alcuna garanzia, esplicita o implicita.
+
+
+The software is distributed under the terms of the GNU General Public License v3.0. Use, modification, and redistribution are permitted, provided that any copy or derivative work is released under the same license. The content is provided "as is", without any warranty, express or implied.
 

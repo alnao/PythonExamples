@@ -35,11 +35,11 @@ Struttura del progetto base:
 
 ## Dynamo locale
 Puoi usare l'immagine ufficiale di Amazon **amazon/dynamodb-local**:
-```
+```bash
 docker run -d --name dynamodb-local-container -p 8000:8000 amazon/dynamodb-local
 ```
 Comandi da eseguire
-```
+```bash
 aws dynamodb list-tables --endpoint-url http://localhost:8000
 aws dynamodb create-table --table-name Persone --attribute-definitions AttributeName=id,AttributeType=S --key-schema AttributeName=id,KeyType=HASH --provisioned-throughput ReadCapacityUnits=5,WriteCapacityUnits=5 --endpoint-url http://localhost:8000
 aws dynamodb put-item --table-name Persone --item '{"id": {"S": "1"},"nome": {"S": "Mario Rossi"},"eta": {"N": "30"}}' --endpoint-url http://localhost:8000
@@ -56,7 +56,7 @@ docker run -d -p 8000:8000 -v $(pwd)/dynamodb-data:/home/dynamodblocal/data --na
 
 ## Comandi per il rilascio
 Per eseguire in locale
-```
+```bash
 docker-compose up --build
 ```
 E l'interfaccia è su 
@@ -64,14 +64,14 @@ E l'interfaccia è su
 http://localhost:8012/
 ```
 La tabella è disponibile con il comando 
-```
+```bash
 aws dynamodb list-tables --endpoint-url http://dynamodb-local:8010
 aws dynamodb scan  --table-name  alnao-persone  --endpoint-url http://dynamodb-local:8010
 ```
 
 ## Nota sulle porte
 Quando usi docker-compose e hai due servizi (ad esempio un backend API e un frontend o un altro servizio che lo chiama), la rete interna di Docker Compose ti permette di comunicare tra i container usando il nome del servizio definito nel file docker-compose.yml. Situazione: Hai due servizi:
-```
+```yaml
 # docker-compose.yml
 services:
     api-service:
@@ -92,7 +92,7 @@ Spiegazione dettagliata
 - Docker Compose crea automaticamente una rete virtuale condivisa tra tutti i servizi definiti nello stesso file.
 - All'interno di questa rete ogni servizio è accessibile dagli altri tramite il proprio nome (quello sotto services:). Le porte sono riferite a quelle interne al container, non a quelle mappate sull'host (8000, non 8010).
 - Comandi per la verifica 
-    ```
+    ```bash
 	docker exec -it other-service_container_id bash
 	apt update && apt install -y curl
 	curl http://api-service:8000/hello
@@ -103,7 +103,7 @@ Spiegazione dettagliata
 ## Esecuzione con Minikube
 Partendo dal `docker-compose` funzionante si usa `kompose convert` per convertire i file depositati nella cartella minikube.
 Poi bisogna lanciare i comandi
-```
+```bash
 minikube start --driver=docker --memory=2048 --cpus=2
 ...
 kubectl apply -f ./minikube/dynamodb-local-service.yaml 
@@ -117,7 +117,7 @@ kubectl apply -f ./minikube/flask-frontend-deployment.yaml
 
 kubectl port-forward svc/flask-frontend 8032:5000
 
-http://localhost:8012
+firefox http://localhost:8012
 
 kubectl get services
 kubectl delete service dynamodb-local
@@ -131,10 +131,29 @@ kubectl delete deployment flask-frontend
 minikube stop
 ```
 
-# AlNao.it
-Nessun contenuto in questo repository è stato creato con IA o automaticamente, tutto il codice è stato scritto con molta pazienza da Alberto Nao. Se il codice è stato preso da altri siti/progetti è sempre indicata la fonte. Per maggior informazioni visitare il sito [AlNao.it](https://www.alnao.it/).
+
+
+
+# &lt; AlNao /&gt;
+Tutti i codici sorgente e le informazioni presenti in questo repository sono frutto di un attento e paziente lavoro di sviluppo da parte di AlNao, che si è impegnato a verificarne la correttezza nella massima misura possibile. Qualora parte del codice o dei contenuti sia stato tratto da fonti esterne, la relativa provenienza viene sempre citata, nel rispetto della trasparenza e della proprietà intellettuale. 
+
+
+Alcuni contenuti e porzioni di codice presenti in questo repository sono stati realizzati anche grazie al supporto di strumenti di intelligenza artificiale, il cui contributo ha permesso di arricchire e velocizzare la produzione del materiale. Ogni informazione e frammento di codice è stato comunque attentamente verificato e validato, con l’obiettivo di garantire la massima qualità e affidabilità dei contenuti offerti. 
+
+
+Per ulteriori dettagli, approfondimenti o richieste di chiarimento, si invita a consultare il sito [AlNao.it](https://www.alnao.it/).
+
 
 ## License
+Made with ❤️ by <a href="https://www.alnao.it">AlNao</a>
+&bull; 
 Public projects 
-<a href="https://it.wikipedia.org/wiki/GNU_General_Public_License"  valign="middle"><img src="https://img.shields.io/badge/License-GNU-blue" style="height:22px;"  valign="middle"></a> 
+<a href="https://www.gnu.org/licenses/gpl-3.0"  valign="middle"> <img src="https://img.shields.io/badge/License-GPL%20v3-blue?style=plastic" alt="GPL v3" valign="middle" /></a>
 *Free Software!*
+
+
+Il software è distribuito secondo i termini della GNU General Public License v3.0. L'uso, la modifica e la ridistribuzione sono consentiti, a condizione che ogni copia o lavoro derivato sia rilasciato con la stessa licenza. Il contenuto è fornito "così com'è", senza alcuna garanzia, esplicita o implicita.
+
+
+The software is distributed under the terms of the GNU General Public License v3.0. Use, modification, and redistribution are permitted, provided that any copy or derivative work is released under the same license. The content is provided "as is", without any warranty, express or implied.
+

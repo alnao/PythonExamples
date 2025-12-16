@@ -86,12 +86,15 @@ Benvenuti nella collezione di esempi Python by [AlNao.it](https://www.alnao.it)!
 - 07 **DockerCompose API**: applicazione con api-rest che legge e scrive dati su un database, app e database sono creati assieme con un docker-compose
 - 08 **Crud MySql Minikubernetes**: applicazione con api-rest che legge e scrive dati su database mysql, creati con Kubernetes *funzionante* su Minikube
 - 09 **AWS Dynamo**: applicazione che crea una tabella dynamo, un CRUD con fast-api e un piccolo frontend per visualizzare i dati
-- 10 **Robot Framework**: applicazione che esegue un test-unit con RobotFramework di una *bellissima* infrastruttura con DynamoDb, Kafka, consumer e un frontend.
+- 10 **Robot Framework**: applicazione che esegue un test-unit con RobotFramework di una *bellissima* infrastruttura con DynamoDb, Kafka, consumer e un frontend
 - 11 **llamaAIRaspberry3**: immagine per eseguire una IA con motore **Llama** in un docker, può essere eseguita su PC *o su Rasbperry3b*
 - 12 **KubernetesScaling**: immagine per eseguire lo scaling con kubernetes utilizzando la funzionalità **Horizontal Pod Autoscalers** di K8S
   - l'immagine permette di mandare la CPU a valori alti con chiamate post
   - sotto-cartella con un esempio *funzionante* con **Prometheus** che utilizza una custum-metrics "numero task" e **Grafana** per il monitoraggio
-  - sotto-cartella con tre esempi *funzionanti* con **CRD** e librerie *operator* per la gestione dello scaling.
+  - sotto-cartella con tre esempi *funzionanti* con **CRD** e librerie *operator* per la gestione dello scaling
+- 13 **FastAPIAuthJWT**: esempio minimale di autenticazione JWT con FastAPI senza database con librerie Bcrypt e Jose
+- 14 **CeleryWorkkersRedis**: esempio di architettura "web + worker + broker" con Flask, Celery e Redis in Docker Compose
+- 15 **StreamProcessingKafka**: esempio di stream processing con Kafka in Docker Compose con producer e consumer asincroni
 
 
 ## From Others Sites
