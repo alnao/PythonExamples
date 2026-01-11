@@ -106,6 +106,7 @@ Benvenuti nella collezione di esempi Python by [AlNao.it](https://www.alnao.it)!
 - **FlaskLoginGoogle**: https://realpython.com/flask-google-login/
 - **IA**: [How To Build A Chat Bot That Learns From The User In Python Tutorial](https://www.youtube.com/watch?v=CkkjXTER2KE)
 - **IA_LargeLanguageModel** libro [Build a Large Language Model (From Scratch)" by Sebastian Raschka](https://github.com/rasbt/LLMs-from-scratch)
+- **IISLivePosition**: esempi di come visualizzare la posizione della IA con API esterne e grafica `plotly.express`
 - **PlaywrightWebScraping**: site downloader, download all PDF, jump captcha with proxy [Web Scraping with Playwright + CAPTCHA Bypass For Beginners](https://www.youtube.com/watch?v=RGR5Xj0Qqfs)
 - SimpleGames
   - **ArcadeLib**: 
