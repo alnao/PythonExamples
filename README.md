@@ -8,6 +8,7 @@
   <!--<img src="https://img.shields.io/badge/Flask-Web-lightgrey?style=for-the-badge&logo=flask&logoColor=white" alt="Flask" height=60/>-->
 </p>
 
+
 ## ✨ Panoramica
 
 Benvenuti nella collezione di esempi Python by [AlNao.it](https://www.alnao.it)! 
@@ -104,8 +105,6 @@ Benvenuti nella collezione di esempi Python by [AlNao.it](https://www.alnao.it)!
 - **FlaskGeolocalNotes**: https://www.youtube.com/watch?v=w-rti-5KHME
 - **FlaskLogin**: https://www.youtube.com/watch?v=ud_nq9lapF4
 - **FlaskLoginGoogle**: https://realpython.com/flask-google-login/
-- **IA**: [How To Build A Chat Bot That Learns From The User In Python Tutorial](https://www.youtube.com/watch?v=CkkjXTER2KE)
-- **IA_LargeLanguageModel** libro [Build a Large Language Model (From Scratch)" by Sebastian Raschka](https://github.com/rasbt/LLMs-from-scratch)
 - **IISLivePosition**: esempi di come visualizzare la posizione della IA con API esterne e grafica `plotly.express`
 - **PlaywrightWebScraping**: site downloader, download all PDF, jump captcha with proxy [Web Scraping with Playwright + CAPTCHA Bypass For Beginners](https://www.youtube.com/watch?v=RGR5Xj0Qqfs)
 - SimpleGames
@@ -133,6 +132,19 @@ Benvenuti nella collezione di esempi Python by [AlNao.it](https://www.alnao.it)!
   - main.py versione con flask
 - **NotificationCron**: https://www.youtube.com/watch?v=7ahUnBhdI5o
 - **Traslator**: see https://huggingface.co/spaces/Mediocreatmybest/PipelineTranslator/blob/main/app.py
+
+
+## IA
+- **Copilot**: *coming soon* esempi usando la IA di GitHub Copilot 
+- **LargeLanguageModel**: esempi basati sul libro [Build a Large Language Model (From Scratch)" by Sebastian Raschka](https://github.com/rasbt/LLMs-from-scratch)
+- **llama**: esempi basati su llama e ollama
+  - Llama è una famiglia di modelli LLM (Large Language Models) creati da Meta  (il "cervello")
+  - Ollama è un tool/server per eseguire modelli LLM localmente sul tuo computer (il "motore")
+- **OpenAI**: esempio basato sulle api di openAI (datato)
+- **open-interpreter**: *coming soon* ( [how to use ollama with open-interpreter](https://github.com/ollama/ollama/issues/838) &  [MikeBirdTech](https://github.com/MikeBirdTech/open-interpreter) )
+- **Qwen**: esempio basato su qwen e docker, basato sul video [1 Minute MUCH SMARTER Chat Bot](https://www.youtube.com/watch?v=YWUvD6qe56g)
+- **RAG**: *coming soon* con AnythingLLM, interpreter e ragpdf/langchain
+- **Simple_Knoloadge**: semplice esempio di ML e risposte basate sull'apperendimento, basato sul video [How To Build A Chat Bot That Learns From The User In Python Tutorial](https://www.youtube.com/watch?v=CkkjXTER2KE)
 
 
 ## Manage File

@@ -1,7 +1,9 @@
 import openai
 import os
-#pip install openai
-#in debian 12: "pip install openai --break-system-packages" #see #https://stackoverflow.com/questions/75608323/how-do-i-solve-error-externally-managed-environment-everytime-i-use-pip3
+# pip install openai
+# in debian 12 e 13: "apt-get install python3-openai" 
+#   oppure sconsigliato "pip install openai --break-system-packages" 
+# #see #https://stackoverflow.com/questions/75608323/how-do-i-solve-error-externally-managed-environment-everytime-i-use-pip3
 
 #to run
 #export OPENAI_API_KEY=valore

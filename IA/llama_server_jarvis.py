@@ -1,45 +1,77 @@
-# questo esempio è vagamente ispirato a Jarvis dal video https://www.youtube.com/watch?v=gASkikWINOM
-
 """
-apt install -y build-essential cmake git python3 python3-pip
-apt install -y libopenblas-dev
+# llama_server_jarvis.py — Client per server Llama/llama.cpp
+
+Breve descrizione
+- Script Python per inviare prompt a un server Llama (es. `llama-server`/`llama.cpp`) in esecuzione localmente e per avviare una sessione interattiva.
+- Supporta richieste normali e streaming, gestione di timeout e una semplice cronologia locale dei prompt/risposte.
+
+Prerequisiti
+- Python 3.x
+- requests
+  - Installazione: 
+    - `apt-get install python3-requests` su sistemi Debian-based     
+    - `pip install requests --break-system-packages` alternativa su altri sistemi
+- Server Llama in esecuzione (es. `/mnt/Virtuali/llama.cpp/build/bin/llama-server`) che espone l'endpoint OpenAI-like (default `http://127.0.0.1:8085`).
+
+Installazione rapida (esempio Debian)
+```bash
+# build llama.cpp (solo se necessario)
 git clone https://github.com/ggerganov/llama.cpp.git
 cd llama.cpp
-mkdir build
-cd build
+mkdir build && cd build
 cmake ..
 cmake --build . --config Release
-cd ..
-mkdir -p models
-cd models
-wget https://huggingface.co/TheBloke/Llama-2-7B-GGUF/resolve/main/llama-2-7b.Q4_K_M.gguf
-/mnt/Virtuali/llama.cpp/build/bin/llama-simple -m /mnt/Virtuali/llama-2-7b.Q4_K_M.gguf
+./bin/llama-server -m /mnt/Virtuali/codellama-7b-instruct.Q8_0.gguf --port 8090
+```
 
-# wget https://huggingface.co/TheBloke/Mistral-7B-Instruct-v0.2-GGUF/resolve/main/mistral-7b-instruct-v0.2.Q2_K.gguf
-    questo scaricherà il modello Mistral 7B Instruct v0.2 con quantizzazione Q2_K dal repository di TheBloke su Hugging Face. Questa versione è molto compressa (circa 2.83GB) ed è ottimizzata per l'esecuzione su CPU con risorse limitate.
-/mnt/Virtuali/llama.cpp/build/bin/llama-server -m /mnt/Virtuali/llama-2-7b.Q4_K_M.gguf --host 127.0.0.1 --port 8085 --n-gpu-layers 0
-ps aux | grep llama-server
-top -c -p $(pgrep llama-server)
-htop -p $(pgrep llama-server)
-NO /mnt/Virtuali/llama.cpp/build/bin/llama-server -m /mnt/Virtuali/llama-2-7b.Q4_K_M.gguf --host 127.0.0.1 --port 8085 --ctx-size 1024 --threads 4 --n-predict 256 --n-gpu-layers 0
-/mnt/Virtuali/llama.cpp/build/bin/llama-server -m /mnt/Virtuali/mistral-7b-instruct-v0.2.Q2_K.gguf --host 127.0.0.1 --port 8085 --ctx-size 1024 --threads 4 --n-predict 256 --n-gpu-layers 0
-> http://127.0.0.1:8085/
+Andare con un browser su
+```
+localhost:8090
+```
 
+Uso dello script
+- Invio di un singolo prompt:
+    ```bash
+    python3 llama_server_jarvis.py --prompt "Ciao, mi crei una funzione AWS Lambda per scrivere in una tabella dynamo e dimmi i passaggi che devo fare?" --max-tokens 150 --temperature 0.5
+    ```
+- Modalità interattiva (default):
+    ```bash
+    python3 llama_server_jarvis.py
+    ```
+- Modalità interattiva con curl
+    ```
+    curl -X POST http://127.0.0.1:8090/v1/completions -H "Content-Type: application/json" -d '{"model": "llama","prompt": "ciao","max_tokens": 10  }'
+    curl -X POST http://127.0.0.1:8090/v1/completions -H "Content-Type: application/json" -d '{"model": "llama","prompt": "Ciao, where id Padova?","max_tokens": 50  }'
+    curl -X POST http://127.0.0.1:8090/v1/completions -H "Content-Type: application/json" -d '{"model": "llama","prompt": "Write to me a aws lambda function to save a record into dynamo table" ,"max_tokens": 350  }'
+    ```
 
-pip install shell-gpt --break-system-packages
-sgpt --api-url http://127.0.0.1:8080/v1 --api-key "non-necessaria" config
-nano ~/.config/shell_gpt/.sgptrc 
-    OPENAI_API_KEY=your_api_key
-    API_BASE_URL=http://localhost:8085/v1
-    DEFAULT_MODEL=llama3.2:latest
+- Parametri utili:
+  - `--api-url` (default `http://127.0.0.1:8090/v1/completions`)
+  - `--max-tokens` (default `512`)
+  - `--temperature` (default `0.7`)
+  - `--stream` (flag per abilitare lo streaming)
 
-curl -X POST http://127.0.0.1:8085/v1/completions -H "Content-Type: application/json" -d '{"model": "llama","prompt": "ciao","max_tokens": 10  }'
+Esempi curl verso `llama-server`
+```bash
+curl -X POST http://127.0.0.1:8090/v1/completions \
+ -H "Content-Type: application/json" \
+ -d '{"model":"mistral","prompt":"Ciao","max_tokens":50}'
+```
 
-curl -X POST http://127.0.0.1:8085/v1/completions -H "Content-Type: application/json" -d '{"model": "llama","prompt": "Ciao, where id Padova?","max_tokens": 50  }'
+Comportamento principale dello script
+- send_prompt(): invia il prompt, gestisce streaming e non-streaming, stampa tempi e errori.
+- interactive_mode(): ciclo REPL con cronologia locale (salvata in memoria durante l'esecuzione).
+- main(): parsing argomenti, verifica raggiungibilità del server e invoca modalità interattiva o singolo prompt.
 
-sgpt "where is Padova?"
-    
+Note e consigli
+- L'endpoint API e il formato della risposta dipendono dalla versione di `llama-server`/API in uso; adattare parsing se la struttura JSON è differente.
+- Per streaming il server deve inviare eventi in formato SSE; in caso diverso lo streaming va adattato.
+- Controllare risorse RAM/Swap prima di caricare modelli grandi (es. Llama 70B).
+- Se il server non è raggiungibile, lo script chiede conferma prima di continuare.
 
+Licenza / Riferimenti
+- I comandi per scaricare modelli e link utili sono presenti nel file sorgente (es. Hugging Face, llama.cpp).
+- questo esempio è vagamente ispirato a Jarvis dal video https://www.youtube.com/watch?v=gASkikWINOM
 """
 
 #!/usr/bin/env python3
@@ -49,7 +81,9 @@ import time
 import argparse
 import sys
 
-def send_prompt(prompt, api_url="http://127.0.0.1:8085/v1/completions", max_tokens=512, 
+SERVER_DEFAULT_URL = "http://127.0.0.1:8090/v1/completions"
+
+def send_prompt(prompt, api_url=SERVER_DEFAULT_URL, max_tokens=512, 
                 temperature=0.7, stop=None, stream=False):
     """
     Invia un prompt al server Llama locale e restituisce la risposta.
@@ -168,8 +202,8 @@ def interactive_mode(api_url, max_tokens, temperature, stream):
 
 def main():
     parser = argparse.ArgumentParser(description="Client per interagire con un server Llama locale")
-    parser.add_argument("--api-url", default="http://127.0.0.1:8085/v1/completions",
-                        help="URL dell'API del server Llama (default: http://127.0.0.1:8085/v1/completions)")
+    parser.add_argument("--api-url", default=SERVER_DEFAULT_URL,
+                        help=f"URL dell'API del server Llama (default: {SERVER_DEFAULT_URL})")
     parser.add_argument("--max-tokens", type=int, default=512,
                         help="Numero massimo di token da generare (default: 512)")
     parser.add_argument("--temperature", type=float, default=0.7,
