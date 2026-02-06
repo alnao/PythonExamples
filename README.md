@@ -143,8 +143,9 @@ Benvenuti nella collezione di esempi Python by [AlNao.it](https://www.alnao.it)!
 - **OpenAI**: esempio basato sulle api di openAI (datato)
 - **open-interpreter**: *coming soon* ( [how to use ollama with open-interpreter](https://github.com/ollama/ollama/issues/838) &  [MikeBirdTech](https://github.com/MikeBirdTech/open-interpreter) )
 - **Qwen**: esempio basato su qwen e docker, basato sul video [1 Minute MUCH SMARTER Chat Bot](https://www.youtube.com/watch?v=YWUvD6qe56g)
+- **RAG Annotazioni**: mini-progetto di RAG che importa delle annotazioni, salvandole in un database vettoriale e poi modulo di ricerca, ispirato al video [Come implemento l'AI in Typescript](https://www.youtube.com/watch?v=xDOUTqlnJuY), in futuro sarà evoluto per integratsi con il sistema [AlNao J-Annotazioni](https://github.com/alnao/JavaSpringBootExample) *coming soon*
 - **RAG**: *coming soon* con AnythingLLM, interpreter e ragpdf/langchain
-- **Simple_Knoloadge**: semplice esempio di ML e risposte basate sull'apperendimento, basato sul video [How To Build A Chat Bot That Learns From The User In Python Tutorial](https://www.youtube.com/watch?v=CkkjXTER2KE)
+- **Simple_Knoloadge**: semplice esempio di ML e risposte basate sull'apperendimento, basato sul video [How To Build A Chat Bot That Learns From The User In Python](https://www.youtube.com/watch?v=CkkjXTER2KE)
 
 
 ## Manage File
@@ -181,32 +182,36 @@ Benvenuti nella collezione di esempi Python by [AlNao.it](https://www.alnao.it)!
 - modules.py: Esempi di modulo in Python
 - scriptWithModules.py: Eempi di script che importa un modulo (modules.py) in Python
 
-
-## Creazione server
-Vedere la [documentazione ufficiale](https://docs.python.org/es/3.10/library/http.server.html) o pagine di [esempio](https://ryanblunden.com/create-a-http-server-with-one-command-thanks-to-python-29fcfdcd240e?gi=45d07bd349a1).
-Per lanciare il server, il comando è
-```
-python -m http.server 8080
-```
-e poi il server è pronto alla pagina `http://localhost:8080/`.
-
-
-## pyinstaller
-Come crare i file eseguibile da un python con **pyinstaller**, vedi [documentazione ufficiale](https://pyinstaller.org/en/stable/) e [video](https://www.youtube.com/watch?v=bqNvkAfTvIc). [Guida all'installazione](https://pyinstaller.org/en/v3.5/installation.html) e comando
-```
-pip install pyinstaller 
-```
-
-Per poi creare il file eseguibile dentro alla cartella dist del progetto:
-```
-pyinstaller file.py --onefile
-pyinstaller ManagerTk.py --onefile  --hidden-import=Services --hidden-import=Services.services
-pyinstaller --hidden-import=Services --hidden-import=Services.services  -F ManagerTk.py
-```
+# Appunti vari
+- Creazione `venv` separato
+  ```bash
+  apt install python3-venv  
+  python3 -m venv .venv  
+  source .venv/bin/activate  
+  pip install -r requirements.txt  
+  python3 file.py  
+  ```
+- Creazione server
+  Vedere la [documentazione ufficiale](https://docs.python.org/es/3.10/library/http.server.html) o pagine di [esempio](https://ryanblunden.com/create-a-http-server-with-one-command-thanks-to-python-29fcfdcd240e?gi=45d07bd349a1).
+  - Per lanciare il server, il comando è
+    ```bash
+    python -m http.server 8080
+    ```
+  - e poi il server è pronto alla pagina `http://localhost:8080/`.
 
 
-## Appunti vari
-In questa sezione appunti vari presi nel tempo
+- pyinstaller
+  Come crare i file eseguibile da un python con **pyinstaller**, vedi [documentazione ufficiale](https://pyinstaller.org/en/stable/) e [video](https://www.youtube.com/watch?v=bqNvkAfTvIc). [Guida all'installazione](https://pyinstaller.org/en/v3.5/installation.html) e comando
+  ```
+  pip install pyinstaller 
+  ```
+  - Per poi creare il file eseguibile dentro alla cartella dist del progetto:
+    ```bash
+    pyinstaller file.py --onefile
+    pyinstaller ManagerTk.py --onefile  --hidden-import=Services --hidden-import=Services.services
+    pyinstaller --hidden-import=Services --hidden-import=Services.services  -F ManagerTk.py
+    ```
+
 - corso base base see https://www.youtube.com/watch?v=XHzDHJ-BgvU
 - main (see https://www.youtube.com/watch?v=NB5LGzmSiCs)
 	```python
@@ -528,13 +533,13 @@ In questa sezione appunti vari presi nel tempo
 	print(PuntoCardinale.SUD.value == 'S' ) #TRUE
   ```
 - Siti interessanti di riferimento:
-  - Create a GUI app with Tkinter - Step by Step Tutorial https://www.youtube.com/watch?v=itRLRfuL_PQ
-  - Machine Learning FOR BEGINNERS - Supervised, Unsupervised and Reinforcement Learning https://www.youtube.com/watch?v=mMc_PIemSnU
-  - Guida Convert py to exe - from code to software https://www.youtube.com/watch?v=Y0HN9tdLuJo
-  - Come eseguire gli script python all’avvio di Raspberry Pi https://www.moreware.org/wp/blog/2022/05/17/come-eseguire-gli-script-python-allavvio-di-raspberry-pi/
-  - Pickle https://www.youtube.com/watch?v=6Q56r_fVqgw
-  - Flask https://www.youtube.com/watch?v=pXMwAD9zMeg
-  - Django https://www.youtube.com/watch?v=EEiqGjCNLRs
+  - [Create a GUI app with Tkinter - Step by Step Tutorial by Python Simplified](https://www.youtube.com/watch?v=itRLRfuL_PQ)
+  - [Machine Learning FOR BEGINNERS  by Python Simplified](https://www.youtube.com/watch?v=mMc_PIemSnU)
+  - [Guida Convert py to exe  by Python Simplified](https://www.youtube.com/watch?v=Y0HN9tdLuJo)
+  - [Come eseguire gli script python all’avvio di Raspberry Pi](https://www.moreware.org/wp/blog/2022/05/17/come-eseguire-gli-script-python-allavvio-di-raspberry-pi/)
+  - [Pickle](https://www.youtube.com/watch?v=6Q56r_fVqgw)
+  - [Flask](https://www.youtube.com/watch?v=pXMwAD9zMeg)
+  - [Django](https://www.youtube.com/watch?v=EEiqGjCNLRs)
 
 
 

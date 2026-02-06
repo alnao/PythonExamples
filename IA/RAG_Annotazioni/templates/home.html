@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="row g-4">
+  <div class="col-12 col-lg-5">
+    <div class="glass-card p-4 h-100">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+          <div class="text-muted-light">Ingestione</div>
+          <h4 class="mb-0">Crea annotazione</h4>
+        </div>
+        <span class="badge bg-success bg-opacity-25 text-success">Live</span>
+      </div>
+      <form method="post" action="{{ url_for('ui_create_annotation') }}" class="needs-validation" novalidate>
+        <div class="mb-3">
+          <label class="form-label">Testo</label>
+          <textarea class="form-control" name="text" rows="5" placeholder="Incolla qui la tua annotazione" required></textarea>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Sorgente (opzionale)</label>
+          <input class="form-control" name="source" placeholder="es. ticket-123" />
+        </div>
+        <button class="btn btn-accent w-100" type="submit">Salva e vettorizza</button>
+      </form>
+    </div>
+  </div>
+
+  <div class="col-12 col-lg-7">
+    <div class="glass-card p-4 h-100">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+          <div class="text-muted-light">Ricerca</div>
+          <h4 class="mb-0">Semantic search</h4>
+        </div>
+        <span class="badge bg-info bg-opacity-25 text-info">RAG</span>
+      </div>
+      <form method="post" action="{{ url_for('ui_search') }}" class="row g-3 align-items-end">
+        <div class="col-12">
+          <label class="form-label">Query</label>
+          <input class="form-control" name="query" value="{{ query }}" placeholder="Cosa stai cercando?" required />
+        </div>
+        <div class="col-6 col-md-4">
+          <label class="form-label">Top K</label>
+          <input class="form-control" type="number" name="top_k" min="1" max="50" value="{{ top_k }}" />
+        </div>
+        <div class="col-12 col-md-8 text-md-end">
+          <button class="btn btn-accent px-4" type="submit">Cerca</button>
+        </div>
+      </form>
+
+      {% if error %}
+      <div class="alert alert-danger mt-3" role="alert">{{ error }}</div>
+      {% endif %}
+
+      {% if status %}
+      <div class="alert alert-success mt-3" role="alert">{{ status }}</div>
+      {% endif %}
+
+      {% if results %}
+      <div class="table-responsive mt-3">
+        <table class="table table-sm table-dark table-striped align-middle">
+          <thead>
+            <tr>
+              <th scope="col">Chunk</th>
+              <th scope="col">Annotation ID</th>
+              <th scope="col" class="text-end">Score</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for item in results %}
+            <tr>
+              <td style="max-width: 420px; white-space: pre-wrap;">{{ item.text }}</td>
+              <td><span class="badge bg-secondary">{{ item.annotation_id }}</span></td>
+              <td class="text-end">{{ '%.4f'|format(item.score) }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <p class="text-muted-light mt-3">Nessun risultato ancora. Esegui una ricerca.</p>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

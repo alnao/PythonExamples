@@ -1,0 +1,12 @@
+fastapi==0.115.5
+uvicorn[standard]==0.32.1
+flask==3.0.3
+chromadb==0.5.21
+pydantic==2.9.2
+pydantic-settings==2.7.0
+python-dotenv==1.0.1
+llama-cpp-python==0.3.4
+openai==1.54.5
+numpy==2.1.2
+aiokafka==0.11.0
+boto3==1.35.50

@@ -1,0 +1,137 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="row g-4">
+  <div class="col-12 col-lg-6">
+    <div class="glass-card p-4 h-100">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+          <div class="text-muted-light">Ricerca avanzata</div>
+          <h4 class="mb-0">Prompt → vettore</h4>
+        </div>
+        <span class="badge bg-warning text-dark">Prompt</span>
+      </div>
+      <form method="post" action="{{ url_for('ui_prompt_search') }}" class="row g-3">
+        <div class="col-12">
+          <label class="form-label">Prompt / Query</label>
+          <textarea class="form-control" name="prompt" rows="4" placeholder="Scrivi il prompt da vettorizzare" required>{{ prompt }}</textarea>
+        </div>
+        <div class="col-12 col-md-6">
+          <label class="form-label">Motore</label>
+          <select class="form-select" name="backend">
+            <option value="local" {% if backend == 'local' %}selected{% endif %}>Local (llama.cpp)</option>
+            <option value="openai" {% if backend == 'openai' %}selected{% endif %}>OpenAI</option>
+            <option value="hybrid" {% if backend == 'hybrid' %}selected{% endif %}>Hybrid (local→OpenAI)</option>
+          </select>
+        </div>
+        <div class="col-12 col-md-6">
+          <label class="form-label">Top K</label>
+          <input class="form-control" type="number" name="top_k" min="1" max="50" value="{{ top_k }}" />
+        </div>
+        <div class="col-12 col-md-6">
+          <label class="form-label">Chunk da sintetizzare</label>
+          <input class="form-control" type="number" name="summary_limit" min="1" max="50" value="{{ summary_limit }}" />
+        </div>
+        <div class="col-12 text-end">
+          <button class="btn btn-accent px-4" type="submit">Cerca</button>
+        </div>
+      </form>
+
+      {% if error %}
+      <div class="alert alert-danger mt-3" role="alert">{{ error }}</div>
+      {% endif %}
+      {% if status %}
+      <div class="alert alert-success mt-3" role="alert">{{ status }}</div>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="col-12 col-lg-6">
+    <div class="glass-card p-4 h-100">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+          <div class="text-muted-light">Risultati</div>
+          <h4 class="mb-0">Chunk simili</h4>
+        </div>
+        <span class="badge bg-info bg-opacity-25 text-info">Vector DB</span>
+      </div>
+      {% if results %}
+      <div class="table-responsive">
+        <table class="table table-sm table-dark table-striped align-middle">
+          <thead>
+            <tr>
+              <th scope="col">Chunk</th>
+              <th scope="col">Annotation ID</th>
+              <th scope="col" class="text-end">Score</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for item in results %}
+            <tr>
+              <td style="max-width: 420px; white-space: pre-wrap;">{{ item.text }}</td>
+              <td><span class="badge bg-secondary">{{ item.annotation_id }}</span></td>
+              <td class="text-end">{{ '%.4f'|format(item.score) }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <p class="text-muted-light">Nessun risultato ancora. Invia un prompt per cercare.</p>
+      {% endif %}
+
+      <div class="mt-4 small text-muted-light">
+        <strong>Cosa sono i chunk?</strong><br />
+        Ogni annotazione viene divisa in pezzi di testo (chunk) di dimensione configurabile. Ogni chunk viene
+        vettorizzato singolarmente: questo permette di trovare porzioni rilevanti di testo anche se il documento
+        originale è lungo. Il campo "Score" indica quanto il chunk è semanticamente vicino al prompt: valori più
+        bassi (distanza) o più alti (similarità, a seconda del backend) corrispondono a una maggiore affinità.<br />
+        <strong>Meaning of returned chunks (original):</strong><br />
+        Each result is a chunk of your stored annotations. The system compares your prompt vector with chunk vectors and
+        returns the closest ones. The score reflects similarity: closer scores mean the chunk is more relevant to what
+        you asked.<br />
+        <strong>Significato dei chunk trovati (traduzione):</strong><br />
+        Ogni risultato è un pezzo delle annotazioni salvate. Il sistema confronta il vettore del prompt con i vettori
+        dei chunk e mostra quelli più vicini. Il punteggio indica la similarità: più il punteggio è vicino, più il chunk
+        è pertinente a ciò che hai richiesto.
+      </div>
+    </div>
+  </div>
+
+  <div class="col-12">
+    <div class="glass-card p-4 h-100">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+          <div class="text-muted-light">Abstract generati</div>
+          <h4 class="mb-0">Sintesi per ogni chunk</h4>
+        </div>
+        <span class="badge bg-warning text-dark">LLM</span>
+      </div>
+      {% if summaries %}
+      <p class="text-muted-light">Mostro al massimo {{ summary_limit }} chunk con punteggio migliore.</p>
+      <div class="table-responsive">
+        <table class="table table-sm table-dark table-striped align-middle">
+          <thead>
+            <tr>
+              <th scope="col">Annotation ID</th>
+              <th scope="col">Abstract (originale)</th>
+              <th scope="col">Abstract (italiano)</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for s in summaries %}
+            <tr>
+              <td><span class="badge bg-secondary">{{ s.annotation_id }}</span></td>
+              <td style="max-width: 380px; white-space: pre-wrap;">{{ s.abstract_en }}</td>
+              <td style="max-width: 380px; white-space: pre-wrap;">{{ s.abstract_it }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <p class="text-muted-light">Nessun abstract disponibile: esegui una ricerca per generare le sintesi.</p>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}
