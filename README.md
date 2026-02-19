@@ -138,10 +138,11 @@ Benvenuti nella collezione di esempi Python by [AlNao.it](https://www.alnao.it)!
 - **Copilot**: *coming soon* esempi usando la IA di GitHub Copilot 
 - **LargeLanguageModel**: esempi basati sul libro [Build a Large Language Model (From Scratch)" by Sebastian Raschka](https://github.com/rasbt/LLMs-from-scratch)
 - **llama**: esempi basati su llama e ollama
-  - Llama è una famiglia di modelli LLM (Large Language Models) creati da Meta  (il "cervello")
-  - Ollama è un tool/server per eseguire modelli LLM localmente sul tuo computer (il "motore")
+  - **Llama** è una famiglia di modelli LLM (Large Language Models) creati da Meta  (il "cervello")
+  - **OllamaAI** è un tool/server per eseguire modelli LLM localmente sul tuo computer (il "motore")
 - **OpenAI**: esempio basato sulle api di openAI (datato)
 - **open-interpreter**: *coming soon* ( [how to use ollama with open-interpreter](https://github.com/ollama/ollama/issues/838) &  [MikeBirdTech](https://github.com/MikeBirdTech/open-interpreter) )
+- **Pdf_translation**: progetto per tradurre un PDF dall'inglese all'italiano, è possibile eseguirlo con Llama locale, GitHub Copilot oppure LibreTranslate *più o meno funzionante*
 - **Qwen**: esempio basato su qwen e docker, basato sul video [1 Minute MUCH SMARTER Chat Bot](https://www.youtube.com/watch?v=YWUvD6qe56g)
 - **RAG Annotazioni**: mini-progetto di RAG che importa delle annotazioni, salvandole in un database vettoriale e poi modulo di ricerca, ispirato al video [Come implemento l'AI in Typescript](https://www.youtube.com/watch?v=xDOUTqlnJuY), in futuro sarà evoluto per integratsi con il sistema [AlNao J-Annotazioni](https://github.com/alnao/JavaSpringBootExample) *coming soon*
 - **RAG**: *coming soon* con AnythingLLM, interpreter e ragpdf/langchain

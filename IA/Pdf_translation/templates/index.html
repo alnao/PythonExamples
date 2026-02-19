@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDF Translator - English to Italian</title>
+    
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px 0;
+        }
+        
+        .main-container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        .card {
+            border: none;
+            border-radius: 15px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+        }
+        
+        .card-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 15px 15px 0 0 !important;
+            padding: 25px;
+        }
+        
+        .upload-zone {
+            border: 3px dashed #667eea;
+            border-radius: 10px;
+            padding: 40px;
+            text-align: center;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            background-color: #f8f9fa;
+        }
+        
+        .upload-zone:hover {
+            border-color: #764ba2;
+            background-color: #e9ecef;
+        }
+        
+        .upload-zone.dragover {
+            background-color: #e7e7ff;
+            border-color: #764ba2;
+        }
+        
+        .upload-icon {
+            font-size: 4rem;
+            color: #667eea;
+            margin-bottom: 20px;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            padding: 12px 40px;
+            font-size: 1.1rem;
+            border-radius: 25px;
+            transition: transform 0.2s;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+        
+        .feature-item {
+            padding: 15px;
+            margin: 10px 0;
+            background-color: #f8f9fa;
+            border-radius: 10px;
+            border-left: 4px solid #667eea;
+        }
+        
+        .alert {
+            border-radius: 10px;
+            border: none;
+        }
+        
+        .model-status {
+            display: inline-block;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+        
+        .model-loaded {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        
+        .model-not-loaded {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+    </style>
+</head>
+<body>
+    <div class="main-container">
+        <!-- Header -->
+        <div class="text-center mb-4">
+            <h1 class="text-white mb-3">
+                <i class="bi bi-file-earmark-pdf"></i>
+                PDF Translator
+            </h1>
+            <p class="text-white-50 fs-5">English → Italian Translation using AI</p>
+        </div>
+        
+        <!-- Translation Engines Status -->
+        <div class="text-center mb-4">
+            {% if llama_loaded %}
+            <span class="model-status model-loaded me-2">
+                <i class="bi bi-cpu"></i> Llama Available
+            </span>
+            {% else %}
+            <span class="model-status model-not-loaded me-2">
+                <i class="bi bi-cpu"></i> Llama Not Loaded
+            </span>
+            {% endif %}
+            
+            {% if copilot_available %}
+            <span class="model-status model-loaded">
+                <i class="bi bi-github"></i> Copilot Available
+            </span>
+            {% else %}
+            <span class="model-status model-not-loaded">
+                <i class="bi bi-github"></i> Copilot Not Available
+            </span>
+            {% endif %}
+        </div>
+        
+        <!-- Flash Messages -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                    <i class="bi bi-info-circle-fill"></i> {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+        
+        <!-- Main Card -->
+        <div class="card">
+            <div class="card-header">
+                <h2 class="mb-0">
+                    <i class="bi bi-cloud-upload"></i>
+                    Upload Your PDF
+                </h2>
+            </div>
+            <div class="card-body p-4">
+                <form action="/upload" method="post" enctype="multipart/form-data" id="uploadForm">
+                    <!-- Upload Zone -->
+                    <div class="upload-zone" id="uploadZone">
+                        <i class="bi bi-file-earmark-arrow-up upload-icon"></i>
+                        <h4>Drag & Drop your PDF here</h4>
+                        <p class="text-muted mb-3">or</p>
+                        <label for="fileInput" class="btn btn-primary">
+                            <i class="bi bi-folder2-open"></i> Browse Files
+                        </label>
+                        <input type="file" name="file" id="fileInput" class="d-none" accept=".pdf" required>
+                        <p class="text-muted mt-3 mb-0">
+                            <small>Maximum file size: 64MB</small>
+                        </p>
+                    </div>
+                    
+                    <!-- Selected File Display -->
+                    <div id="fileInfo" class="mt-3 d-none">
+                        <div class="alert alert-info">
+                            <i class="bi bi-file-earmark-pdf-fill"></i>
+                            <strong>Selected file:</strong>
+                            <span id="fileName"></span>
+                            <span class="float-end">
+                                <span id="fileSize"></span>
+                            </span>
+                        </div>
+                    </div>
+                    
+                    <!-- Translation Engine Selector -->
+                    <div class="mt-4">
+                        <label class="form-label fw-bold">
+                            <i class="bi bi-gear"></i> Translation Engine:
+                        </label>
+                        <div class="btn-group w-100" role="group">
+                            <input type="radio" class="btn-check" name="engine" id="engineLlama" value="llama" 
+                                   {% if llama_loaded %}checked{% endif %} 
+                                   {% if not llama_loaded %}disabled{% endif %}>
+                            <label class="btn btn-outline-primary" for="engineLlama">
+                                <i class="bi bi-cpu"></i> Llama 2 (Local)
+                                {% if not llama_loaded %}<br><small class="text-muted">Not Available</small>{% endif %}
+                            </label>
+                            
+                            <input type="radio" class="btn-check" name="engine" id="engineCopilot" value="copilot"
+                                   {% if not llama_loaded and copilot_available %}checked{% endif %}
+                                   {% if not copilot_available %}disabled{% endif %}>
+                            <label class="btn btn-outline-primary" for="engineCopilot">
+                                <i class="bi bi-github"></i> GitHub Copilot CLI
+                                {% if not copilot_available %}<br><small class="text-muted">Not Available</small>{% endif %}
+                            </label>
+
+                            <input type="radio" class="btn-check" name="engine" id="engineLibre" value="libre"
+                                   {% if not llama_loaded and not copilot_available %}checked{% endif %}>
+                            <label class="btn btn-outline-primary" for="engineLibre">
+                                <i class="bi bi-cloud-download"></i> LibreTranslate (Local server)
+                            </label>
+                        </div>
+                        <small class="text-muted d-block mt-2">
+                            <i class="bi bi-info-circle"></i> 
+                            Llama runs locally for privacy. Copilot requires GitHub CLI and internet connection.
+                        </small>
+                    </div>
+
+                    <!-- Page Layout Selector -->
+                    <div class="mt-4">
+                        <label class="form-label fw-bold">
+                            <i class="bi bi-layout-text-window"></i> Page Layout:
+                        </label>
+                        <div class="btn-group w-100" role="group">
+                            <input type="radio" class="btn-check" name="column_layout" id="layoutSingle" value="single" checked>
+                            <label class="btn btn-outline-primary" for="layoutSingle">
+                                <i class="bi bi-columns-gap"></i> Single Column
+                            </label>
+
+                            <input type="radio" class="btn-check" name="column_layout" id="layoutDouble" value="double">
+                            <label class="btn btn-outline-primary" for="layoutDouble">
+                                <i class="bi bi-layout-three-columns"></i> Two Columns
+                            </label>
+                        </div>
+                        <small class="text-muted d-block mt-2">
+                            <i class="bi bi-info-circle"></i> 
+                            Use two columns for PDFs with a left/right layout so blocks stay in reading order.
+                        </small>
+                    </div>
+                    
+                    <!-- Copilot Model Selector (shown when Copilot is selected) -->
+                    <div class="mt-4" id="copilotModelSelector" style="display: none;">
+                        <label class="form-label fw-bold">
+                            <i class="bi bi-layers"></i> Copilot Model:
+                        </label>
+                        <select class="form-select form-select-lg" name="copilot_model" id="copilotModel">
+                            <option value="gpt-5" selected>GPT-5 (Most Capable)</option>
+                            <option value="claude-sonnet-4.5">Claude Sonnet 4.5 (Balanced)</option>
+                            <option value="gpt-5-mini">GPT-5 Mini (Faster & Cheaper)</option>
+                        </select>
+                        <small class="text-muted d-block mt-2">
+                            <i class="bi bi-info-circle"></i> 
+                            Select the AI model for translation. GPT-5 provides best quality, Mini is faster.
+                        </small>
+                    </div>
+                    
+                    <!-- Submit Button -->
+                    <div class="text-center mt-4">
+                        <button type="submit" class="btn btn-primary btn-lg" id="submitBtn" disabled>
+                            <i class="bi bi-translate"></i> Translate to Italian
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <!-- Features Section -->
+        <div class="card mt-4">
+            <div class="card-body p-4">
+                <h5 class="mb-4">
+                    <i class="bi bi-stars"></i> Features
+                </h5>
+                
+                <div class="feature-item">
+                    <i class="bi bi-cpu text-primary"></i>
+                    <strong>Multiple Engines</strong> - Choose between Llama 2 (local) or GitHub Copilot CLI
+                </div>
+                
+                <div class="feature-item">
+                    <i class="bi bi-shield-check text-success"></i>
+                    <strong>Privacy First</strong> - Your documents never leave your machine
+                </div>
+                
+                <div class="feature-item">
+                    <i class="bi bi-lightning-charge text-warning"></i>
+                    <strong>Technical Accuracy</strong> - Optimized for technical and formal documents
+                </div>
+                
+                <div class="feature-item">
+                    <i class="bi bi-file-pdf text-danger"></i>
+                    <strong>PDF to PDF</strong> - Upload PDF, get translated PDF back
+                </div>
+            </div>
+        </div>
+        
+        <!-- Footer -->
+        <div class="text-center mt-4">
+            <p class="text-white-50">
+                <small>
+                    <i class="bi bi-info-circle"></i>
+                    Powered by Llama 2 & GitHub Copilot | Built with Flask & Bootstrap 5
+                </small>
+            </p>
+        </div>
+    </div>
+    
+    <!-- Bootstrap 5 JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Custom JavaScript -->
+    <script>
+        const fileInput = document.getElementById('fileInput');
+        const uploadZone = document.getElementById('uploadZone');
+        const fileInfo = document.getElementById('fileInfo');
+        const fileName = document.getElementById('fileName');
+        const fileSize = document.getElementById('fileSize');
+        const submitBtn = document.getElementById('submitBtn');
+        
+        // File input change handler
+        fileInput.addEventListener('change', function(e) {
+            if (this.files.length > 0) {
+                displayFileInfo(this.files[0]);
+            }
+        });
+        
+        // Drag and drop handlers
+        uploadZone.addEventListener('click', function() {
+            fileInput.click();
+        });
+        
+        uploadZone.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            this.classList.add('dragover');
+        });
+        
+        uploadZone.addEventListener('dragleave', function() {
+            this.classList.remove('dragover');
+        });
+        
+        uploadZone.addEventListener('drop', function(e) {
+            e.preventDefault();
+            this.classList.remove('dragover');
+            
+            if (e.dataTransfer.files.length > 0) {
+                const file = e.dataTransfer.files[0];
+                if (file.type === 'application/pdf') {
+                    fileInput.files = e.dataTransfer.files;
+                    displayFileInfo(file);
+                } else {
+                    alert('Please upload a PDF file');
+                }
+            }
+        });
+        
+        // Display file info
+        function displayFileInfo(file) {
+            fileName.textContent = file.name;
+            fileSize.textContent = formatFileSize(file.size);
+            fileInfo.classList.remove('d-none');
+            submitBtn.disabled = false;
+        }
+        
+        // Format file size
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+        }
+        
+        // Handle engine selection change - show/hide Copilot model selector
+        const engineLlama = document.getElementById('engineLlama');
+        const engineCopilot = document.getElementById('engineCopilot');
+        const copilotModelSelector = document.getElementById('copilotModelSelector');
+        
+        function updateModelSelectorVisibility() {
+            if (engineCopilot && engineCopilot.checked) {
+                copilotModelSelector.style.display = 'block';
+            } else {
+                copilotModelSelector.style.display = 'none';
+            }
+        }
+        
+        // Add event listeners to engine radio buttons
+        if (engineLlama) {
+            engineLlama.addEventListener('change', updateModelSelectorVisibility);
+        }
+        if (engineCopilot) {
+            engineCopilot.addEventListener('change', updateModelSelectorVisibility);
+        }
+        
+        // Initial check on page load
+        updateModelSelectorVisibility();
+        
+        // Form submission
+        document.getElementById('uploadForm').addEventListener('submit', function() {
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="bi bi-hourglass-split"></i> Processing...';
+        });
+    </script>
+</body>
+</html>

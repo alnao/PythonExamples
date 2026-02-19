@@ -1,0 +1,16 @@
+# Flask web framework
+Flask==3.0.0
+Werkzeug==3.0.1
+
+# PDF processing
+pypdf==3.17.4
+reportlab==4.0.7
+PyMuPDF>=1.23.9
+
+# Llama model support
+llama-cpp-python==0.2.20
+
+# Additional dependencies
+Pillow>=10.1.0
+
+requests

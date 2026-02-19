@@ -1,6 +1,6 @@
 # IA RAD Annotazioni
 
-Tutto in Python con due entrypoint (FastAPI e Flask) per ingestione e ricerca RAG, con UI web Flask per inserire annotazioni, fare ricerche e generare abstract sui chunk restituiti.
+Piccolo progetto in Python con due entrypoint (FastAPI e Flask) per gestione e ricerca annotazioni dentro ad un RAG, con UI web Flask per inserire annotazioni, eseguire ricerche e generare abstract sui chunk restituiti.
 - ispirato al video [Come ho implemento l'AI in Typescript](https://www.youtube.com/watch?v=xDOUTqlnJuY)
 - in futuro sarà evoluto per integratsi con il sistema [AlNao J-Annotazioni](https://github.com/alnao/JavaSpringBootExample) *coming soon*
 - attenzione: usando un RAD locale, anche con piccoli modelli come il `codellama-7b-instruct.Q8_0`, risulta necessaria una grande quantità di risorse: usando Debian 13, CPU 12 CORE, servono 10Gb di ram e 10Gb di memoria swap (*non mi posso permettere una GPU con quello che costano!*)
@@ -12,11 +12,11 @@ Questo *progetto* è stato creato interamente usando l'IA GitHub copilot con i s
     - split annotation on chunks (example on break line or similar)
     - trasform every chunk in vectory with llamam model
     - save chanks and vetors on databases (different tabels with id unique)
-    - use database DMBS with vector type and vestor searching system (SQLite+pgvector-like (Chroma/Faiss embedded)
+    - use database DMBS with vector type and vestor searching system (SQLite+pgvector-like , Chroma/Faiss embedded)
     - service to search a word or input, trasform input into vestor and search similar vector into database
     - web-interface to create an annotation or upload annotations (in future automatic loading)
     - web-interface to insert input and check searching result
-    - llama model on folder     model_path="/mnt/Virtuali/codellama-7b-instruct.Q8_0.gguf"
+    - llama model on folder model_path="/mnt/Virtuali/codellama-7b-instruct.Q8_0.gguf"
 - with flask create an web-interface to create a single annotation and run search system using bootstrap5
 - now I wanna create another Search, for example an new Serach input with prompt and engin have to trasform in vector and search vector into database, result table with result, create an new view
 - on "Prompt Search" result, add an section where model analize every chank finded and write an abstract, in original language and an traduction in italian , when you run summary process, use only X chunks, X a parameter default 5, use chunks with more scores
