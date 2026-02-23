@@ -135,14 +135,18 @@ Benvenuti nella collezione di esempi Python by [AlNao.it](https://www.alnao.it)!
 
 
 ## IA
+- **BuildLargeLanguageModel**: esempi basati sul libro [Build a Large Language Model by Sebastian Raschka](https://github.com/rasbt/LLMs-from-scratch)
 - **Copilot**: *coming soon* esempi usando la IA di GitHub Copilot 
-- **LargeLanguageModel**: esempi basati sul libro [Build a Large Language Model (From Scratch)" by Sebastian Raschka](https://github.com/rasbt/LLMs-from-scratch)
+- **litellm**: LiteLLM è una libreria Python open-source compatibile con oltre 100 modelli di Large Language Models (LLM) usando il formato OpenAI
+  - **base**: alcuni semplici script che usano la libreria base presi dalla [documentazione ufficiale](https://docs.litellm.ai/docs/providers/github_copilot)
+  - **nano-agent**: un piccolo agente che usa litellm come libreria per interfacciarsi ad un llm 
+    - liberamente ispirati al *nano agent* di [ekolivero](https://github.com/ekolivero/nano-agent#).
 - **llama**: esempi basati su llama e ollama
   - **Llama** è una famiglia di modelli LLM (Large Language Models) creati da Meta  (il "cervello")
   - **OllamaAI** è un tool/server per eseguire modelli LLM localmente sul tuo computer (il "motore")
 - **OpenAI**: esempio basato sulle api di openAI (datato)
 - **open-interpreter**: *coming soon* ( [how to use ollama with open-interpreter](https://github.com/ollama/ollama/issues/838) &  [MikeBirdTech](https://github.com/MikeBirdTech/open-interpreter) )
-- **Pdf_translation**: progetto per tradurre un PDF dall'inglese all'italiano, è possibile eseguirlo con Llama locale, GitHub Copilot oppure LibreTranslate *più o meno funzionante*
+- **Pdf_translation**: progetto per tradurre un PDF dall'inglese all'italiano, è possibile eseguirlo con Llama locale, GitHub Copilot oppure LibreTranslate *più o meno funzionante, arriveranno aggiornamenti*
 - **Qwen**: esempio basato su qwen e docker, basato sul video [1 Minute MUCH SMARTER Chat Bot](https://www.youtube.com/watch?v=YWUvD6qe56g)
 - **RAG Annotazioni**: mini-progetto di RAG che importa delle annotazioni, salvandole in un database vettoriale e poi modulo di ricerca, ispirato al video [Come implemento l'AI in Typescript](https://www.youtube.com/watch?v=xDOUTqlnJuY), in futuro sarà evoluto per integratsi con il sistema [AlNao J-Annotazioni](https://github.com/alnao/JavaSpringBootExample) *coming soon*
 - **RAG**: *coming soon* con AnythingLLM, interpreter e ragpdf/langchain

@@ -1,0 +1,12 @@
+[project]
+name = "nano-agent"
+version = "1.0.0"
+description = "Mini coding agent – works with OpenAI, Anthropic, Perplexity, and local GGUF models"
+requires-python = ">=3.10"
+dependencies = [
+    "litellm>=1.40",
+    "python-dotenv>=1.0",
+]
+
+[project.scripts]
+nano-agent = "nano_agent.main:main"
