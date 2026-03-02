@@ -1,6 +1,11 @@
 # from https://www.youtube.com/watch?v=CkkjXTER2KE
 # create SimpleIA_knowladge.json
 
+"""
+semplice esempio di ML e risposte basate sull'apperendimento, 
+basato sul video [How To Build A Chat Bot That Learns From The User In Python](https://www.youtube.com/watch?v=CkkjXTER2KE)
+"""
+
 import json
 from difflib import get_close_matches
 import os

@@ -3,6 +3,9 @@ SEE https://docs.aws.amazon.com/it_it/polly/latest/dg/examples-python.html
 
 TO RUN python  server.py
 
+Per eseguirlo basta lanciare `python server.py e` e poi procedere alla pagina `http://localhost:8000/index.html` che permette di eseguire.
+esempio preso dalla [documentazione ufficiale](https://docs.aws.amazon.com/it_it/polly/latest/dg/examples-python.html)
+
 Example Python 2.7+/3.3+ Application
 
 This application consists of a HTTP 1.1 server using the HTTP chunked transfer

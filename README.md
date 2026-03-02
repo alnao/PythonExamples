@@ -1,191 +1,79 @@
 # Python Examples ✨
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Python-3.8%2B-blue?style=for-the-badge&logo=python&logoColor=white" alt="Python 3.8+" height=60/>
-  <img src="https://img.shields.io/badge/AWS-Cloud-orange?style=for-the-badge&logo=amazon-aws&logoColor=white" alt="AWS" height=60/>
-  <!--<img src="https://img.shields.io/badge/Django-Framework-green?style=for-the-badge&logo=django&logoColor=white" alt="Django">-->
-  <img src="https://img.shields.io/badge/Docker-Container-blue?style=for-the-badge&logo=docker&logoColor=white" alt="Docker" height=60/>
-  <!--<img src="https://img.shields.io/badge/Flask-Web-lightgrey?style=for-the-badge&logo=flask&logoColor=white" alt="Flask" height=60/>-->
+  <img src="https://img.shields.io/badge/Python-3766AB?logo=Python&logoColor=white" />
+  <img src="https://img.shields.io/badge/Pandas-2496ED?logo=pandas&logoColor=white" />
+  <img src="https://img.shields.io/badge/Linux-BBCCEE?logo=Linux&logoColor=black" />
+  <img src="https://img.shields.io/badge/AWS-FF9900?logo=AmazonAWS&logoColor=white" />
+  <img src="https://img.shields.io/badge/Azure-0078D4?logo=microsoftazure&logoColor=white" />        
+  <img src="https://img.shields.io/badge/Docker-2496ED?logo=Docker&logoColor=white" />
+  <img src="https://img.shields.io/badge/kubernetes-326CE5?logo=kubernetes&logoColor=white" />
+  <img src="https://img.shields.io/badge/ollama-522CA5?logo=ollama&logoColor=white" />
+  <img src="https://img.shields.io/badge/Copilot-gray?logo=githubcopilot&logoColor=white" />
+  <img src="https://img.shields.io/badge/RobotFramework-3766AB?logo=RobotFramework&logoColor=white" />
 </p>
 
 
-## ✨ Panoramica
-
-Benvenuti nella collezione di esempi Python by [AlNao.it](https://www.alnao.it)! 
-- **☁️ Cloud Computing con AWS ed Azure**: Esempi completi per CDK-SDK per i servizi Cloud di AWS e di Azure
-- **🌐 Sviluppo Web**: Applicazioni Flask, Django, API REST e interfacce web moderne
-- **🐳 Containerizzazione**: Progetti Docker e Kubernetes pronti per la produzione
-- **📊 Data Science**: Manipolazione dati con Pandas, Spark e tecniche di analisi avanzate
-- **🎮 Applicazioni GUI**: Interfacce desktop con Tkinter e altre librerie grafiche
-- **🎯 Progetti Pratici**: Dall'automazione di file alla gestione di database NoSQL
+Benvenuti nella collezione di esempi Python by [AlNao](https://www.alnao.it)!
 
 
+# Table of examples
 
-## AWS
-- Per eseguire correttamente gli esempi relativi ai servizi AWS, è necessario avere:
+| Section | Name | Description |
+|-----|----|----|
+| AI | [`📁`](./AI/BuildLargeLanguageModel/) LLM | esempi basati sul libro [Build a Large Language Model by Sebastian Raschka](https://github.com/rasbt/LLMs-from-scratch) |
+| AI | [`📁`](./AI/Copilot/) copilot | *coming soon* esempi usando la IA di GitHub Copilot  |
+| AI | [`📁`](./AI/litellm/) litellm | - **base**: alcuni semplici script che usano la libreria base presi dalla [documentazione ufficiale](https://docs.litellm.ai/docs/providers/github_copilot)<br />- **nano-agent**: un piccolo agente che usa litellm come libreria per interfacciarsi ad un llm <br />- liberamente ispirati al *nano agent* di [ekolivero](https://github.com/ekolivero/nano-agent#) |
+| AI | [`📁`](./AI/llama/) llama | - **Llama** è una famiglia di modelli LLM (Large Language Models) creati da Meta  (il "cervello") <br/>- **OllamaAI** è un tool/server per eseguire modelli LLM localmente sul tuo computer (il "motore") |
+| AI | [`📁`](./AI/OpenAI/) OpenAI | esempio basato sulle api di openAI (*datato e probabilmente non funzionante*) <br />- **open-interpreter**: *coming soon* ( [how to use ollama with open-interpreter](https://github.com/ollama/ollama/issues/838) &  [MikeBirdTech](https://github.com/MikeBirdTech/open-interpreter) )|
+| AI | [`📁`](./AI/Pdf_translation/) Translation | progetto per tradurre un PDF dall'inglese all'italiano, è possibile eseguirlo con Llama locale, GitHub Copilot e LibreTranslate <br/>*più o meno funzionante, arriveranno aggiornamenti* |
+| AI | [`📁`](./AI/Qwen/) Qwen | esempio basato su qwen e docker, basato sul video [1 Minute MUCH SMARTER Chat Bot](https://www.youtube.com/watch?v=YWUvD6qe56g) |
+| AI | [`📁`](./AI/RAG/) RAG | mini-progetto di RAG che importa delle annotazioni, salvandole in un database vettoriale e poi modulo di ricerca, ispirato al video [Come implemento l'AI in Typescript](https://www.youtube.com/watch?v=xDOUTqlnJuY) <br /> in futuro sarà evoluto per integratsi con il sistema [AlNao J-Annotazioni](https://github.com/alnao/JavaSpringBootExample) *coming soon* |
+| <img src="https://img.shields.io/badge/AWS-FF9900?logo=AmazonAWS&logoColor=white" /> | [`📁`](./AWS/Bedrock/) Bedrock | un sistema RAG (Retrieval-Augmented Generation) completo utilizzando i servizi AWS, con particolare focus su Amazon Bedrock per l'intelligenza artificiale. Il sistema permette di caricare documenti, indicizzarli semanticamente e interrogarli in linguaggio naturale, combinando la potenza dei modelli di embedding e chat di AWS Bedrock. |
+| <img src="https://img.shields.io/badge/AWS-FF9900?logo=AmazonAWS&logoColor=white" /> | [`📁`](./AWS/CDK/) CDK | Esempi per la creazione di risorse tramite la libreria CDK. Gli esempi coprono i principali servizi come bucket S3, Ec2, CloudFront, Lambda, Step function, Api gateway, Dynamo, Glue, SQS, SNS, EFS, ASG e ALB.<br/>Per ogni progettino c'è un file README dedicato.
+| <img src="https://img.shields.io/badge/AWS-FF9900?logo=AmazonAWS&logoColor=white" /> | [`📁`](./AWS/Glue/) Glue | Semplici esempi creato manualmente che elabora un file csv con una struttura ben definita. <br/> Esempi per importare in database RDS SqlServer il contenuto di un file CSV (funziona anche con file di grandi dimensioni a differenze di una lambda che andrebbe in errore per timeout) |
+| <img src="https://img.shields.io/badge/AWS-FF9900?logo=AmazonAWS&logoColor=white" /> | [`📁`](./AWS/Lambda/) Lambda | Semplici esempi di funzioni AWS-Lambda scritte in python con, per maggiori dettagli vedere il README nella cartella e il [sito ufficiale di serverless](https://www.serverless.com/) |
+| <img src="https://img.shields.io/badge/AWS-FF9900?logo=AmazonAWS&logoColor=white" /> | [`📁`](./AWS/Managers/)  Managers | - **ManagerFlask**: *Applicazione web* sviluppata con Flask per gestire i servizi AWS usando le librerie SDK <br/>- **ManagerFlaskCloudWatch**: *Applicazione web* sviluppata con Flask per la gestione di CloudWatch Alarms & CloudWatch  <br/>- **ManagerTk**: *Applicazione* sviluppata con la libreria tkinter (menu, gestione finestre ed elenchi) per gestire i servizi AWS usando le librerie SDK/boto <br/>- **PanoramicResources**: semplice *Dashboard* per visualizzare delle risorse di un account AWS |
+| <img src="https://img.shields.io/badge/AWS-FF9900?logo=AmazonAWS&logoColor=white" /> | [`📁`](./AWS/Polly/) Polly | Semplice **text to speech**, esempio preso dalla [documentazione ufficiale](https://docs.aws.amazon.com/it_it/polly/latest/dg/examples-python.html), funzionante anche con la lingua italiana selezionando la voce *Bianca (Famale, Italian)*. |
+| <img src="https://img.shields.io/badge/AWS-FF9900?logo=AmazonAWS&logoColor=white" /> | [`📁`](./AWS/SDK/) SDK | Diversi esempi che usano la libreria AWS-SDK, per maggiori dettagli vedere il [sito ufficiale](https://boto3.amazonaws.com/v1/documentation/api/latest/guide/quickstart.html). |
+| <img src="https://img.shields.io/badge/Azure-0078D4?logo=microsoftazure&logoColor=white" /> | [`📁`](./Azure/Managers/) Managers | **PanoramicResources**: semplice *Dashboard* per visualizzare delle risorse di un account Azure |
+| <img src="https://img.shields.io/badge/Pandas-2496ED?logo=pandas&logoColor=white" /> |  [`📁`](./DataScientist/Pandas/)  | Examples ispired by [khuyentran1401 website](https://khuyentran1401.github.io/Efficient_Python_tricks_and_tools_for_data_scientists/README.html) |
+| <img src="https://img.shields.io/badge/Spark-2496ED?logo=sparkar&logoColor=white" /> | [`📁`](./DataScientist/Spark/)  | Progetti ispirati al corso [udemy.com/course/apache-spark](https://www.udemy.com/course/apache-spark-programming-in-python-for-beginners). Per maggiori dettagli, vedere il file README all'interno della cartella. |
+| <img src="https://img.shields.io/badge/Django-blue?logo=django&logoColor=white" /> | [`📁`](./Django/)  | Quattro esempi di progetti sviluppati con Django *potrebbero essere obsoleti* |
+| <img src="https://img.shields.io/badge/Docker-2496ED?logo=Docker&logoColor=white" /> | [`📁`](./Docker/) | - 01 **simple Pandas**: see [run a python code on aws batch](https://medium.com/codex/run-a-python-code-on-aws-batch-part-1-creation-of-python-script-and-docker-container-1b01dc89eaed) <br/>- 02 **Flask Login**: [esempio di docker](https://www.youtube.com/watch?v=ud_nq9lapF4) con dentro una piccola applicazione web creata con Flask e db (sqlite) <br/>- 03 **Api Persone NODB**: applicazione per l'esposizione di API, non prevista persistenza *al riavvio si perde tutto* <br />- 04 **Flask login Ldap**: piccola applicazione Flask con la gestione delle credenziali tramite un server AD e protocollo LDAP <br />- 05 **Flask login Saml2-SSO**: piccola applicazione Flask con la gestione delle credenziali tramite un server AD e protocollo Saml2-SSO |
+| <img src="https://img.shields.io/badge/Docker-2496ED?logo=Docker&logoColor=white" /> |  [`📁`](./Docker/) | - 06 **TraslatorSubtitle**: applicazione per tradurre file subtitle in formato srt, see [video](https://www.youtube.com/watch?v=-l7YocEQtA0) <br/>- 07 **DockerCompose API**: applicazione con api-rest che legge e scrive dati su un database (con docker-compose) <br />- 08 **Crud MySql Minikubernetes**: infrastruttura CRUD creata con Kubernetes *funzionante* su Minikube <br/>- 09 **AWS Dynamo**: CRUD con Dynamo con fast-api con un piccolo frontend per visualizzare i dati <br/>- 10 **Robot Framework**: test-unit con RobotFramework di una infrastruttura con DynamoDb, Kafka, consumer e un frontend |
+| <img src="https://img.shields.io/badge/Docker-2496ED?logo=Docker&logoColor=white" />  <img src="https://img.shields.io/badge/kubernetes-326CE5?logo=kubernetes&logoColor=white" /> |  [`📁`](./Docker/) | - 11 **llamaAIRaspberry3**: immagine per eseguire una IA con motore **Llama** in un docker, può essere eseguita su PC *o su Rasbperry 3b* <br />- 12 **KubernetesScaling**: eseguire lo scaling con kubernetes utilizzando la funzionalità **Horizontal Pod Autoscalers** di K8S <br />- 13 **FastAPIAuthJWT**: esempio minimale di autenticazione JWT con FastAPI senza database con librerie Bcrypt e Jose <br/>- 14 **CeleryWorkkersRedis**: esempio di architettura "web + worker + broker" con Flask, Celery e Redis in Docker Compose <br/>- 15 **StreamProcessingKafka**: esempio di stream processing con Kafka in Docker Compose con producer e consumer asincroni |
+| FronOtherSites |  [`📁`](./FromOthersSites/) | - **Blockchain**: esempi di implementazione dell'algoritmo "proof of work" single and multiple node<br/> - **FaceDetector**: https://www.youtube.com/watch?v=i3sLv1sus0I <br />- **FastApi**: https://realpython.com/fastapi-python-web-apis/ <br />- **FlaskGeolocalNotes**: https://www.youtube.com/watch?v=w-rti-5KHME <br />-**FlaskLogin**: https://www.youtube.com/watch?v=ud_nq9lapF4 <br />- **FlaskLoginGoogle**: https://realpython.com/flask-google-login/ <br/>- **IISLivePosition**: esempi di come visualizzare la posizione della IA con API esterne e grafica `plotly.express` <br />- **PlaywrightWebScraping**: site downloader [Web Scraping with Playwright + CAPTCHA Bypass For Beginners](https://www.youtube.com/watch?v=RGR5Xj0Qqfs) |
+| FronOtherSites | [`📁`](./FromOthersSites/) Games | - **ArcadeLib**: [Snake](https://www.geeksforgeeks.org/python-arcade-player-movement/) - [Space](https://realpython.com/arcade-python-game-framework/) - [Tutorial](https://api.arcade.academy/en/latest/examples/platform_tutorial/step_02.html) - [Framework](https://realpython.com/arcade-python-game-framework/) <br />- **Coffe**: [simple coffe machine](https://github.com/uxai/100daysofcode/blob/main/Day%2015/coffee_machine.py) <br />- **Pong**: [pong example from arcade.academy](https://api.arcade.academy/en/latest/examples/sections_demo_2.html#sections-demo-2) <br />- **PyGame** library see [documentation](https://www.pygame.org/docs/), [fly game](https://realpython.com/pygame-a-primer/) and [asteroids](https://realpython.com/asteroids-game-python/) <br />- **Rogue Like**: see [tutorial](https://rogueliketutorials.com/tutorials/tcod/v2/part-1/) <br />- **Tetris**: see [tutorial](https://api.arcade.academy/en/latest/examples/tetris.html#tetris) <br />- **Vital_messages** & shootout: see [tutorial](https://www.youtube.com/watch?v=3kdM9wyglnw) |
+| FronOtherSites | [`📁`](./FromOthersSites/)  | - **TkinterExample**: example from [Python Simplified](https://www.youtube.com/watch?v=5qOnzF7RsNA) <br />- **Youtube Downloader**: with flask see [tutorial](https://www.youtube.com/watch?v=EMlM6QTzJo0) <br />- **NotificationCron**: see [tutorial](https://www.youtube.com/watch?v=7ahUnBhdI5o) <br />- **Traslator**: see [huggingface example](https://huggingface.co/spaces/Mediocreatmybest/PipelineTranslator/blob/main/app.py) |
+| <img src="https://img.shields.io/badge/ManageFile-3766AB?logo=Python&logoColor=white" /> | [`📁`](./ManageFile/)   | - **CheckASCII**: script che verifica se in un file di testo ci sono carateri non AsciiUtf8 <br />- **Csv2fixedWidthFile**: esempio di script py che prende un file csv e lo trasforma in un file txt posizionale <br />- **Marge2txtFile**: esempio di script py che esegue marge di due file <br />- **Sftp & ssh**: metodi per la gestione di un server sftp (invio e ricezione dati), esecuzione comando in remoto con ssh <br />- **UnzipFile**: esempio che usa "zipfile" di Py per estrarre il contenuto di un pacchetto zip <br />- **UploadFileToRestAPI**: esempio per l'invio di un file locale ad una API Rest <br />- **VideoConcat ffmpeg**: script per eseguire il concat di più video usando ffmpeg (solo su GNU Linux)  |
+| <img src="https://img.shields.io/badge/RobotFramework-3766AB?logo=RobotFramework&logoColor=white" /> | [`📁`](./RobotFramework/) | - 01 Simple: robot che esegue test sulla login su una applicazioni di esempio <br />- 02 Database: robot che esegue query CRUD su un Database Mysql |
+| <img src="https://img.shields.io/badge/Simples-3766AB?logo=Python&logoColor=white" /> | [`📁`](./Simple/)  | - **gui**: esempi vari di librerie GUI per Python <br />- **mongo**: script per la gestione di una base dati NoSql Mongo<br />- **rabbitMq**: script la gestione di una coda RabbitMq |
+
+<!--
+  - *coming soon* https://github.com/BlakeDalmas/Python
+  - *coming soon* Simple Platformer https://api.arcade.academy/en/latest/examples/platform_tutorial/index.html
+  - *coming soon* Simple game https://api.arcade.academy/en/latest/sample_games.html
+  - *coming soon* Procedural caves https://api.arcade.academy/en/stable/examples/procedural_caves_bsp.html 
+  - **open-interpreter**: *coming soon* ( [how to use ollama with open-interpreter](https://github.com/ollama/ollama/issues/838) &  [MikeBirdTech](https://github.com/MikeBirdTech/open-interpreter) )
+  - **RAG**: *coming soon* con AnythingLLM, interpreter e ragpdf/langchain
+  -->
+
+
+### Requisiti
+
+- Per tutti gli esempi nella cartella AWS, per eseguire correttamente gli esempi relativi ai servizi AWS, è necessario avere:
   - Account AWS attivo e avere installata la [AWS Command Line Interface](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html).
   - Credenziali configurate con il comando `aws configure` (con Access Key, Secret Key, regione)
   - Permessi adeguati: L’utente AWS deve avere i permessi necessari per i servizi utilizzati (S3, Lambda, EC2, DynamoDB, ecc.).
   - Tool e librerie: Python 3.8+, pip e boto3, Node.js e npm, Docker
-- **Bedrock**: un sistema **RAG (Retrieval-Augmented Generation)** completo utilizzando i servizi AWS, con particolare focus su **Amazon Bedrock** per l'intelligenza artificiale. Il sistema permette di caricare documenti, indicizzarli semanticamente e interrogarli in linguaggio naturale, combinando la potenza dei modelli di embedding e chat di AWS Bedrock.
-- **CDK**: Per la libreria CDK, installare della libreria, vedere il [sito ufficiale](https://docs.aws.amazon.com/cdk/v2/guide/getting_started.html) eseguire il comando `npm install -g aws-cdk`. Per ogni progetto c'è un README dedicato:
-  - 01 **bucketS3**: creazione di un bucket
-  - 02 **EC2**: creazione di una istanza EC2
-  - 03 **website S3**: creazione di una sito web esposto con S3
-  - 04 **cloud front**: creazione di una distribuzione con CloudFront, vedere [repository aws-samples](https://github.com/aws-samples/deploy-cloudfront-in-china-with-cdk/blob/main/Python/lib/cloudfront_in_china_stack.py)
-  - 05 **lambda function**: creazione di una funzione lambda function, vedere [repository aws-samples](https://github.com/aws-samples/aws-cdk-examples/tree/main/python/lambda-with-existing-s3-code)
-  - 06 **event bridge**: creazione di una regola EventBridge, vedere [repository aws-samples](https://github.com/aws-samples/aws-cdk-examples/blob/main/python/api-eventbridge-lambda/api_eventbridge_lambda/api_eventbridge_lambda.py) 
-  - 07 **step function**: creazione di una step function con due lambda, vedere [repository aws-samples](https://github.com/aws-samples/aws-cdk-examples/blob/main/python/stepfunctions/stepfunctions/stepfunctions_stack.py)
-  - 08 **api gateway**: api gateway con esposizione di una risorsa REST
-  - 09 **dynamo api crud**: creazione di una tabella dynamo con api gateway e lambda come crud 
-  - 10 **lambda auth**: creazione di una API REST con lambda authorizer per la validazione di Token JWT
-  - 13 **glue job**: creazione di un job glue per leggere un file e modificarne il contenuto
-  - 15 **SQS**: creazione di una coda SQS, un API con un metodo producer e un metodo consumer
-  - 16 **SNS**: creazione di un sistema SNS con una lambda che scoda le notifiche
-  - 18 **EFS**: creazione di un disco EFS montato da una EC2 che espone un server apache
-  - 20 **ASG** e **ALB**: creazione di un AutoScaling group e Application Load Balancer con EC2 che eseguono un webserver apache senza disco condiviso
-- **Glue**
-  - 01 **console**: Semplice esempio creato da console manualmente che elabora un file csv con una struttura ben definita.
-  - 02 **sqlServer** e **example03sqlServerWithRunSql**: Esempio creato per importare in database RDS SqlServer il contenuto di un file CSV (funziona anche con file di grandi dimensioni a differenze di una lambda che andrebbe in errore per timeout)
-- **Lambda**: vari esempi di lambda scritte in python con, vedere il README nella cartella e il [sito ufficiale di serverless](https://www.serverless.com/). 
-- **Managers**
-  - **ManagerFlask**: *Applicazione web* sviluppata con Flask per gestire i servizi AWS usando le librerie SDK
-  - **ManagerFlaskCloudWatch**: *Applicazione web* sviluppata con Flask per la gestione di CloudWatch Alarms & CloudWatch  
-  - **ManagerTk**: *Applicazione* sviluppata con la libreria tkinter (menu, gestione finestre ed elenchi) per gestire i servizi AWS usando le librerie SDK/boto
-  - **PanoramicResources**: semplice *Dashboard* per visualizzare delle risorse di un account AWS
-- **Polly**: text to speech, esempio preso dalla [documentazione ufficiale](https://docs.aws.amazon.com/it_it/polly/latest/dg/examples-python.html), funzionante anche con la lingua italiana selezionando la voce `Bianca (Famale, Italian)`. Per eseguirlo basta lanciare `python server.py e` e poi procedere alla pagina `http://localhost:8000/index.html` che permette di eseguire.
-  - **Amazon Polly**: è un servizio AWS specificamente dedicato alla sintesi vocale, ovvero alla generazione di audio (voce) a partire da testo. Polly non genera immagini né video a partire da testo. Polly può essere usato per generare tracce audio da inserire in video o slideshow, ma la generazione di immagini/video rimane esterna.
-  - Soluzioni di terze parti: Puoi comunque integrare servizi esterni (come Runway, Pika, Synthesia, ecc.) sulle infrastrutture AWS, ma non sono prodotti AWS nativi. 
-  - Amazon Rekognition: È un servizio per l’analisi di immagini e video (riconoscimento facciale, oggetti, moderazione), ma non genera contenuti multimediali.
-- **SDK**: Per la libreria SDK, l'installazione e la configurazione vedere il [sito ufficiale](https://boto3.amazonaws.com/v1/documentation/api/latest/guide/quickstart.html) e il comando `pip install boto3`. Classi per la gestione dei servizi: profiles, SSM parameter, Bucket S3, Ec2, CloudFront, Lambda, Event bridge, Step function, Dynamo, RDS e tanti altri.
+  - **CDK**: Per la libreria CDK, installare della libreria, vedere il [sito ufficiale](https://docs.aws.amazon.com/cdk/v2/guide/getting_started.html) eseguire il comando `npm install -g aws-cdk`.
+- Per tutti gli esempi su Azure è necessario avere un account Azure attivo e una subscription 
+- Per tutti gli esempi che usano Llama e Ollama è necessario avere scaricati i modelli
+  - per l'esecuzione in locale è consigliato l'uso di una GPU abbastanza potente
+- Per tutti gli esempi di GitHub Copilot e OpenAI è necessario avere un utente e un abbonamento attivo
   
 
-## Azure
-- **Managers**
-  - **PanoramicResources**: semplice *Dashboard* per visualizzare delle risorse di un account Azure
-
-
-## Data Scientist
-- **Pandas** e altre librerie per la manipolazione dati, see [khuyentran1401 website](https://khuyentran1401.github.io/Efficient_Python_tricks_and_tools_for_data_scientists/README.html)
-- **Spark** vedere file README all'interno della cartella, progetti ispirati al corso [udemy.com/course/apache-spark](https://www.udemy.com/course/apache-spark-programming-in-python-for-beginners)
-
-
-## Django
-- PythonDjango1example
-- PythonDjango2news
-- PythonDjango3forms
-- PythonDjango4forms
-
-
-## Docker
-- 01 **simple Pandas**: see [run a python code on aws batch](https://medium.com/codex/run-a-python-code-on-aws-batch-part-1-creation-of-python-script-and-docker-container-1b01dc89eaed)
-- 02 **Flask Login**: [esempio di docker](https://www.youtube.com/watch?v=ud_nq9lapF4) con dentro una piccola applicazione web creata con Flask e db (sqlite), 
-- 03 **Api Persone NODB**: applicazione per l'esposizione di API, non previsto DB e non previsto sistema di concorrenza: *al riavvio si perde tutto*
-- 04 **Flask login Ldap**: piccola applicazione Flask con la gestione delle credenziali tramite un server AD e protocollo LDAP
-- 05 **Flask login Saml2-SSO**: piccola applicazione Flask con la gestione delle credenziali tramite un server AD e protocollo Saml2-SSO
-- 06 **TraslatorSubtitle**: applicazione per tradurre file subtitle in formato srt, see [video](https://www.youtube.com/watch?v=-l7YocEQtA0)
-- 07 **DockerCompose API**: applicazione con api-rest che legge e scrive dati su un database, app e database sono creati assieme con un docker-compose
-- 08 **Crud MySql Minikubernetes**: applicazione con api-rest che legge e scrive dati su database mysql, creati con Kubernetes *funzionante* su Minikube
-- 09 **AWS Dynamo**: applicazione che crea una tabella dynamo, un CRUD con fast-api e un piccolo frontend per visualizzare i dati
-- 10 **Robot Framework**: applicazione che esegue un test-unit con RobotFramework di una *bellissima* infrastruttura con DynamoDb, Kafka, consumer e un frontend
-- 11 **llamaAIRaspberry3**: immagine per eseguire una IA con motore **Llama** in un docker, può essere eseguita su PC *o su Rasbperry3b*
-- 12 **KubernetesScaling**: immagine per eseguire lo scaling con kubernetes utilizzando la funzionalità **Horizontal Pod Autoscalers** di K8S
-  - l'immagine permette di mandare la CPU a valori alti con chiamate post
-  - sotto-cartella con un esempio *funzionante* con **Prometheus** che utilizza una custum-metrics "numero task" e **Grafana** per il monitoraggio
-  - sotto-cartella con tre esempi *funzionanti* con **CRD** e librerie *operator* per la gestione dello scaling
-- 13 **FastAPIAuthJWT**: esempio minimale di autenticazione JWT con FastAPI senza database con librerie Bcrypt e Jose
-- 14 **CeleryWorkkersRedis**: esempio di architettura "web + worker + broker" con Flask, Celery e Redis in Docker Compose
-- 15 **StreamProcessingKafka**: esempio di stream processing con Kafka in Docker Compose con producer e consumer asincroni
-
-
-## From Others Sites
-- **Blockchain**: esempi di implementazione dell'algoritmo "proof of work" con un unico nodo e un secondo esempio multi-nodo con metodo per la sincronia
-- **FaceDetector**: https://www.youtube.com/watch?v=i3sLv1sus0I
-- **FastApi**: https://realpython.com/fastapi-python-web-apis/
-- **FlaskGeolocalNotes**: https://www.youtube.com/watch?v=w-rti-5KHME
-- **FlaskLogin**: https://www.youtube.com/watch?v=ud_nq9lapF4
-- **FlaskLoginGoogle**: https://realpython.com/flask-google-login/
-- **IISLivePosition**: esempi di come visualizzare la posizione della IA con API esterne e grafica `plotly.express`
-- **PlaywrightWebScraping**: site downloader, download all PDF, jump captcha with proxy [Web Scraping with Playwright + CAPTCHA Bypass For Beginners](https://www.youtube.com/watch?v=RGR5Xj0Qqfs)
-- SimpleGames
-  - **ArcadeLib**: 
-    - Snake see https://www.geeksforgeeks.org/python-arcade-player-movement/
-    - Space see https://realpython.com/arcade-python-game-framework/
-    - see https://api.arcade.academy/en/latest/examples/platform_tutorial/step_02.html
-    - see https://realpython.com/arcade-python-game-framework/
-  - **Coffe**: https://github.com/uxai/100daysofcode/blob/main/Day%2015/coffee_machine.py
-  - **Pong**: https://api.arcade.academy/en/latest/examples/sections_demo_2.html#sections-demo-2
-  - **PyGame**
-    - see https://www.pygame.org/docs/
-    - fly game: see https://realpython.com/pygame-a-primer/
-    - asteroid: see https://realpython.com/asteroids-game-python/
-  - **Rogue Like**: tutorial see https://rogueliketutorials.com/tutorials/tcod/v2/part-1/
-  - **Tetris**: see https://api.arcade.academy/en/latest/examples/tetris.html#tetris
-  - **Vital_messages** & shootout: https://www.youtube.com/watch?v=3kdM9wyglnw
-  - TODO https://github.com/BlakeDalmas/Python
-  - TODO Simple Platformer https://api.arcade.academy/en/latest/examples/platform_tutorial/index.html
-  - TODO https://api.arcade.academy/en/latest/sample_games.html
-  - TODO https://api.arcade.academy/en/stable/examples/procedural_caves_bsp.html
-- **TkinterExample**:  https://www.youtube.com/watch?v=5qOnzF7RsNA (Tkinter e "Python Simplified")
-- **Youtube Downloader**: 
-  - pytube.py dal https://www.youtube.com/watch?v=EMlM6QTzJo0 
-  - main.py versione con flask
-- **NotificationCron**: https://www.youtube.com/watch?v=7ahUnBhdI5o
-- **Traslator**: see https://huggingface.co/spaces/Mediocreatmybest/PipelineTranslator/blob/main/app.py
-
-
-## IA
-- **BuildLargeLanguageModel**: esempi basati sul libro [Build a Large Language Model by Sebastian Raschka](https://github.com/rasbt/LLMs-from-scratch)
-- **Copilot**: *coming soon* esempi usando la IA di GitHub Copilot 
-- **litellm**: LiteLLM è una libreria Python open-source compatibile con oltre 100 modelli di Large Language Models (LLM) usando il formato OpenAI
-  - **base**: alcuni semplici script che usano la libreria base presi dalla [documentazione ufficiale](https://docs.litellm.ai/docs/providers/github_copilot)
-  - **nano-agent**: un piccolo agente che usa litellm come libreria per interfacciarsi ad un llm 
-    - liberamente ispirati al *nano agent* di [ekolivero](https://github.com/ekolivero/nano-agent#).
-- **llama**: esempi basati su llama e ollama
-  - **Llama** è una famiglia di modelli LLM (Large Language Models) creati da Meta  (il "cervello")
-  - **OllamaAI** è un tool/server per eseguire modelli LLM localmente sul tuo computer (il "motore")
-- **OpenAI**: esempio basato sulle api di openAI (datato)
-- **open-interpreter**: *coming soon* ( [how to use ollama with open-interpreter](https://github.com/ollama/ollama/issues/838) &  [MikeBirdTech](https://github.com/MikeBirdTech/open-interpreter) )
-- **Pdf_translation**: progetto per tradurre un PDF dall'inglese all'italiano, è possibile eseguirlo con Llama locale, GitHub Copilot oppure LibreTranslate *più o meno funzionante, arriveranno aggiornamenti*
-- **Qwen**: esempio basato su qwen e docker, basato sul video [1 Minute MUCH SMARTER Chat Bot](https://www.youtube.com/watch?v=YWUvD6qe56g)
-- **RAG Annotazioni**: mini-progetto di RAG che importa delle annotazioni, salvandole in un database vettoriale e poi modulo di ricerca, ispirato al video [Come implemento l'AI in Typescript](https://www.youtube.com/watch?v=xDOUTqlnJuY), in futuro sarà evoluto per integratsi con il sistema [AlNao J-Annotazioni](https://github.com/alnao/JavaSpringBootExample) *coming soon*
-- **RAG**: *coming soon* con AnythingLLM, interpreter e ragpdf/langchain
-- **Simple_Knoloadge**: semplice esempio di ML e risposte basate sull'apperendimento, basato sul video [How To Build A Chat Bot That Learns From The User In Python](https://www.youtube.com/watch?v=CkkjXTER2KE)
-
-
-## Manage File
-- **CheckASCII**: script che verifica se in un file di testo ci sono carateri non AsciiUtf8
-- **Csv2fixedWidthFile**: esempio di script py che prende un file csv e lo trasforma in un file txt posizionale
-  - tracciato.csv necessario con i campi del file posizionale con le informazioni: nome, tipo, lunghezza, valore e descrizione
-  - input.csv file di input coni campi 
-  - l'ouput viene scritto in un file OUT.txt
-- **Marge2txtFile**: esempio di script py che esegue marge di due file
-  -  un file di testo txt (chiamato BAN) e un file csv (chiamato rapporti)
-  -  genera un file di testotxt (chiamato OUT.txt) e un file csv di report con quali righe sono state modificate (OUT.log)
-- **Sftp & ssh**: metodi per la gestione di un server sftp (invio e ricezione dati), esecuzione comando in remoto con ssh
-- **UnzipFile**: esempio che usa "zipfile" di Py per estrarre il contenuto di un pacchetto zip
-- **UploadFileToRestAPI**: esempio per l'invio di un file locale ad una API Rest 
-- **VideoConcat ffmpeg**: script per eseguire il concat di più video usando ffmpeg (solo su GNU Linux)
-
-
-## RobotFramework
-- 01 Simple: robot che esegue test sulla login su una applicazioni di esempio
-- 02 Database: robot che esegue query CRUD su un Database Mysql
-
-
-## Simple
-- **gui**: esempi vari di librerie GUI per Python
-- **mongo**: script per la gestione di una base dati NoSql Mongo
-- **rabbitMq**: script la gestione di una coda RabbitMq
-- classes.py: Esempio di classe Python
-- conto1.py: Esercitazione classe ContoCorrente, inizializzatore con 3 parametri (nome titolare, numero conto e saldo) con tre attributi (nome, conto e saldo)
-- conto2.py: Esercitazione classe ContoCorrente, prendere spunto dal conto1.py ma nascondere il saldo come proprietà semplice con una property ''privata'' , 
-- conto3.py: Esercitazione classe Conto come padre di ContoCorrente, in conto ci devono essere nome e numero conto
-- conto4.py: Esercitazione classe Gestore Conto corrente, crea metodo bonifico per prelevare da un conto e fare un deposito ad un altro
-- exception.py: Esempi di exception in Python
-- lambda.py: esempi di lambda in Python
-- modules.py: Esempi di modulo in Python
-- scriptWithModules.py: Eempi di script che importa un modulo (modules.py) in Python
 
 # Appunti vari
 - Creazione `venv` separato
@@ -195,6 +83,13 @@ Benvenuti nella collezione di esempi Python by [AlNao.it](https://www.alnao.it)!
   source .venv/bin/activate  
   pip install -r requirements.txt  
   python3 file.py  
+
+  deactivate # per uscire
+
+  # Per ripulire tutto
+  find . -type d -name "venv" -o -name "env" -o -name "*.venv" -o -name "tf-cpu"
+  find . -type d \( -name "venv" -o -name "env" -o -name "*.venv*" \) -exec rm -rf {} + 2>/dev/null
+
   ```
 - Creazione server
   Vedere la [documentazione ufficiale](https://docs.python.org/es/3.10/library/http.server.html) o pagine di [esempio](https://ryanblunden.com/create-a-http-server-with-one-command-thanks-to-python-29fcfdcd240e?gi=45d07bd349a1).
