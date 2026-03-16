@@ -17,6 +17,17 @@ Every effort moves you Samoa parad Defensive MacBook Referospace preparation Ein
 Clearly, the model isn't yet producing coherent text because it hasn't undergone training. 
     To define what makes text “coherent” or “high quality,” we have to implement a numerical method to evaluate the generated content.
     This approach will enable us to monitor and enhance the model's performance throughout its training process.
+
+2) ch5_file2_generator_inconsistency.py — conversione token/testo e demo
+Aggiunge utility:
+- text_to_token_ids(text, tokenizer)
+- token_ids_to_text(token_ids, tokenizer)
+Funzione ch5_file2_main(start_context):
+- imposta seed (torch.manual_seed(123)),
+- crea GPTModel con context length 256,
+- genera 10 token dal prompt,
+- stampa il testo risultante.
+Scopo: mostrare che un modello non addestrato produce testo poco coerente.
 """
 
 
@@ -32,6 +43,9 @@ TO RUN:
 
     python ch5_file2_generator_inconsistency.py
 """
+
+
+
 
 
 from pydoc import text

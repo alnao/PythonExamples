@@ -3,14 +3,30 @@
 #   - https://www.manning.com/books/build-a-large-language-model-from-scratch
 # Code: https://github.com/rasbt/LLMs-from-scratch
 #
-# This file collects all the relevant code that we covered thus far
-# throughout Chapters 2-4.
+# This file collects all the relevant code that we covered thus far throughout Chapters 2-4.
 # This file can be run as a standalone script.
 
 ## Original file
 ## https://github.com/rasbt/LLMs-from-scratch/blob/main/ch05/01_main-chapter-code/previous_chapters.py
 ##
 ## see https://github.com/rasbt/LLMs-from-scratch/blob/main/ch05/01_main-chapter-code/README.md
+
+"""
+1) ch5_file1_previus_chapter.py — base del modello
+Contiene i componenti principali:
+- GPTDatasetV1: crea coppie (input_ids, target_ids) con finestra scorrevole.
+- create_dataloader_v1(...): costruisce un DataLoader PyTorch.
+- MultiHeadAttention: self-attention causale con maschera triangolare superiore.
+- LayerNorm, GELU, FeedForward, TransformerBlock: blocchi standard Transformer.
+- GPTModel: embedding token + positional embedding + stack di blocchi + head finale sul vocabolario.
+- generate_text_simple(...): generazione greedy autoregressiva (argmax del prossimo token).
+Nel main del file:
+- inizializza un GPT 124M-like config,
+- genera testo da un prompt ("Hello, I am"),
+- stampa input/output.
+"""
+
+
 
 import tiktoken
 import torch

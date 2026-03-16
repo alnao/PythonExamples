@@ -17,6 +17,7 @@
     - nuovi esempi della libreria spark
 - Docker
     - nuovi esempi di applicazioni docker sviluppate in python
+    - esempio con una CRD che crea un disco EBS su AWS oppure BlockStorage in Azure!
 - FromOtherSites
     - See Dungeon Game https://github.com/BlakeDalmas/Python examples (arcade.academy/)
     - Simple Platformer https://api.arcade.academy/en/latest/examples/platform_tutorial/index.html

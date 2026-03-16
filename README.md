@@ -1,15 +1,17 @@
 # Python Examples ✨
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Python-3766AB?logo=Python&logoColor=white" height="32" />
-  <img src="https://img.shields.io/badge/Pandas-2496ED?logo=pandas&logoColor=white" height="32" />
-  <img src="https://img.shields.io/badge/AWS-FF9900?logo=AmazonAWS&logoColor=white"  height="32"/>
-  <img src="https://img.shields.io/badge/Azure-0078D4?logo=microsoftazure&logoColor=white" height="32" />        
-  <img src="https://img.shields.io/badge/Docker-2496ED?logo=Docker&logoColor=white" height="32" />
-  <img src="https://img.shields.io/badge/kubernetes-326CE5?logo=kubernetes&logoColor=white" height="32" />
-  <img src="https://img.shields.io/badge/ollama-522CA5?logo=ollama&logoColor=white" height="32" />
-  <img src="https://img.shields.io/badge/Copilot-gray?logo=githubcopilot&logoColor=white" height="32" />
-  <img src="https://img.shields.io/badge/RobotFramework-3766AB?logo=RobotFramework&logoColor=white" height="32" />
+  <img src="https://img.shields.io/badge/Python-3766AB?logo=Python&logoColor=white" height=32/>
+  <img src="https://img.shields.io/badge/Pandas-2496ED?logo=pandas&logoColor=white" height=32/>
+  <img src="https://img.shields.io/badge/RobotFramework-3766AB?logo=RobotFramework&logoColor=white" height=32/>
+  <br />
+  <img src="https://img.shields.io/badge/AWS-FF9900?logo=AmazonAWS&logoColor=white"  height=32/>
+  <img src="https://img.shields.io/badge/Azure-0078D4?logo=microsoftazure&logoColor=white" height=32/>        
+  <img src="https://img.shields.io/badge/Docker-2496ED?logo=Docker&logoColor=white" height=32/>
+  <img src="https://img.shields.io/badge/kubernetes-326CE5?logo=kubernetes&logoColor=white" height=32/>
+  <br />
+  <img src="https://img.shields.io/badge/ollama-522CA5?logo=ollama&logoColor=white" height=32/>
+  <img src="https://img.shields.io/badge/Copilot-gray?logo=githubcopilot&logoColor=white" height=32/>
 </p>
 
 
