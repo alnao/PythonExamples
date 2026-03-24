@@ -5,8 +5,13 @@ OUT.log
 flask_session/
 
 .serverless
-
 *sqlite_db*
+
+##IA/RetrievalAugmentedGeneration
+**/part01_file02_test/
+graph_examples.ipynb
+grafo_finale.html
+
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

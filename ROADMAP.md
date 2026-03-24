@@ -1,12 +1,14 @@
 # Python Repository AlNao Roadmap
 - AI
     - **BuildLargeLanguageModel**: studio e analisi del famoso libro [Build a Large Language Model](https://github.com/rasbt/LLMs-from-scratch/tree/main)
+    - **GraphRAG**: nuovi esempi liberamente ispirati ai contenuti di [ALucek Adam Łucek](https://github.com/ALucek/GraphRAG-Breakdown) e i suoi [Video](https://www.youtube.com/watch?v=6vG_amAshTk&list=PL31XFvSmiPKEMco1JXKtIBttlAOOxE8aO&index=3)
     - **Copilot**
         - see [copilot-sdk](https://github.com/github/copilot-sdk/blob/main/cookbook/python/README.md)
         - see [awesome-copilot](https://github.com/github/awesome-copilot/blob/main/instructions/copilot-sdk-python.instructions.md)
     - **open-interpreter**: *coming soon* ( [how to use ollama with open-interpreter](https://github.com/ollama/ollama/issues/838) &  [MikeBirdTech](https://github.com/MikeBirdTech/open-interpreter) )
-    - **RAG**: *coming soon* nuove intetrazioni con con AnythingLLM, interpreter e ragpdf/langchain
-    - integratiozione dei RAG con il progetto AlNao J-Annotazioni
+    - **RAG**: vedere l'esempio già creato e migiorarlo con il salvaggio della memoria vettoriale e integrazione con J-Annotazioni!
+
+    
 - AWS
     - evoluzione dell'esempio **AWS Bedrock**
     - revisione degli esempi ed evoluzioni dei manager del cloud
