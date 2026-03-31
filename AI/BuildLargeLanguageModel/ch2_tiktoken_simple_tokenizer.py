@@ -1,16 +1,28 @@
+# Copyright (c) Sebastian Raschka under Apache License 2.0 (see LICENSE.txt).
+# Source for "Build a Large Language Model From Scratch"
+#   - https://www.manning.com/books/build-a-large-language-model-from-scratch
+# Code: https://github.com/rasbt/LLMs-from-scratch
+
 import re
 import urllib.request
 
-"""
-Simple script ispired by book: "Build a Large Language Model (From Scratch)" by Sebastian Raschka
-Chapter 2: Working with text data - 2.4 Adding special context tokens
+""" Notes by AlNao:
+	Simple script ispired by book: "Build a Large Language Model (From Scratch)" by Sebastian Raschka
+	Chapter 2: Working with text data - 2.4 Adding special context tokens
+		see https://github.com/rasbt/LLMs-from-scratch
 
-see https://github.com/rasbt/LLMs-from-scratch
+Let's discuss how we split input text into individual tokens, a required preprocessing step for creating embeddings for an LLM.
+	Let's convert these tokens from a Python string to an integer representation to produce the token IDs
+	These special tokens can include markers for unknown words and document boundaries, for example. In
+	particular, we will modify the vocabulary and tokenizer, SimpleTokenizerV2, to support two new tokens, <|unk|> and <|endoftext|>
 
-Let’s discuss how we split input text into individual tokens, a required preprocessing step for creating embeddings for an LLM.
-Let’s convert these tokens from a Python string to an integer representation to produce the token IDs
-These special tokens can include markers for unknown words and document boundaries, for example. In
-particular, we will modify the vocabulary and tokenizer, SimpleTokenizerV2, to support two new tokens, <|unk|> and <|endoftext|>
+To run 
+- Use a virtual environment (venv) and install the required libraries
+    source .venv/bin/activate (on main project directory - PythonExamples)
+	pip install tiktoken
+- Run the script
+	python ./AI/BuildLargeLanguageModel/ch2_tiktoken_simple_tokenizer.py
+
 """
 
 
@@ -45,30 +57,36 @@ class SimpleTokenizerV2:
 			if tid != self.vocab[self.eot_token]
 		]
 		return " ".join(tokens)
+def main():
+		
+	url = ("https://raw.githubusercontent.com/rasbt/"
+		"LLMs-from-scratch/main/ch02/01_main-chapter-code/"
+		"the-verdict.txt")
+	file_path = "the-verdict.txt"
+	urllib.request.urlretrieve(url, file_path)
+	with open("the-verdict.txt", "r", encoding="utf-8") as f:
+		raw_text = f.read()
+	print("Total number of character:", len(raw_text))
+
+	text = "Hello, world. Is this-- a test?"
+	result = re.split(r'([,.:;?_!"()\']|--|\s)', text)
+	result = [item.strip() for item in result if item.strip()]
+	print(result)
+	preprocessed = re.split(r'([,.:;?_!"()\']|--|\s)', raw_text)
+	preprocessed = [item.strip() for item in preprocessed if item.strip()]
+	print(len(preprocessed))
+	all_tokens = sorted(list(set(preprocessed)))
+	all_tokens.extend(["<|endoftext|>", "<|unk|>"])
+	vocab = {token:integer for integer,token in enumerate(all_tokens)}
+
+	text1 = "Hello, do you like tea?"
+	text2 = "In the sunlit terraces of the palace. I'm Alberto, nice to meet you! Hello!"
+	text = " <|endoftext|> ".join((text1, text2))
+	print(text)
+	tokenizer = SimpleTokenizerV2(vocab)
+	print(tokenizer.encode(text))
+
+
+if __name__ == "__main__":
+    main()
 	
-url = ("https://raw.githubusercontent.com/rasbt/"
-"LLMs-from-scratch/main/ch02/01_main-chapter-code/"
-"the-verdict.txt")
-file_path = "the-verdict.txt"
-urllib.request.urlretrieve(url, file_path)
-with open("the-verdict.txt", "r", encoding="utf-8") as f:
-	raw_text = f.read()
-print("Total number of character:", len(raw_text))
-
-text = "Hello, world. Is this-- a test?"
-result = re.split(r'([,.:;?_!"()\']|--|\s)', text)
-result = [item.strip() for item in result if item.strip()]
-print(result)
-preprocessed = re.split(r'([,.:;?_!"()\']|--|\s)', raw_text)
-preprocessed = [item.strip() for item in preprocessed if item.strip()]
-print(len(preprocessed))
-all_tokens = sorted(list(set(preprocessed)))
-all_tokens.extend(["<|endoftext|>", "<|unk|>"])
-vocab = {token:integer for integer,token in enumerate(all_tokens)}
-
-text1 = "Hello, do you like tea?"
-text2 = "In the sunlit terraces of the palace. I'm Alberto, nice to meet you! Hello!"
-text = " <|endoftext|> ".join((text1, text2))
-print(text)
-tokenizer = SimpleTokenizerV2(vocab)
-print(tokenizer.encode(text))

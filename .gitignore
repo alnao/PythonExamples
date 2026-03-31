@@ -3,6 +3,7 @@ OUT.txt
 OUT.log
 .vscode
 flask_session/
+gpt2/
 
 .serverless
 *sqlite_db*

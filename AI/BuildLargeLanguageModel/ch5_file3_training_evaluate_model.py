@@ -2,26 +2,44 @@
 # Source for "Build a Large Language Model From Scratch"
 #   - https://www.manning.com/books/build-a-large-language-model-from-scratch
 # Code: https://github.com/rasbt/LLMs-from-scratch
+# Original code: # https://github.com/rasbt/LLMs-from-scratch/blob/main/ch05/01_main-chapter-code/gpt_train.py
 
-# Original code
-# https://github.com/rasbt/LLMs-from-scratch/blob/main/ch05/01_main-chapter-code/gpt_train.py
+""" Notes by AlNao:
 
-"""
-3) ch5_file3_training_evaluate_model.py — training e valutazione
-- calc_loss_batch(...): cross-entropy tra logits e target per un batch.
-- calc_loss_loader(...): media loss su num_batches di un dataloader.
-- evaluate_model(...): loss train/val in no_grad() e eval().
-- generate_and_print_sample(...): genera un sample testuale durante il training.
-- train_model_simple(...): loop di training per epoche con:
-    - forward/backward/optimizer step,
-    - conteggio token visti,
-    - valutazione periodica ogni eval_freq,
-    - sample a fine epoca.
-Nel main:
-    - seleziona device (cuda o cpu),
-    - inizializza modello/tokenizer,
-    - imposta parametri training,
-    - avvia training.
+To run 
+- Use a virtual environment (venv) and install the required libraries
+    source .venv/bin/activate (on main project directory - PythonExamples)
+    pip install tensorflow-cpu torch tiktoken
+- install pyplot
+    pip install matplotlib
+
+- Run the script
+    python ./AI/BuildLargeLanguageModel/ch5_file3_training_evaluate_model.py
+    note: edit "from" statement if script is run from a different directory (add AI.BuildLargeLanguageModel. before ch5_file1_previus_chapters)
+
+Components "ch5_file3_training_evaluate_model.py": training e valutazione
+    - calc_loss_batch(...): cross-entropy tra logits e target per un batch.
+    - calc_loss_loader(...): media loss su num_batches di un dataloader.
+    - evaluate_model(...): loss train/val in no_grad() e eval().
+    - generate_and_print_sample(...): genera un sample testuale durante il training.
+    - train_model_simple(...): loop di training per epoche con:
+        - forward/backward/optimizer step,
+        - conteggio token visti,
+        - valutazione periodica ogni eval_freq,
+        - sample a fine epoca.
+    Nel main:
+        - seleziona device (cuda o cpu),
+        - inizializza modello/tokenizer,
+        - imposta parametri training,
+        - avvia training.
+
+Questo script fa questo
+- Carica un testo (the-verdict.txt) e lo divide in train/val.
+- Crea dataloader per train/val con batch_size=2 e context_length=256.
+- Addestra un modello GPT-124M per 3 epoche, valutando ogni 50 step e stampando un sample generato dopo ogni epoca.
+- Stampa le perde di training e validazione durante il processo.
+Scopo: mostrare un processo di training completo con valutazione e generazione di sample, 
+    evidenziando come la perdita si evolve e come il testo generato migliora con l'addestramento.
 """
 import matplotlib.pyplot as plt
 import os
@@ -30,9 +48,9 @@ import torch
 import tiktoken
 
 
-from ch5_file1_previus_chapter import generate_text_simple
-from ch5_file1_previus_chapter import GPTModel
-from ch5_file1_previus_chapter import create_dataloader_v1
+from ch5_file1_previus_chapters import generate_text_simple
+from ch5_file1_previus_chapters import GPTModel
+from ch5_file1_previus_chapters import create_dataloader_v1
 from ch5_file2_generator_inconsistency import text_to_token_ids
 from ch5_file2_generator_inconsistency import token_ids_to_text
 

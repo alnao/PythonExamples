@@ -1,44 +1,41 @@
-# Copyright (c) Sebastian Raschka under Apache License 2.0
+# Copyright (c) Sebastian Raschka under Apache License 2.0 (see LICENSE.txt).
 # Source for "Build a Large Language Model From Scratch"
 #   - https://www.manning.com/books/build-a-large-language-model-from-scratch
 # Code: https://github.com/rasbt/LLMs-from-scratch
-# https://github.com/rasbt/LLMs-from-scratch/blob/main/ch05/01_main-chapter-code/gpt_generate.py
 
+""" Notes by AlNao:
+- This script downloads the GPT-2 model parameters from the original TensorFlow checkpoint files and loads
+    them into the PyTorch implementation of the GPT model defined in `previous_chapters.py`.
+- The `download_and_load_gpt2` function handles the downloading of the model files and the loading of the parameters.
+- The `download_file` function is responsible for downloading a file from a given URL, with a backup URL option and progress bar.
+- The `load_gpt2_params_from_tf_ckpt` function reads the TensorFlow checkpoint and organizes the parameters into a nested dictionary structure.
+- The `assign` function is a helper to convert NumPy arrays to PyTorch parameters while checking for shape compatibility.
+- The `load_weights_into_gpt` function takes the loaded parameters and assigns them to the corresponding weights in the PyTorch GPT model.
+
+To run
+- Use a virtual environment (venv) and install the required libraries (requests, numpy, tensorflow, torch, tqdm).
+    source .venv/bin/activate (on main project directory - PythonExamples)
+    pip install requests numpy tensorflow torch tqdm
+- Run this script to download the GPT-2 parameters and load them into the PyTorch model. 
+    You can specify the model size (e.g., "124M", "355M", "774M", "1558M") and the directory where the models should be stored.
+- After running this script, you can use the loaded model for inference or further fine-tuning as needed.
+
+Nessun main presente, questo script è principalmente una utility per scaricare e caricare i parametri del modello GPT-2.
+    Usato nei successivi script per inizializzare il modello con i pesi pre-addestrati di GPT-2.
 """
-python3 -m venv .venv
-source .venv/bin/activate
 
-pip install --upgrade pip
-# NOpip install tensorflow
-pip install tensorflow-cpu
-
-python -c "import tensorflow as tf; print(tf.__version__); print(tf.config.list_physical_devices())"
-"""
-
-import argparse
-import json
-import numpy as np
 import os
 
 import requests
+import json
+import numpy as np
 import tensorflow as tf
-import tiktoken
+
 import torch
 from tqdm import tqdm
 
-# Import from local files
-from previous_chapters import GPTModel
 
-
-def text_to_token_ids(text, tokenizer):
-    encoded = tokenizer.encode(text)
-    encoded_tensor = torch.tensor(encoded).unsqueeze(0)  # add batch dimension
-    return encoded_tensor
-
-
-def token_ids_to_text(token_ids, tokenizer):
-    flat = token_ids.squeeze(0)  # remove batch dimension
-    return tokenizer.decode(flat.tolist())
+from ch5_file1_previus_chapters import GPTModel
 
 
 def download_and_load_gpt2(model_size, models_dir):
@@ -50,6 +47,7 @@ def download_and_load_gpt2(model_size, models_dir):
     # Define paths
     model_dir = os.path.join(models_dir, model_size)
     base_url = "https://openaipublic.blob.core.windows.net/gpt-2/models"
+    backup_base_url = "https://f001.backblazeb2.com/file/LLMs-from-scratch/gpt2"
     filenames = [
         "checkpoint", "encoder.json", "hparams.json",
         "model.ckpt.data-00000-of-00001", "model.ckpt.index",
@@ -60,29 +58,78 @@ def download_and_load_gpt2(model_size, models_dir):
     os.makedirs(model_dir, exist_ok=True)
     for filename in filenames:
         file_url = os.path.join(base_url, model_size, filename)
+        backup_url = os.path.join(backup_base_url, model_size, filename)
         file_path = os.path.join(model_dir, filename)
-        download_file(file_url, file_path)
+        download_file(file_url, file_path, backup_url)
 
     # Load settings and params
     tf_ckpt_path = tf.train.latest_checkpoint(model_dir)
-    settings = json.load(open(os.path.join(model_dir, "hparams.json")))
+    settings = json.load(open(os.path.join(model_dir, "hparams.json"), "r", encoding="utf-8"))
     params = load_gpt2_params_from_tf_ckpt(tf_ckpt_path, settings)
 
     return settings, params
 
 
+def download_file(url, destination, backup_url=None):
+    def _attempt_download(download_url):
+        response = requests.get(download_url, stream=True, timeout=60)
+        response.raise_for_status()
+
+        file_size = int(response.headers.get("Content-Length", 0))
+
+        # Check if file exists and has same size
+        if os.path.exists(destination):
+            file_size_local = os.path.getsize(destination)
+            if file_size and file_size == file_size_local:
+                print(f"File already exists and is up-to-date: {destination}")
+                return True
+
+        block_size = 1024  # 1 KB
+        desc = os.path.basename(download_url)
+        with tqdm(total=file_size, unit="iB", unit_scale=True, desc=desc) as progress_bar:
+            with open(destination, "wb") as file:
+                for chunk in response.iter_content(chunk_size=block_size):
+                    if chunk:
+                        file.write(chunk)
+                        progress_bar.update(len(chunk))
+        return True
+
+    try:
+        if _attempt_download(url):
+            return
+    except requests.exceptions.RequestException:
+        if backup_url is not None:
+            print(f"Primary URL ({url}) failed. Attempting backup URL: {backup_url}")
+            try:
+                if _attempt_download(backup_url):
+                    return
+            except requests.exceptions.RequestException:
+                pass
+
+        error_message = (
+            f"Failed to download from both primary URL ({url})"
+            f"{' and backup URL (' + backup_url + ')' if backup_url else ''}."
+            "\nCheck your internet connection or the file availability.\n"
+            "For help, visit: https://github.com/rasbt/LLMs-from-scratch/discussions/273"
+        )
+        print(error_message)
+    except Exception as e:
+        print(f"An unexpected error occurred: {e}")
+
+
+# Alternative way using `requests`
+"""
 def download_file(url, destination):
-    # Send a GET request to download the file
-    response = requests.get(url, stream=True, timeout=60)
-    response.raise_for_status()
+    # Send a GET request to download the file in streaming mode
+    response = requests.get(url, stream=True)
 
     # Get the total file size from headers, defaulting to 0 if not present
-    file_size = int(response.headers.get("Content-Length", 0))
+    file_size = int(response.headers.get("content-length", 0))
 
     # Check if file exists and has the same size
     if os.path.exists(destination):
         file_size_local = os.path.getsize(destination)
-        if file_size and file_size == file_size_local:
+        if file_size == file_size_local:
             print(f"File already exists and is up-to-date: {destination}")
             return
 
@@ -90,14 +137,15 @@ def download_file(url, destination):
     block_size = 1024  # 1 Kilobyte
 
     # Initialize the progress bar with total file size
-    progress_bar_description = os.path.basename(url)
+    progress_bar_description = url.split("/")[-1]  # Extract filename from URL
     with tqdm(total=file_size, unit="iB", unit_scale=True, desc=progress_bar_description) as progress_bar:
         # Open the destination file in binary write mode
         with open(destination, "wb") as file:
-            for chunk in response.iter_content(chunk_size=block_size):
-                if chunk:
-                    file.write(chunk)
-                    progress_bar.update(len(chunk))  # Update progress bar
+            # Iterate over the file data in chunks
+            for chunk in response.iter_content(block_size):
+                progress_bar.update(len(chunk))  # Update progress bar
+                file.write(chunk)  # Write the chunk to the file
+"""
 
 
 def load_gpt2_params_from_tf_ckpt(ckpt_path, settings):
@@ -127,7 +175,6 @@ def load_gpt2_params_from_tf_ckpt(ckpt_path, settings):
         target_dict[last_key] = variable_array
 
     return params
-
 
 def assign(left, right):
     if left.shape != right.shape:
@@ -194,118 +241,3 @@ def load_weights_into_gpt(gpt, params):
     gpt.final_norm.scale = assign(gpt.final_norm.scale, params["g"])
     gpt.final_norm.shift = assign(gpt.final_norm.shift, params["b"])
     gpt.out_head.weight = assign(gpt.out_head.weight, params["wte"])
-
-
-def generate(model, idx, max_new_tokens, context_size, temperature=0.0, top_k=None, eos_id=None):
-
-    # For-loop is the same as before: Get logits, and only focus on last time step
-    for _ in range(max_new_tokens):
-        idx_cond = idx[:, -context_size:]
-        with torch.no_grad():
-            logits = model(idx_cond)
-        logits = logits[:, -1, :]
-
-        # New: Filter logits with top_k sampling
-        if top_k is not None:
-            # Keep only top_k values
-            top_logits, _ = torch.topk(logits, top_k)
-            min_val = top_logits[:, -1]
-            logits = torch.where(logits < min_val, torch.tensor(float("-inf")).to(logits.device), logits)
-
-        # New: Apply temperature scaling
-        if temperature > 0.0:
-            logits = logits / temperature
-
-            # New (not in book): numerical stability tip to get equivalent results on mps device
-            # subtract rowwise max before softmax
-            logits = logits - logits.max(dim=-1, keepdim=True).values
-
-            # Apply softmax to get probabilities
-            probs = torch.softmax(logits, dim=-1)  # (batch_size, context_len)
-
-            # Sample from the distribution
-            idx_next = torch.multinomial(probs, num_samples=1)  # (batch_size, 1)
-
-        # Otherwise same as before: get idx of the vocab entry with the highest logits value
-        else:
-            idx_next = torch.argmax(logits, dim=-1, keepdim=True)  # (batch_size, 1)
-
-        if idx_next == eos_id:  # Stop generating early if end-of-sequence token is encountered and eos_id is specified
-            break
-
-        # Same as before: append sampled index to the running sequence
-        idx = torch.cat((idx, idx_next), dim=1)  # (batch_size, num_tokens+1)
-
-    return idx
-
-
-def main(gpt_config, input_prompt, model_size, device):
-
-    settings, params = download_and_load_gpt2(model_size=model_size, models_dir="gpt2")
-
-    gpt = GPTModel(gpt_config)
-    load_weights_into_gpt(gpt, params)
-    gpt.to(device)
-    gpt.eval()
-
-    tokenizer = tiktoken.get_encoding("gpt2")
-    torch.manual_seed(123)
-
-    token_ids = generate(
-        model=gpt,
-        idx=text_to_token_ids(input_prompt, tokenizer).to(device),
-        max_new_tokens=25,
-        context_size=gpt_config["context_length"],
-        top_k=50,
-        temperature=1.0
-    )
-
-    print("Output text:\n", token_ids_to_text(token_ids, tokenizer))
-
-
-if __name__ == "__main__":
-
-    parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter, description="Generate text with a pretrained GPT-2 model.")
-    parser.add_argument(
-        "--prompt",
-        default="Every effort moves you",
-        help="Prompt text used to seed the generation."
-    )
-    parser.add_argument(
-        "--device",
-        default="cpu",
-        help="Device for running inference, e.g., cpu, cuda, mps, or auto."
-    )
-
-    args = parser.parse_args()
-
-
-    torch.manual_seed(123)
-
-    CHOOSE_MODEL = "gpt2-small (124M)"
-    INPUT_PROMPT = args.prompt
-    DEVICE = torch.device(args.device)
-
-    print("PyTorch:", torch.__version__)
-    print("Device:", DEVICE)
-
-
-    BASE_CONFIG = {
-        "vocab_size": 50257,     # Vocabulary size
-        "context_length": 1024,  # Context length
-        "drop_rate": 0.0,        # Dropout rate
-        "qkv_bias": True         # Query-key-value bias
-    }
-
-    model_configs = {
-        "gpt2-small (124M)": {"emb_dim": 768, "n_layers": 12, "n_heads": 12},
-        "gpt2-medium (355M)": {"emb_dim": 1024, "n_layers": 24, "n_heads": 16},
-        "gpt2-large (774M)": {"emb_dim": 1280, "n_layers": 36, "n_heads": 20},
-        "gpt2-xl (1558M)": {"emb_dim": 1600, "n_layers": 48, "n_heads": 25},
-    }
-
-    model_size = CHOOSE_MODEL.split(" ")[-1].lstrip("(").rstrip(")")
-
-    BASE_CONFIG.update(model_configs[CHOOSE_MODEL])
-
-    main(BASE_CONFIG, INPUT_PROMPT, model_size, DEVICE)

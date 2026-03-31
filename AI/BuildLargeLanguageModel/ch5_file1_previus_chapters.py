@@ -8,22 +8,29 @@
 
 ## Original file
 ## https://github.com/rasbt/LLMs-from-scratch/blob/main/ch05/01_main-chapter-code/previous_chapters.py
-##
 ## see https://github.com/rasbt/LLMs-from-scratch/blob/main/ch05/01_main-chapter-code/README.md
 
-"""
-1) ch5_file1_previus_chapter.py — base del modello
-Contiene i componenti principali:
-- GPTDatasetV1: crea coppie (input_ids, target_ids) con finestra scorrevole.
-- create_dataloader_v1(...): costruisce un DataLoader PyTorch.
-- MultiHeadAttention: self-attention causale con maschera triangolare superiore.
-- LayerNorm, GELU, FeedForward, TransformerBlock: blocchi standard Transformer.
-- GPTModel: embedding token + positional embedding + stack di blocchi + head finale sul vocabolario.
-- generate_text_simple(...): generazione greedy autoregressiva (argmax del prossimo token).
-Nel main del file:
-- inizializza un GPT 124M-like config,
-- genera testo da un prompt ("Hello, I am"),
-- stampa input/output.
+"""  Notes by AlNao:
+- This file collects all the relevant code that we covered thus far throughout Chapters 2-4.
+    - This file can be run as a standalone script.
+- It includes:
+    - GPTDatasetV1: crea coppie (input_ids, target_ids) con finestra scorrevole.
+    - create_dataloader_v1(...): costruisce un DataLoader PyTorch.
+    - MultiHeadAttention: self-attention causale con maschera triangolare superiore.
+    - LayerNorm, GELU, FeedForward, TransformerBlock: blocchi standard Transformer.
+    - GPTModel: embedding token + positional embedding + stack di blocchi + head finale sul vocabolario.
+    - generate_text_simple(...): generazione greedy autoregressiva (argmax del prossimo token).
+- Nel main del file:
+    - inizializza un GPT 124M-like config,
+    - genera testo da un prompt ("Hello, I am"),
+    - stampa input/output.
+
+To run 
+- Use a virtual environment (venv) and install the required libraries
+    source .venv/bin/activate (on main project directory - PythonExamples)
+    pip install tiktoken torch tqdm
+- Run the script
+    python ./AI/BuildLargeLanguageModel/ch5_file1_previus_chapters.py
 """
 
 
