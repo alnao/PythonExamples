@@ -8,7 +8,7 @@
     - **open-interpreter**: *coming soon* ( [how to use ollama with open-interpreter](https://github.com/ollama/ollama/issues/838) &  [MikeBirdTech](https://github.com/MikeBirdTech/open-interpreter) )
     - **RAG**: vedere l'esempio già creato e migiorarlo con il salvaggio della memoria vettoriale e integrazione con J-Annotazioni!
 
-    
+    - miglioare l'esempio presente nella cartella `FromOthersSites/BuildRAG` come indicato nel readme dedicato
 - AWS
     - evoluzione dell'esempio **AWS Bedrock**
     - revisione degli esempi ed evoluzioni dei manager del cloud
