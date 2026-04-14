@@ -26,7 +26,11 @@ Components of "ch5_file5_generate.py":
     - importante : file model.ckpt.data-00000-of-00001 è di 498 Mb, quindi assicurati di avere spazio sufficiente e una connessione stabile per il download.
 
 - Output text:
+    PROMPT = "Every effort moves you"
     Every effort moves you toward finding an ideal life. You don't have to accept your problems by trying to remedy them, because that would be foolish
+
+    PROMPT = "Venice is a city"
+    Venice is a city which is well known for its small but growing wealth and is well known by its proximity to the capital of Rome. The city
 """
 
 import argparse
@@ -40,9 +44,9 @@ import tiktoken
 import torch
 from tqdm import tqdm
 
-from ch5_file1_previus_chapters import generate_text_simple
+#from ch5_file1_previus_chapters import generate_text_simple
 from ch5_file1_previus_chapters import GPTModel
-from ch5_file1_previus_chapters import create_dataloader_v1
+#from ch5_file1_previus_chapters import create_dataloader_v1
 from ch5_file2_generator_inconsistency import text_to_token_ids
 from ch5_file2_generator_inconsistency import token_ids_to_text
 from ch5_file4_download_gpt2_params import download_and_load_gpt2

@@ -1,5 +1,9 @@
 FromOthersSites/BuildRAG/rules.pdf
+#AI /BuildLargeLanguageModel/ch5_file6_text_generation.py
 the-verdict.txt
+shakespeare.txt
+training_validation_loss.png
+
 OUT.txt
 OUT.log
 .vscode

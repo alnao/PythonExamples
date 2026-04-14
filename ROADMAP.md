@@ -1,7 +1,11 @@
 # Python Repository AlNao Roadmap
 - AI
     - **BuildLargeLanguageModel**: studio e analisi del famoso libro [Build a Large Language Model](https://github.com/rasbt/LLMs-from-scratch/tree/main)
-    - **GraphRAG**: nuovi esempi liberamente ispirati ai contenuti di [ALucek Adam Łucek](https://github.com/ALucek/GraphRAG-Breakdown) e i suoi [Video](https://www.youtube.com/watch?v=6vG_amAshTk&list=PL31XFvSmiPKEMco1JXKtIBttlAOOxE8aO&index=3)
+        - Video [Build an LLM from Scratch 5: Pretraining on Unlabeled Data](https://www.youtube.com/watch?v=Zar2TJv-sE0)
+            - interrotto a 1:34:00
+    - **GraphRAG**: nuovi esempi liberamente ispirati ai contenuti di [ALucek Adam Łucek](https://github.com/ALucek/GraphRAG-Breakdown)
+        - [Video](https://www.youtube.com/watch?v=6vG_amAshTk&list=PL31XFvSmiPKEMco1JXKtIBttlAOOxE8aO&index=3)
+            - interrotto a 8:09
     - **Copilot**
         - see [copilot-sdk](https://github.com/github/copilot-sdk/blob/main/cookbook/python/README.md)
         - see [awesome-copilot](https://github.com/github/awesome-copilot/blob/main/instructions/copilot-sdk-python.instructions.md)

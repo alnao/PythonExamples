@@ -13,6 +13,9 @@ See [Official GitHub Page](https://github.com/rasbt/LLMs-from-scratch/tree/main)
 - `ch5_file3_training_evaluate_model.py`: Script completo per addestrare e valutare un modello GPT su un dataset di testo. Include funzioni per calcolare la loss, valutare il modello e generare campioni durante il training.
 - `ch5_file4_download_gpt2_params.py`: Script utility per scaricare i parametri pre-addestrati di GPT-2 dai checkpoint TensorFlow e caricarli in un modello PyTorch. Utile per inizializzare modelli con pesi reali.
 - `ch5_file5_generate.py`: Esegue la generazione di testo usando un modello GPT-2 pre-addestrato. Permette di impostare prompt, device e parametri di sampling per testare la generazione autoregressiva.
+- `ch5_file6_text_generation.py`: Esegue l'addestramento di un modello, script fatto seguendo il video [
+Build an LLM from Scratch 5: Pretraining on Unlabeled Data](https://www.youtube.com/watch?v=Zar2TJv-sE0)
+
 - next todo GPT 2 Llama https://github.com/rasbt/LLMs-from-scratch/blob/main/ch05/07_gpt_to_llama/README.md
 
 

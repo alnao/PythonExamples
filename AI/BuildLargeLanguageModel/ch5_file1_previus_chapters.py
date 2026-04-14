@@ -50,8 +50,11 @@ class GPTDatasetV1(Dataset):
         self.input_ids = []
         self.target_ids = []
 
-        # Tokenize the entire text
-        token_ids = tokenizer.encode(txt, allowed_special={"<|endoftext|>"})
+        # Tokenize the entire text or accept a pre-tokenized sequence
+        if isinstance(txt, (list, tuple)):
+            token_ids = list(txt)
+        else:
+            token_ids = tokenizer.encode(txt, allowed_special={"<|endoftext|>"})
 
         # Use a sliding window to chunk the book into overlapping sequences of max_length
         for i in range(0, len(token_ids) - max_length, stride):
