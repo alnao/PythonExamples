@@ -1,0 +1,56 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h4 class="mb-4">
+            <i class="fa-solid fa-list"></i> Execution Plans
+            <a href="{{ url_for('create_plan') }}" class="btn btn-success btn-sm float-end"><i class="fa-solid fa-plus"></i> New Plan</a>
+        </h4>
+        <div class="table-responsive">
+            <table class="table table-dark table-hover align-middle">
+                <thead>
+                    <tr>
+                        <th>ID / Title</th>
+                        <th>Branch</th>
+                        <th>Status</th>
+                        <th>Scheduled</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for plan in plans %}
+                    <tr>
+                        <td>
+                            <span class="fw-bold">{{ plan.id }}</span><br>
+                            <small class="text-muted">{{ plan.title or 'No Title' }}</small>
+                        </td>
+                        <td><span class="badge bg-secondary"><i class="fa-solid fa-code-branch"></i> {{ plan.branch }}</span></td>
+                        <td>
+                            <span class="badge {% if plan.status == 'COMPLETED' %}bg-success{% elif plan.status == 'FAILED' %}bg-danger{% elif plan.status == 'RUNNING' %}bg-info{% else %}bg-secondary{% endif %}">
+                                {{ plan.status }}
+                            </span>
+                        </td>
+                        <td>{{ plan.schedule_time.strftime('%Y-%m-%d %H:%M') }}</td>
+                        <td>
+                            <div class="btn-group">
+                                <a href="{{ url_for('plan_detail', plan_id=plan.id) }}" class="btn btn-sm btn-primary">
+                                    <i class="fa-solid fa-eye"></i> View
+                                </a>
+                                <a href="{{ url_for('create_plan', clone_from=plan.id) }}" class="btn btn-sm btn-outline-secondary">
+                                    <i class="fa-solid fa-copy"></i> Edit as New
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="5" class="text-center text-muted">No plans found.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

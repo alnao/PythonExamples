@@ -1,0 +1,104 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="card shadow-sm">
+    <div class="card-body">
+        <h4 class="card-title"><i class="fa-solid fa-plus"></i> Create New Plan</h4>
+        <form action="{{ url_for('create_plan') }}" method="POST">
+            <div class="row mb-3">
+                <div class="col-md-3">
+                    <label>Plan Title</label>
+                    <input type="text" name="title" class="form-control" placeholder="My Plan Title"
+                        value="{{ cloned_plan.title if cloned_plan else '' }}">
+                </div>
+                <div class="col-md-3">
+                    <label>Schedule Time (UTC)</label>
+                    <input type="datetime-local" name="schedule_time" class="form-control"
+                        value="{{ cloned_plan.schedule_time.strftime('%Y-%m-%dT%H:%M') if cloned_plan else now }}">
+                </div>
+                <div class="col-md-3">
+                    <label>Branch Name</label>
+                    <input type="text" name="branch" class="form-control" required placeholder="feature/my-branch"
+                        value="{{ cloned_plan.branch if cloned_plan else default_branch }}">
+                </div>
+                <div class="col-md-3">
+                    <label>Base Directory</label>
+                    <input type="text" name="base_dir" class="form-control" placeholder="/mnt/Dati4/todel/"
+                        value="{{ cloned_plan.base_dir if cloned_plan else default_base_dir }}">
+                </div>
+            </div>
+            <div class="row mb-3">
+                <div class="col-md-12">
+                    <label>Global Commit Prefix</label>
+                    <input type="text" name="commit_prefix" class="form-control" placeholder="feat: my feature"
+                        value="{{ cloned_plan.commit_prefix if cloned_plan else '' }}">
+                </div>
+            </div>
+
+            <h5 class="mt-4 border-bottom pb-2">Tasks (Max 15)</h5>
+            <div class="container-fluid">
+                <div class="row fw-bold text-muted small mb-2">
+                    <div class="col-md-1">#</div>
+                    <div class="col-md-2">Agent & Model</div>
+                    <div class="col-md-5">Prompt</div>
+                    <div class="col-md-4">Commit Message</div>
+                </div>
+
+                {% for i in range(1, 16) %}
+                {% set ctask = cloned_tasks[i-1] if cloned_tasks|length >= i else None %}
+                <div class="row mb-3 border-bottom pb-3">
+                    <div class="col-md-1">
+                        <label class="col-form-label">{{ i }}</label>
+                    </div>
+                    <div class="col-md-2">
+                        <select name="agent_{{ i }}" class="form-select form-select-sm mb-1">
+                            <option value="DefaultAgent">Default</option>
+                            <option value="Analyst" {{ 'selected' if ctask and ctask.agent=='Analyst' }}>Analyst
+                            </option>
+                            <option value="Coder" {{ 'selected' if ctask and ctask.agent=='Coder' }}>Coder</option>
+                            <option value="Reviewer" {{ 'selected' if ctask and ctask.agent=='Reviewer' }}>Reviewer
+                            </option>
+                            <option value="Caveman" {{ 'selected' if ctask and ctask.agent=='Caveman' }}>Caveman
+                            </option>
+                        </select>
+                        <select name="model_{{ i }}" class="form-select form-select-sm">
+                            <optgroup label="Claude">
+                                <option value="claude:claude-4.6-sonnet" {{ 'selected' if ctask and
+                                    ctask.model=='claude:claude-4.6-sonnet' }}>Sonnet 4.6</option>
+                                <option value="claude:claude-4.6-opus" {{ 'selected' if ctask and
+                                    ctask.model=='claude:claude-4.6-opus' }}>Opus 4.6</option>
+                            </optgroup>
+                            <optgroup label="Gemini">
+                                <option value="gemini:gemini-1.5-pro" {{ 'selected' if ctask and
+                                    ctask.model=='gemini:gemini-1.5-pro' }}>Gemini 1.5 Pro</option>
+                            </optgroup>
+                            <optgroup label="Copilot">
+                                <option value="copilot:gpt-5-mini" {{ 'selected' if ctask and
+                                    ctask.model=='copilot:gpt-5-mini' }}>GPT 5 mini free</option>
+                                <option value="copilot:claude-sonnet-4.6" {{ 'selected' if ctask and
+                                    ctask.model=='copilot:claude-sonnet-4.6' }}>Sonnet 4.6 (Copilot)</option>
+                                <option value="copilot:gpt-5.3-codex" {{ 'selected' if ctask and
+                                    ctask.model=='copilot:gpt-5.3-codex' }}>GPT 5.3 Codex</option>
+                            </optgroup>
+                        </select>
+                    </div>
+                    <div class="col-md-5">
+                        <textarea name="prompt_{{ i }}" class="form-control form-control-sm" rows="2"
+                            placeholder="Task prompt...">{{ ctask.prompt if ctask else '' }}</textarea>
+                    </div>
+                    <div class="col-md-4">
+                        <input type="text" name="commit_msg_{{ i }}" class="form-control form-control-sm"
+                            placeholder="Step commit description..." value="{{ ctask.commit_msg if ctask else '' }}">
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <div class="mt-4">
+                <button type="submit" class="btn btn-success"><i class="fa-solid fa-save"></i> Save Plan</button>
+                <a href="{{ url_for('index') }}" class="btn btn-secondary">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

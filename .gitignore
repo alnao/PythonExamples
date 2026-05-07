@@ -1,3 +1,14 @@
+.agents
+
+# AlNaoAIRunners
+AI/AlNaoAIRunners/.AlNaoAgent
+.AlNaoAgent/logs
+.AlNaoAgent/workspace
+node_modules
+
+# AI AlnaoAIrunners
+alnaoagents.db
+
 FromOthersSites/BuildRAG/rules.pdf
 #AI /BuildLargeLanguageModel/ch5_file6_text_generation.py
 the-verdict.txt

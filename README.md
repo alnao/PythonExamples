@@ -25,6 +25,7 @@ Attività in corso e le prossime evoluzioni sono descritte nel file [ROADMAP](./
 
 | Section | Name | Description |
 |-----|----|----|
+| AI | [`📁`](./AI/AlNaoAIRunners/) AlNaoAIRunners | Sistema di esecuzione di modelli Claude, GitHub copilot e Gemini <br /> - vedere [README](./AI/AlNaoAIRunners/README.md) specifico che descrive come è stato realizzato |
 | AI | [`📁`](./AI/BuildLargeLanguageModel/) LLM | Esempi basati sul libro [Build a Large Language Model by Sebastian Raschka](https://github.com/rasbt/LLMs-from-scratch) <br > - vedere [README](./AI/BuildLargeLanguageModel/README.md) specifico che descrive tutti gli esempi |
 | AI | [`📁`](./AI/Copilot/) copilot | Esempi usando la libreria SDK di GitHub Copilot <br/>- [Simple Prompt](./AI/Copilot/Esempio01_SimplePrompt/README.md) semplice chat che invia un prompt ad un modello e visualizza la risposta | 
 | AI | [`📁`](./AI/GraphRAG/README.md) GraphRAG | Esempi basati sulla libreria [GraphRag](https://microsoft.github.io/graphrag/) <br />liberamente ispirati ai contenuti di [ALucek Adam Łucek](https://github.com/ALucek/GraphRAG-Breakdown) e i suoi [Video](https://www.youtube.com/watch?v=6vG_amAshTk&list=PL31XFvSmiPKEMco1JXKtIBttlAOOxE8aO&index=3)

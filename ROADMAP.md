@@ -1,5 +1,10 @@
 # Python Repository AlNao Roadmap
 - AI
+    - **AlNaoAIRunners**
+        - fare commit se indicato nello step e poi commit finale!
+        - come installare claude, gemini e copilot e come devono essere configurati
+        - migliorare l'interfaccia grafica
+        - migliorare il commit
     - **BuildLargeLanguageModel**: studio e analisi del famoso libro [Build a Large Language Model](https://github.com/rasbt/LLMs-from-scratch/tree/main)
         - Video [Build an LLM from Scratch 5: Pretraining on Unlabeled Data](https://www.youtube.com/watch?v=Zar2TJv-sE0)
             - interrotto a 1:34:00
@@ -25,6 +30,7 @@
     - nuovi esempi di applicazioni docker sviluppate in python
     - esempio con una CRD che crea un disco EBS su AWS oppure BlockStorage in Azure!
 - FromOtherSites
+    - pyglet (game), visual python (blender video), turtle, pyqt (piattaforma grafica)
     - See Dungeon Game https://github.com/BlakeDalmas/Python examples (arcade.academy/)
     - Simple Platformer https://api.arcade.academy/en/latest/examples/platform_tutorial/index.html
     - Simple game https://api.arcade.academy/en/latest/sample_games.html
