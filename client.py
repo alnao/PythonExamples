@@ -24,7 +24,24 @@ def double(x):
         raise ValueError("Input non numerico")
 
 
+def triple(x):
+    """Ritorna triplo di x. Accetta stringa, int, float."""
+    try:
+        if isinstance(x, (int, float)):
+            return x * 3
+        s = str(x).strip()
+        # supporta numeri con punto decimale
+        if s == '':
+            raise ValueError
+        if any(c in s for c in ('.', 'e', 'E')):
+            return float(s) * 3
+        return int(s) * 3
+    except Exception:
+        raise ValueError("Input non numerico")
+
+
 def main():
+
     if len(sys.argv) > 1:
         val = sys.argv[1]
     else:
