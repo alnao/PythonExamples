@@ -1,5 +1,5 @@
 """Modulo matematica
-Fornisce la funzione `doppio(n)` che ritorna il doppio di un numero.
+Fornisce le funzioni `doppio(n)` e `triplo(n)` che ritornano il doppio e il triplo di un numero.
 Esempio CLI: python matematica.py 3  -> stampa 6
 """
 
@@ -16,6 +16,21 @@ def doppio(n):
     except Exception:
         raise TypeError("doppio: valore non numerico")
     return val * 2
+
+
+def triplo(n):
+    """Restituisce il triplo di n. Accetta int o float o valori convertibili a float.
+
+    Raises:
+        TypeError: se n non è un numero o non è convertibile a float.
+    """
+    if isinstance(n, (int, float)):
+        return n * 3
+    try:
+        val = float(n)
+    except Exception:
+        raise TypeError("triplo: valore non numerico")
+    return val * 3
 
 
 if __name__ == "__main__":
