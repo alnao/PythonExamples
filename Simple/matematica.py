@@ -3,6 +3,11 @@ def doppio(n):
     return n * 2
 
 
+def triplo(n):
+    """Return the triple of n."""
+    return n * 3
+
+
 if __name__ == "__main__":
     import sys
 
