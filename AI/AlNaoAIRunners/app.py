@@ -1,6 +1,7 @@
 import os
 from flask import Flask, render_template, request, redirect, url_for
 import uuid
+import json
 from datetime import datetime
 from dotenv import load_dotenv
 from python.database import init_db, Plan, Task
@@ -42,8 +43,10 @@ def create_plan():
     if request.method == 'POST':
         title = request.form.get('title')
         branch = request.form.get('branch')
+        work_branch = request.form.get('work_branch')
         base_dir = request.form.get('base_dir')
-        commit_prefix = request.form.get('commit_prefix')
+        repo_url = request.form.get('repo_url')
+        commit_prefix = request.form.get('commit_prefix') or 'alnao-ai-runner'
         sched_str = request.form.get('schedule_time')
         try:
             schedule_time = datetime.fromisoformat(sched_str) if sched_str else datetime.utcnow()
@@ -51,8 +54,9 @@ def create_plan():
             schedule_time = datetime.utcnow()
             
         plan_id = f"plan-{str(uuid.uuid4())[:8]}"
-        plan = Plan(id=plan_id, title=title, branch=branch, schedule_time=schedule_time, 
-                    base_dir=base_dir, commit_prefix=commit_prefix, status='PENDING')
+        plan = Plan(id=plan_id, title=title, branch=branch, work_branch=work_branch,
+                    schedule_time=schedule_time, base_dir=base_dir, repo_url=repo_url,
+                    commit_prefix=commit_prefix, status='PENDING')
         db_session.add(plan)
         
         step_counter = 1
@@ -79,12 +83,30 @@ def create_plan():
         if cloned_plan:
             cloned_tasks = db_session.query(Task).filter_by(plan_id=clone_from).order_by(Task.step_order).all()
 
+    # Nuova logica: legge gruppi e modelli da variabili piatte invece del JSON
+    available_models = {}
+    groups_str = os.getenv('MODELS_GROUPS', '')
+    if groups_str:
+        for group in groups_str.split(','):
+            group = group.strip()
+            models_list = os.getenv(f'MODELS_{group}', '')
+            if models_list:
+                group_dict = {}
+                for item in models_list.split(','):
+                    if '|' in item:
+                        val, label = item.strip().split('|', 1)
+                        group_dict[val] = label
+                available_models[group] = group_dict
+
     return render_template('create_plan.html', 
                            cloned_plan=cloned_plan, 
                            cloned_tasks=cloned_tasks, 
                            now=datetime.utcnow().strftime('%Y-%m-%dT%H:%M'),
                            default_base_dir=os.getenv('BASE_WORKSPACE_DIR', '/mnt/Dati4/todel/'),
-                           default_branch=os.getenv('REPO_BRANCH', 'main'))
+                           default_branch=os.getenv('REPO_BRANCH', 'main'),
+                           default_work_branch=os.getenv('WORK_BRANCH', 'alnao-ai-agent'),
+                           default_repo_url=os.getenv('REPO_URL', ''),
+                           available_models=available_models)
 
 @app.route('/task/<int:task_id>/action', methods=['POST'])
 def task_action(task_id):

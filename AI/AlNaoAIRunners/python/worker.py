@@ -32,7 +32,8 @@ def check_and_run_plans():
 
     for plan in plans:
         logger.info(f"Starting plan {plan.id}...")
-        orchestrator = PlanOrchestrator(REPO_URL, WORKSPACE_DIR, LOGS_PATH)
+        plan_repo_url = plan.repo_url if plan.repo_url else REPO_URL
+        orchestrator = PlanOrchestrator(plan_repo_url, WORKSPACE_DIR, LOGS_PATH)
         orchestrator.execute_plan(plan.id)
         
     if not plans:

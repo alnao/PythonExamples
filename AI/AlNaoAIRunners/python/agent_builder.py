@@ -40,6 +40,8 @@ class AgentContextBuilder:
 Context: Leggi lo stato attuale per sapere cosa hanno fatto i predecessori dai files.
 {ctx_list_str}
 
+Important: Hai il permesso e gli strumenti per modificare direttamente i file nel workspace corrente se necessario.
+
 
 {constraint}
 

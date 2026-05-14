@@ -2,3 +2,4 @@ Flask
 python-dotenv
 APScheduler
 SQLAlchemy
+google-genai

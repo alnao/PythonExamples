@@ -12,6 +12,8 @@ class Plan(Base):
     branch = Column(String, nullable=False)
     schedule_time = Column(DateTime, nullable=False)
     base_dir = Column(String, nullable=True)
+    repo_url = Column(String, nullable=True)
+    work_branch = Column(String, nullable=True)
     commit_prefix = Column(String, nullable=True)
     status = Column(String, default='PENDING')
     created_at = Column(DateTime, default=datetime.utcnow)

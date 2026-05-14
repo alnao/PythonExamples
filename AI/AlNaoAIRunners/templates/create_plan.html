@@ -16,19 +16,29 @@
                     <input type="datetime-local" name="schedule_time" class="form-control"
                         value="{{ cloned_plan.schedule_time.strftime('%Y-%m-%dT%H:%M') if cloned_plan else now }}">
                 </div>
-                <div class="col-md-3">
-                    <label>Branch Name</label>
-                    <input type="text" name="branch" class="form-control" required placeholder="feature/my-branch"
+                <div class="col-md-2">
+                    <label>Main Branch</label>
+                    <input type="text" name="branch" class="form-control" required placeholder="main"
                         value="{{ cloned_plan.branch if cloned_plan else default_branch }}">
                 </div>
-                <div class="col-md-3">
+                <div class="col-md-2">
+                    <label>Work Branch</label>
+                    <input type="text" name="work_branch" class="form-control" placeholder="alnao-ai-agent"
+                        value="{{ cloned_plan.work_branch if cloned_plan else default_work_branch }}">
+                </div>
+                <div class="col-md-2">
                     <label>Base Directory</label>
                     <input type="text" name="base_dir" class="form-control" placeholder="/mnt/Dati4/todel/"
                         value="{{ cloned_plan.base_dir if cloned_plan else default_base_dir }}">
                 </div>
             </div>
             <div class="row mb-3">
-                <div class="col-md-12">
+                <div class="col-md-8">
+                    <label>Repository URL</label>
+                    <input type="text" name="repo_url" class="form-control" placeholder="git@github.com:user/repo.git"
+                        value="{{ cloned_plan.repo_url if cloned_plan else default_repo_url }}">
+                </div>
+                <div class="col-md-4">
                     <label>Global Commit Prefix</label>
                     <input type="text" name="commit_prefix" class="form-control" placeholder="feat: my feature"
                         value="{{ cloned_plan.commit_prefix if cloned_plan else '' }}">
@@ -62,24 +72,13 @@
                             </option>
                         </select>
                         <select name="model_{{ i }}" class="form-select form-select-sm">
-                            <optgroup label="Claude">
-                                <option value="claude:claude-4.6-sonnet" {{ 'selected' if ctask and
-                                    ctask.model=='claude:claude-4.6-sonnet' }}>Sonnet 4.6</option>
-                                <option value="claude:claude-4.6-opus" {{ 'selected' if ctask and
-                                    ctask.model=='claude:claude-4.6-opus' }}>Opus 4.6</option>
+                            {% for group, models in available_models.items() %}
+                            <optgroup label="{{ group }}">
+                                {% for val, label in models.items() %}
+                                <option value="{{ val }}" {{ 'selected' if ctask and ctask.model==val }}>{{ label }}</option>
+                                {% endfor %}
                             </optgroup>
-                            <optgroup label="Gemini">
-                                <option value="gemini:gemini-1.5-pro" {{ 'selected' if ctask and
-                                    ctask.model=='gemini:gemini-1.5-pro' }}>Gemini 1.5 Pro</option>
-                            </optgroup>
-                            <optgroup label="Copilot">
-                                <option value="copilot:gpt-5-mini" {{ 'selected' if ctask and
-                                    ctask.model=='copilot:gpt-5-mini' }}>GPT 5 mini free</option>
-                                <option value="copilot:claude-sonnet-4.6" {{ 'selected' if ctask and
-                                    ctask.model=='copilot:claude-sonnet-4.6' }}>Sonnet 4.6 (Copilot)</option>
-                                <option value="copilot:gpt-5.3-codex" {{ 'selected' if ctask and
-                                    ctask.model=='copilot:gpt-5.3-codex' }}>GPT 5.3 Codex</option>
-                            </optgroup>
+                            {% endfor %}
                         </select>
                     </div>
                     <div class="col-md-5">

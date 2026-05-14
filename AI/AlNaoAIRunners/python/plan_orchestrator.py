@@ -50,12 +50,23 @@ class PlanOrchestrator:
         git = GitManager(self.repo_url, workspace_path, log_cb)
         runner = SingleStepRunner(workspace_path, self.logs_path, log_cb, plan_folder=plan_folder, plan_title=plan.title)
         
-        self._log(plan.id, "Plan started. Cloning branch...", title=plan.title)
+        main_branch = plan.branch
+        work_branch = plan.work_branch or os.getenv('WORK_BRANCH', 'alnao-ai-agent')
+        
+        self._log(plan.id, f"Plan started. Main branch: {main_branch}, Work branch: {work_branch}", title=plan.title)
 
         try:
-            git.clone_or_pull(plan.branch)
-            self._log(plan_id, f"Branch {plan.branch} cloned/pulled.")
+            # Step 1: Clone/pull the main branch
+            self._log(plan_id, f"Cloning/pulling main branch '{main_branch}'...")
+            git.clone_or_pull(main_branch)
+            self._log(plan_id, f"Main branch '{main_branch}' ready.")
 
+            # Step 2: Setup work branch (create or sync with main)
+            self._log(plan_id, f"Setting up work branch '{work_branch}'...")
+            git.setup_work_branch(main_branch, work_branch)
+            self._log(plan_id, f"Work branch '{work_branch}' ready.")
+
+            # Step 3: Execute tasks on the work branch
             tasks = db_session.query(Task).filter_by(plan_id=plan.id)\
                 .filter(Task.status.in_(['PENDING', 'WAITING_CREDITS']))\
                 .order_by(Task.step_order).all()
@@ -79,12 +90,13 @@ class PlanOrchestrator:
                     db_session.commit()
                     return
 
-                full_commit_msg = f"{plan.commit_prefix or 'Auto-commit'}: {task.commit_msg or ''} (Plan: {plan.id}, Step: {task.step_order})"
+                full_commit_msg = f"{plan.commit_prefix}: {task.commit_msg or ''}"
                 commit_hash = git.commit_step(full_commit_msg)
                 task.last_commit_hash = commit_hash
                 db_session.commit()
                 self._log(plan_id, f"Step {task.step_order} completed. Commit: {commit_hash}")
 
+            # Step 4: Copy logs to repo
             import shutil
             self._log(plan_id, "All tasks complete. Copying logs to repo...", title=plan.title)
             
@@ -96,13 +108,15 @@ class PlanOrchestrator:
             
             if os.path.exists(plan_logs_dir):
                 for f in os.listdir(plan_logs_dir):
-                    if f.endswith('.md') or f == 'worker.log':
+                    if f.startswith('worker') or f.endswith('.md'):
                         shutil.copy2(os.path.join(plan_logs_dir, f), repo_logs_dir)
             
-            git.commit_step(f"plan-{slug_title}-report")
+            report_commit_msg = f"{plan.commit_prefix}: final report"
+            git.commit_step(report_commit_msg)
             
-            self._log(plan_id, "Logs committed. Pushing branch...", title=plan.title)
-            git.push(plan.branch)
+            # Step 5: Push only the work branch
+            self._log(plan_id, f"Logs committed. Pushing work branch '{work_branch}'...", title=plan.title)
+            git.push(work_branch)
             plan.status = 'COMPLETED'
             db_session.commit()
             self._log(plan_id, "Plan execution finished successfully.")
@@ -111,3 +125,4 @@ class PlanOrchestrator:
             plan.status = 'FAILED'
             db_session.commit()
             self._log(plan_id, f"Plan failed with exception: {str(e)}")
+

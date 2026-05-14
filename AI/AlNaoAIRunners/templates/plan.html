@@ -8,7 +8,7 @@
     <div class="card-body">
         <h4 class="card-title"><i class="fa-solid fa-layer-group"></i> Plan: {{ plan.title or plan.id }}</h4>
         <p class="text-muted small mb-0">ID: {{ plan.id }}</p>
-        <p>Branch: <code>{{ plan.branch }}</code> | Status: <strong>{{ plan.status }}</strong></p>
+        <p>Repo: <code>{{ plan.repo_url or 'default' }}</code> | Main: <code>{{ plan.branch }}</code> | Work: <code>{{ plan.work_branch or 'alnao-ai-agent' }}</code> | Status: <strong>{{ plan.status }}</strong></p>
     </div>
 </div>
 

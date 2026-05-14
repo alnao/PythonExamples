@@ -65,12 +65,12 @@ class SingleStepRunner:
                 attempts += 1
                 
         # Save log file
-        # Naming: plan-<nomeplan>-<nomeversione>-<Commit Message>-id.md
         slug_title = self.slugify(self.plan_title)
         slug_model = self.slugify(task.model.split(':')[-1])
         slug_commit = self.slugify(task.commit_msg)
         
-        filename = f"plan-{slug_title}-{slug_commit}-{task.id}.md" #{slug_model}-
+        #filename = f"plan-{slug_title}-{slug_commit}-{task.id}.md"
+        filename = f"task{task_id}-{slug_commit}-{slug_model}.md"
         
         plan_logs_dir = os.path.join(self.logs_path, self.plan_folder or task.plan_id)
         os.makedirs(plan_logs_dir, exist_ok=True)

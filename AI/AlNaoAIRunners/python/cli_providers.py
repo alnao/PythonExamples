@@ -19,7 +19,7 @@ class ClaudeCLIProvider(AbstractCLIProvider):
         # Use --model if a specific one is provided
         if self.model_name and self.model_name.lower() not in ['claude', '']:
             cmd.extend(['--model', self.model_name])
-        cmd.extend(['-p', prompt])
+        cmd.extend(['-w', '-p', prompt])
         
         log_cb(f"EXEC CMD: {' '.join(cmd)}")
         try:
@@ -43,7 +43,7 @@ class GeminiCLIProvider(AbstractCLIProvider):
         cmd = ['gemini']
         if self.model_name and self.model_name.lower() not in ['gemini', '']:
             cmd.extend(['--model', self.model_name])
-        cmd.extend(['-p', prompt])
+        cmd.extend([ '--yolo', '-p', prompt]) #'-w',
         
         log_cb(f"EXEC CMD: {' '.join(cmd)}")
         try:

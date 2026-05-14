@@ -80,6 +80,23 @@ ho ancora l'errore [2026-05-07T17:08:50.971487] EXEC CMD: git -C /mnt/Dati4/tode
 
 usa il REPO_BRANCH come default nel nome branch ma rimane modificabile
 
+attualmente il processo elabora tutto su un branch (clone, commit and push finale). voglio questo cambiamento: aggiungi un parametro "nome work branch" con env di default = alnao-ai-agent ma modificabile via web. Il processo deve effettuare il clone del "main branch" , crea un nuovo branch con il nome indicato (partendo dal main branch attuale) e poi lavora solo su quello : commit & push fatte solo nel nuovo branch. Se il nuovo branch esiste all'avvio, se il main è più avanti devi aggiornarlo con quello che c'è nel mail con una commit iniziale solo se ci sono differenze, se il main è più indietro riallinea il new con il main.
+
+l'elenco dei modelli (per gruppo) me li metti su .env con un default? la AVAILABLE_MODELS che è un json , puoi farmi una lista tipo AVAILABLE_MODELS_GROUP_1=xx, AVAILABLE_MODELS_GROUP_1_MODEL_1=xx. 
+
+"Tuttavia, **non dispongo di uno strumento per modificare il contenuto dei file** e applicare queste modifiche al file YAML" devo aggiungere qualcosa al "Gemini 2.5 Flash Lite " ?
+
+ti spiego ogni step scrive worker.log su cartelle diverse, voglio uniformare tutto mettendo i file worker dentro la stessa cartella ma con un incrementale tipo "worker-1.log", poi controlla che le commit vengano fatte con commento "<Global Commit Prefix>: <Commit Message>" e null'altro. il global commit prefix di default deve essere "alnao-ai-runner". torna indietro sulla modifica che hai fatto prima sul workder, rivoglio il file md come era prima
+
+TODO:
+- se il branch esiste già prosegui da quello e non dal main branch
+- mettere un flag se eseguire o meno il checkout prima di iniziare
+- mettere un flag se eseguire o meno il commit dopo ogni step
+- mettere un flag se eseguire o meno il push dopo ogni step e alla fine
+- mettere agente che fa riassunto di tutti gli step così tutti sanno gli steps 
+- mettere agente che scrive un riassunto di tutto il repository (cosa c'è dentro)
+
+
 
 --- comandi 
     npm install -g @google/gemini-cli
