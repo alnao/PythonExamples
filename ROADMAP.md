@@ -20,6 +20,7 @@
     - miglioare l'esempio presente nella cartella `FromOthersSites/BuildRAG` come indicato nel readme dedicato
 - AWS
     - evoluzione dell'esempio **AWS Bedrock**
+    - evoluzioni degli esempi Polly per integrarsi con **paths.games** 
     - revisione degli esempi ed evoluzioni dei manager del cloud
 - Azure
     - creazione di esempi con la libreria Azure-Sdk
