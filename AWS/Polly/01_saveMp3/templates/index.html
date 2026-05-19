@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>AWS Polly – Save MP3 to S3</title>
+  <!-- Bootstrap 5 -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+        rel="stylesheet" crossorigin="anonymous" />
+  <!-- Font Awesome 6 -->
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
+        rel="stylesheet" crossorigin="anonymous" />
+  <style>
+    body { background: #f0f4f8; }
+    .header-bar { background: linear-gradient(135deg, #232f3e 0%, #1a6b96 100%); }
+    .card { border: none; box-shadow: 0 2px 12px rgba(0,0,0,.10); }
+    .item-card { background: #fff; border-left: 4px solid #1a6b96; }
+    .result-success { border-left: 4px solid #198754; }
+    .result-error   { border-left: 4px solid #dc3545; }
+    pre.log { font-size: .82rem; background: #1e1e1e; color: #d4d4d4;
+              border-radius: .4rem; max-height: 320px; overflow-y: auto; }
+  </style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="header-bar text-white py-3 mb-4 shadow-sm">
+  <div class="container d-flex align-items-center gap-3">
+    <i class="fa-solid fa-volume-high fa-2x"></i>
+    <div>
+      <h4 class="mb-0 fw-bold">AWS Polly – Save MP3 to S3</h4>
+      <small class="opacity-75">Sintesi vocale e salvataggio su Amazon S3</small>
+    </div>
+  </div>
+</div>
+
+<div class="container pb-5">
+
+  <!-- Settings row -->
+  <div class="row g-3 mb-4">
+    <div class="col-md-5">
+      <div class="card p-3">
+        <label class="form-label fw-semibold"><i class="fa-solid fa-microphone me-1 text-primary"></i>Voce Polly</label>
+        <select id="voiceSelect" class="form-select">
+          <option value="Bianca">Bianca (IT – Neural)</option>
+          <option value="Carla">Carla (IT)</option>
+          <option value="Joanna">Joanna (EN-US – Neural)</option>
+          <option value="Matthew">Matthew (EN-US – Neural)</option>
+          <option value="Celine">Céline (FR)</option>
+          <option value="Marlene">Marlene (DE)</option>
+        </select>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card p-3">
+        <label class="form-label fw-semibold"><i class="fa-solid fa-gear me-1 text-secondary"></i>Engine</label>
+        <select id="engineSelect" class="form-select">
+          <option value="neural">Neural</option>
+          <option value="standard">Standard</option>
+          <option value="long-form">Long-form</option>
+        </select>
+      </div>
+    </div>
+    <div class="col-md-4 d-flex align-items-end">
+      <div class="card p-3 w-100">
+        <button class="btn btn-outline-secondary w-100" onclick="loadVoices()">
+          <i class="fa-solid fa-rotate me-1"></i>Ricarica voci da AWS
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Items -->
+  <div class="card p-4 mb-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <h5 class="mb-0 fw-bold"><i class="fa-solid fa-list-ul me-2 text-primary"></i>Elementi da sintetizzare</h5>
+      <button class="btn btn-sm btn-outline-primary" onclick="addItem()">
+        <i class="fa-solid fa-plus me-1"></i>Aggiungi elemento
+      </button>
+    </div>
+    <div id="itemsContainer"></div>
+  </div>
+
+  <!-- Actions -->
+  <div class="d-flex gap-3 mb-4">
+    <button class="btn btn-success px-4" onclick="synthesize()" id="btnSynth">
+      <i class="fa-solid fa-cloud-arrow-up me-2"></i>Sintetizza e salva su S3
+    </button>
+    <button class="btn btn-outline-danger" onclick="clearItems()">
+      <i class="fa-solid fa-trash me-1"></i>Svuota lista
+    </button>
+  </div>
+
+  <!-- Results -->
+  <div id="resultsSection" class="d-none">
+    <h5 class="fw-bold mb-3"><i class="fa-solid fa-circle-check me-2 text-success"></i>Risultati</h5>
+    <div id="resultsContainer" class="mb-3"></div>
+    <div>
+      <label class="form-label fw-semibold text-muted">Log JSON</label>
+      <pre class="log p-3" id="logPre"></pre>
+    </div>
+  </div>
+</div>
+
+<!-- Bootstrap JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+        crossorigin="anonymous"></script>
+<script>
+// ── State ────────────────────────────────────────────────────────────────────
+let itemCounter = 0;
+
+function generateUUID() {
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+    const r = Math.random() * 16 | 0;
+    return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
+  });
+}
+
+// ── Add / Remove items ────────────────────────────────────────────────────────
+function addItem(defaults = {}) {
+  itemCounter++;
+  const idx = itemCounter;
+  const uuid = defaults.uuid || generateUUID();
+  const container = document.getElementById('itemsContainer');
+  const div = document.createElement('div');
+  div.id = `item-${idx}`;
+  div.className = 'card item-card p-3 mb-3';
+  div.innerHTML = `
+    <div class="d-flex justify-content-between align-items-center mb-2">
+      <span class="fw-semibold text-primary"><i class="fa-solid fa-file-audio me-1"></i>Elemento #${idx}</span>
+      <button class="btn btn-sm btn-outline-danger" onclick="removeItem(${idx})">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+    </div>
+    <div class="row g-2">
+      <div class="col-md-2">
+        <label class="form-label form-label-sm">ID</label>
+        <input type="text" class="form-control form-control-sm" id="id-${idx}"
+               value="${defaults.id || idx}" placeholder="1" />
+      </div>
+      <div class="col-md-4">
+        <label class="form-label form-label-sm">UUID</label>
+        <div class="input-group input-group-sm">
+          <input type="text" class="form-control" id="uuid-${idx}" value="${uuid}" />
+          <button class="btn btn-outline-secondary" type="button" onclick="refreshUUID(${idx})">
+            <i class="fa-solid fa-rotate"></i>
+          </button>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <label class="form-label form-label-sm">Nome</label>
+        <input type="text" class="form-control form-control-sm" id="nome-${idx}"
+               value="${defaults.nome || ''}" placeholder="es. benvenuto" />
+      </div>
+      <div class="col-md-3">
+        <label class="form-label form-label-sm">Bucket S3 (pathS3)</label>
+        <input type="text" class="form-control form-control-sm" id="pathS3-${idx}"
+               value="${defaults.pathS3 || ''}" placeholder="my-bucket" />
+      </div>
+      <div class="col-md-4">
+        <label class="form-label form-label-sm">Key S3 (keyS3)</label>
+        <input type="text" class="form-control form-control-sm" id="keyS3-${idx}"
+               value="${defaults.keyS3 || `audio/${uuid}.mp3`}" placeholder="audio/file.mp3" />
+      </div>
+      <div class="col-md-8">
+        <label class="form-label form-label-sm">Testo da leggere</label>
+        <textarea class="form-control form-control-sm" id="testo-${idx}" rows="2"
+                  placeholder="Inserisci il testo che Polly dovrà leggere...">${defaults.testo || ''}</textarea>
+      </div>
+    </div>`;
+  container.appendChild(div);
+}
+
+function removeItem(idx) {
+  document.getElementById(`item-${idx}`)?.remove();
+}
+
+function clearItems() {
+  document.getElementById('itemsContainer').innerHTML = '';
+  document.getElementById('resultsSection').classList.add('d-none');
+  itemCounter = 0;
+}
+
+function refreshUUID(idx) {
+  document.getElementById(`uuid-${idx}`).value = generateUUID();
+}
+
+// ── Load voices from API ──────────────────────────────────────────────────────
+async function loadVoices() {
+  try {
+    const res  = await fetch('/voices');
+    const data = await res.json();
+    const sel  = document.getElementById('voiceSelect');
+    sel.innerHTML = '';
+    data.voices.sort((a, b) => a.Name.localeCompare(b.Name)).forEach(v => {
+      const opt = document.createElement('option');
+      opt.value       = v.Id;
+      opt.textContent = `${v.Name} (${v.LanguageCode})${v.SupportedEngines?.includes('neural') ? ' ★' : ''}`;
+      sel.appendChild(opt);
+    });
+  } catch (e) {
+    alert('Errore nel caricamento delle voci: ' + e.message);
+  }
+}
+
+// ── Synthesize ────────────────────────────────────────────────────────────────
+function collectItems() {
+  const items = [];
+  document.querySelectorAll('[id^="item-"]').forEach(el => {
+    const idx = el.id.split('-')[1];
+    items.push({
+      id:            document.getElementById(`id-${idx}`)?.value?.trim()    || String(idx),
+      uuid:          document.getElementById(`uuid-${idx}`)?.value?.trim()  || generateUUID(),
+      nome:          document.getElementById(`nome-${idx}`)?.value?.trim()  || '',
+      pathS3:        document.getElementById(`pathS3-${idx}`)?.value?.trim() || '',
+      keyS3:         document.getElementById(`keyS3-${idx}`)?.value?.trim()  || '',
+      testoDaLeggere: document.getElementById(`testo-${idx}`)?.value?.trim() || '',
+    });
+  });
+  return items;
+}
+
+async function synthesize() {
+  const items = collectItems();
+  if (!items.length) { alert('Aggiungi almeno un elemento.'); return; }
+  for (const it of items) {
+    if (!it.pathS3) { alert(`Elemento "${it.nome || it.id}": il Bucket S3 è obbligatorio.`); return; }
+    if (!it.keyS3)  { alert(`Elemento "${it.nome || it.id}": la Key S3 è obbligatoria.`); return; }
+    if (!it.testoDaLeggere) { alert(`Elemento "${it.nome || it.id}": il testo è obbligatorio.`); return; }
+  }
+
+  const btn = document.getElementById('btnSynth');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Elaborazione…';
+
+  try {
+    const payload = {
+      voice_id: document.getElementById('voiceSelect').value,
+      engine:   document.getElementById('engineSelect').value,
+      items,
+    };
+    const res  = await fetch('/synthesize', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify(payload),
+    });
+    const data = await res.json();
+    renderResults(data);
+  } catch (e) {
+    alert('Errore di rete: ' + e.message);
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fa-solid fa-cloud-arrow-up me-2"></i>Sintetizza e salva su S3';
+  }
+}
+
+function renderResults(data) {
+  const section    = document.getElementById('resultsSection');
+  const container  = document.getElementById('resultsContainer');
+  const logPre     = document.getElementById('logPre');
+
+  section.classList.remove('d-none');
+  container.innerHTML = '';
+
+  (data.results || []).forEach(r => {
+    const isOk  = r.status === 'success';
+    const icon  = isOk ? 'fa-circle-check text-success' : 'fa-circle-xmark text-danger';
+    const cls   = isOk ? 'result-success' : 'result-error';
+    const div   = document.createElement('div');
+    div.className = `card ${cls} p-3 mb-2`;
+    div.innerHTML = `
+      <div class="d-flex align-items-start gap-3">
+        <i class="fa-solid ${icon} fa-lg mt-1"></i>
+        <div class="flex-grow-1">
+          <strong>${r.nome || r.id}</strong>
+          <span class="text-muted ms-2 small">${r.uuid}</span>
+          <div class="small mt-1">
+            <i class="fa-brands fa-aws me-1 text-warning"></i>
+            <code>${r.s3_uri}</code>
+          </div>
+          <div class="small mt-1 ${isOk ? 'text-success' : 'text-danger'}">${r.message}</div>
+        </div>
+        <span class="badge ${isOk ? 'bg-success' : 'bg-danger'}">${r.status}</span>
+      </div>`;
+    container.appendChild(div);
+  });
+
+  logPre.textContent = JSON.stringify(data, null, 2);
+  section.scrollIntoView({ behavior: 'smooth' });
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+addItem({ nome: 'benvenuto', pathS3: 'my-polly-bucket', keyS3: 'audio/benvenuto.mp3', testo: 'Benvenuto nel sistema di sintesi vocale.' });
+</script>
+</body>
+</html>
