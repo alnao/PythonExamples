@@ -7,9 +7,11 @@ from python.git_manager import GitManager
 from python.logger import get_logger
 
 logger = get_logger(__name__)
+UNAMED="unnamed"
+
 
 def slugify(text):
-    if not text: return "unnamed"
+    if not text: return UNAMED
     return re.sub(r'[^a-z0-9]+', '-', str(text).lower()).strip('-')
 
 class PlanOrchestrator:
@@ -20,10 +22,12 @@ class PlanOrchestrator:
 
     def _log(self, plan_id: str, msg: str, title: str = None):
         slug_title = slugify(title)
-        plan_folder = f"plan-{slug_title}-{plan_id}"
+        if slug_title==UNAMED:
+            return
+        plan_folder = f"plan{plan_id}-{slug_title}"
         plan_logs_dir = os.path.join(self.logs_path, plan_folder)
         os.makedirs(plan_logs_dir, exist_ok=True)
-        orchestrator_log = os.path.join(plan_logs_dir, "worker.log")
+        orchestrator_log = os.path.join(plan_logs_dir, f"plan{plan_id}.log")
         with open(orchestrator_log, "a") as f:
             f.write(f"[{datetime.utcnow().isoformat()}] {msg}\n")
         logger.info(f"[{plan_id}] {msg}")
@@ -37,7 +41,7 @@ class PlanOrchestrator:
         db_session.commit()
         
         slug_title = slugify(plan.title)
-        plan_folder = f"plan-{slug_title}-{plan.id}"
+        plan_folder = f"plan{plan.id}-{slug_title}"
 
         def log_cb(msg):
             self._log(plan.id, msg, title=plan.title)
@@ -52,7 +56,9 @@ class PlanOrchestrator:
         
         main_branch = plan.branch
         work_branch = plan.work_branch or os.getenv('WORK_BRANCH', 'alnao-ai-agent')
-        
+        agent_logs_dir_name = os.getenv('REPO_AGENT_LOGS_DIR', '.alNaoAgentLogs')
+        repo_logs_dir = os.path.join(workspace_path, agent_logs_dir_name, f"plan{plan_id}-{slug_title}")
+
         self._log(plan.id, f"Plan started. Main branch: {main_branch}, Work branch: {work_branch}", title=plan.title)
 
         try:
@@ -90,33 +96,48 @@ class PlanOrchestrator:
                     db_session.commit()
                     return
 
-                full_commit_msg = f"{plan.commit_prefix}: {task.commit_msg or ''}"
-                commit_hash = git.commit_step(full_commit_msg)
-                task.last_commit_hash = commit_hash
-                db_session.commit()
-                self._log(plan_id, f"Step {task.step_order} completed. Commit: {commit_hash}")
+                if task.commit_after_task:
+                    prefix = f"{plan.commit_prefix}: " if plan.commit_prefix else ""
+                    suffix = plan.commit_suffix or ""
+                    full_commit_msg = f"{prefix}{task.commit_msg or ''}{suffix}"
+                    commit_hash = git.commit_step(full_commit_msg)
+                    task.last_commit_hash = commit_hash
+                    db_session.commit()
+                    self._log(plan_id, f"Step {task.step_order} completed. Commit: {commit_hash}")
+                else:
+                    self._log(plan_id, f"Step {task.step_order} completed. (No commit executed as requested)")
 
             # Step 4: Copy logs to repo
             import shutil
-            self._log(plan_id, "All tasks complete. Copying logs to repo...", title=plan.title)
+            self._log(plan_id, "All tasks complete. Logging overall modified files and copying logs to repo...", title=plan.title)
             
-            agent_logs_dir_name = os.getenv('REPO_AGENT_LOGS_DIR', '.alNaoAgentLogs')
+            # Get all modified files since main branch
+            diff_res = git._run_soft(['git', '-C', workspace_path, 'diff', f'origin/{main_branch}', 'HEAD', '--name-status'])
+            diff_output = diff_res.stdout.strip() if diff_res.returncode == 0 else ""
+            if diff_output:
+                self._log(plan_id, f"Overall files modified/added/removed in this plan:\n{diff_output}", title=plan.title)
+            else:
+                self._log(plan_id, "No files modified/added/removed in this plan.", title=plan.title)
+                
             repo_logs_dir = os.path.join(workspace_path, agent_logs_dir_name, f"plan-{slug_title}")
             os.makedirs(repo_logs_dir, exist_ok=True)
-            
             plan_logs_dir = os.path.join(self.logs_path, plan_folder)
-            
             if os.path.exists(plan_logs_dir):
                 for f in os.listdir(plan_logs_dir):
-                    if f.startswith('worker') or f.endswith('.md'):
+                    if f.startswith('worker.log') or f.endswith(f".log"): # or f.endswith('.md'):
                         shutil.copy2(os.path.join(plan_logs_dir, f), repo_logs_dir)
             
-            report_commit_msg = f"{plan.commit_prefix}: final report"
+            prefix = f"{plan.commit_prefix}: " if plan.commit_prefix else ""
+            suffix = plan.commit_suffix or ""
+            report_commit_msg = f"{prefix} final report {suffix}"
             git.commit_step(report_commit_msg)
             
-            # Step 5: Push only the work branch
-            self._log(plan_id, f"Logs committed. Pushing work branch '{work_branch}'...", title=plan.title)
-            git.push(work_branch)
+            # Step 5: Push only the work branch if requested
+            if plan.push_final:
+                self._log(plan_id, f"Logs committed. Pushing work branch '{work_branch}'...", title=plan.title)
+                git.push(work_branch)
+            else:
+                self._log(plan_id, f"Logs committed. (Pushing work branch skipped as requested)", title=plan.title)
             plan.status = 'COMPLETED'
             db_session.commit()
             self._log(plan_id, "Plan execution finished successfully.")
