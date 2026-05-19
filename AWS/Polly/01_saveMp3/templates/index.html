@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>AWS Polly – Save MP3 to S3</title>
+  <title>AWS Polly – Save MP3 / Logs</title>
   <!-- Bootstrap 5 -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
         rel="stylesheet" crossorigin="anonymous" />
@@ -28,8 +28,8 @@
   <div class="container d-flex align-items-center gap-3">
     <i class="fa-solid fa-volume-high fa-2x"></i>
     <div>
-      <h4 class="mb-0 fw-bold">AWS Polly – Save MP3 to S3</h4>
-      <small class="opacity-75">Sintesi vocale e salvataggio su Amazon S3</small>
+      <h4 class="mb-0 fw-bold">AWS Polly – Save MP3 / Logs</h4>
+      <small class="opacity-75">Sintesi, log execution.log e download MP3 da Amazon S3</small>
     </div>
   </div>
 </div>
@@ -96,9 +96,29 @@
     <h5 class="fw-bold mb-3"><i class="fa-solid fa-circle-check me-2 text-success"></i>Risultati</h5>
     <div id="resultsContainer" class="mb-3"></div>
     <div>
-      <label class="form-label fw-semibold text-muted">Log JSON</label>
+      <label class="form-label fw-semibold text-muted">Risposta JSON</label>
       <pre class="log p-3" id="logPre"></pre>
     </div>
+  </div>
+
+  <div class="card p-4 mt-4">
+    <h5 class="fw-bold mb-3"><i class="fa-solid fa-file-lines me-2 text-primary"></i>Visualizza execution.log</h5>
+    <div class="row g-2 align-items-end">
+      <div class="col-md-5">
+        <label class="form-label form-label-sm">Bucket S3</label>
+        <input id="logBucket" class="form-control form-control-sm" placeholder="my-bucket" />
+      </div>
+      <div class="col-md-5">
+        <label class="form-label form-label-sm">Key log</label>
+        <input id="logKey" class="form-control form-control-sm" value="execution.log" />
+      </div>
+      <div class="col-md-2 d-grid">
+        <button class="btn btn-primary btn-sm" onclick="fetchExecutionLog()">
+          <i class="fa-solid fa-eye me-1"></i>Mostra
+        </button>
+      </div>
+    </div>
+    <pre class="log p-3 mt-3 mb-0" id="executionLogPre">Nessun log caricato.</pre>
   </div>
 </div>
 
@@ -267,6 +287,18 @@ function renderResults(data) {
     const icon  = isOk ? 'fa-circle-check text-success' : 'fa-circle-xmark text-danger';
     const cls   = isOk ? 'result-success' : 'result-error';
     const div   = document.createElement('div');
+    const actions = isOk
+      ? `<div class="mt-2">
+           <a class="btn btn-sm btn-outline-primary"
+              href="/download-mp3?bucket=${encodeURIComponent(r.bucket)}&key=${encodeURIComponent(r.key)}">
+             <i class="fa-solid fa-download me-1"></i>Scarica MP3
+           </a>
+           <button class="btn btn-sm btn-outline-secondary ms-2"
+                   onclick="loadLogForBucket('${encodeURIComponent(r.bucket)}')">
+             <i class="fa-solid fa-file-lines me-1"></i>Apri log bucket
+           </button>
+         </div>`
+      : '';
     div.className = `card ${cls} p-3 mb-2`;
     div.innerHTML = `
       <div class="d-flex align-items-start gap-3">
@@ -279,6 +311,7 @@ function renderResults(data) {
             <code>${r.s3_uri}</code>
           </div>
           <div class="small mt-1 ${isOk ? 'text-success' : 'text-danger'}">${r.message}</div>
+          ${actions}
         </div>
         <span class="badge ${isOk ? 'bg-success' : 'bg-danger'}">${r.status}</span>
       </div>`;
@@ -287,6 +320,31 @@ function renderResults(data) {
 
   logPre.textContent = JSON.stringify(data, null, 2);
   section.scrollIntoView({ behavior: 'smooth' });
+}
+
+async function fetchExecutionLog() {
+  const bucket = document.getElementById('logBucket').value.trim();
+  const key = document.getElementById('logKey').value.trim() || 'execution.log';
+  if (!bucket) { alert('Bucket log obbligatorio.'); return; }
+  const pre = document.getElementById('executionLogPre');
+  pre.textContent = 'Caricamento log...';
+  try {
+    const res = await fetch(`/logs?bucket=${encodeURIComponent(bucket)}&key=${encodeURIComponent(key)}`);
+    const data = await res.json();
+    if (!res.ok) {
+      pre.textContent = `Errore: ${data.error || 'Impossibile leggere il log.'}`;
+      return;
+    }
+    pre.textContent = data.content || '(log vuoto)';
+  } catch (e) {
+    pre.textContent = `Errore rete: ${e.message}`;
+  }
+}
+
+function loadLogForBucket(bucketEncoded) {
+  const bucket = decodeURIComponent(bucketEncoded);
+  document.getElementById('logBucket').value = bucket;
+  fetchExecutionLog();
 }
 
 // ── Init ──────────────────────────────────────────────────────────────────────

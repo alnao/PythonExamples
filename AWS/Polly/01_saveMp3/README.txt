@@ -3,10 +3,14 @@ AWS Polly – Save MP3 to S3
 
 Descrizione
 -----------
-Applicazione FastAPI che riceve una lista di elementi
+Applicazione Flask che riceve una lista di elementi
 (id, uuid, nome, pathS3, keyS3, testoDaLeggere), sintetizza
 ogni testo con AWS Polly (formato MP3) e carica il file audio
 sul bucket Amazon S3 indicato.
+In aggiunta:
+- salva `execution.log` su ogni bucket coinvolto
+- visualizza il log nella UI
+- permette il download MP3 direttamente dalla UI
 
 Prerequisiti
 ------------
@@ -16,6 +20,7 @@ Prerequisiti
 - Il bucket S3 deve già esistere e il profilo IAM deve avere i permessi:
     polly:SynthesizeSpeech
     s3:PutObject
+    s3:GetObject
 
 Installazione
 -------------
@@ -23,7 +28,7 @@ Installazione
 
 Avvio
 -----
-    uvicorn main:app --reload --port 8001
+    python main.py
 
 Aprire il browser su:  http://localhost:8001
 
@@ -37,6 +42,10 @@ API
   GET  /          – Interfaccia web
   GET  /voices    – Lista voci Polly disponibili
                     ?language_code=it-IT  (opzionale)
+  GET  /logs      – Legge execution.log da S3
+                    ?bucket=my-bucket&key=execution.log
+  GET  /download-mp3 – Scarica un MP3 da S3
+                    ?bucket=my-bucket&key=audio/file.mp3
   POST /synthesize – Sintetizza e salva su S3
     Body JSON:
     {
@@ -62,8 +71,17 @@ API
           "uuid":    "abc-123",
           "nome":    "benvenuto",
           "s3_uri":  "s3://my-bucket/audio/benvenuto.mp3",
+          "bucket":  "my-bucket",
+          "key":     "audio/benvenuto.mp3",
           "status":  "success",
-          "message": "MP3 saved to S3 successfully"
+          "message": "MP3 salvato su S3"
+        }
+      ],
+      "log_uploads": [
+        {
+          "bucket": "my-bucket",
+          "status": "success",
+          "key": "execution.log"
         }
       ]
     }
