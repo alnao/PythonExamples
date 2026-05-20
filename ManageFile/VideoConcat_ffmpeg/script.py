@@ -20,11 +20,21 @@ from os.path import isfile, join
 import subprocess
 import logging
 import threading
+from dataclasses import dataclass
 
 C_MP4 = ".mp4"
 C_MKV = ".mkv"
 C_OGV = ".ogv"
 C_VIDEO_TYPES = [("Video files", "*.mp4 *.mkv *.ogv *.avi *.mov"), ("All files", "*.*")]
+
+
+@dataclass
+class VideoItem:
+    path: str
+    start: str = ""
+    end: str = ""
+    video_crf: str = ""      # CRF 0-51 (vuoto = copia stream)
+    audio_bitrate: str = ""  # es. "128k" (vuoto = copia stream)
 
 
 def run_ffmpeg(cmd_list):
@@ -37,17 +47,44 @@ def run_ffmpeg(cmd_list):
     return result
 
 
+def _build_encode_args(item: "VideoItem"):
+    """Restituisce gli argomenti ffmpeg per video/audio basandosi sui parametri di qualità."""
+    has_video_quality = bool(item.video_crf.strip())
+    has_audio_quality = bool(item.audio_bitrate.strip())
+    if not has_video_quality and not has_audio_quality:
+        # Nessuna ri-codifica: copia stream con bitstream filter per mpegts
+        return ["-c", "copy", "-bsf:v", "h264_mp4toannexb"]
+    args = []
+    if has_video_quality:
+        args.extend(["-c:v", "libx264", "-crf", item.video_crf.strip()])
+    else:
+        args.extend(["-c:v", "copy"])
+    if has_audio_quality:
+        args.extend(["-c:a", "aac", "-b:a", item.audio_bitrate.strip()])
+    else:
+        args.extend(["-c:a", "copy"])
+    return args
+
+
 def concatVideo(file_paths, out_path):
-    """Concatena una lista di file video (percorsi assoluti) nel file di output specificato."""
+    """Concatena una lista di VideoItem nel file di output specificato."""
     tmp_dir = os.path.dirname(out_path) or os.getcwd()
     list_ts = []
-    for i, file_path in enumerate(file_paths):
-        logging.info(f"Inizio a processare il video: {file_path}")
+    for i, item in enumerate(file_paths):
+        logging.info(
+            f"Processando: {item.path} "
+            f"[da={item.start or 'inizio'} a={item.end or 'fine'} "
+            f"crf={item.video_crf or 'copy'} audio={item.audio_bitrate or 'copy'}]"
+        )
         ts_path = os.path.join(tmp_dir, f"_fileIntermediate{i}.ts")
-        cmd = [
-            "ffmpeg", "-y", "-i", file_path,
-            "-c", "copy", "-bsf:v", "h264_mp4toannexb", "-f", "mpegts", ts_path
-        ]
+        cmd = ["ffmpeg", "-y"]
+        if item.start:
+            cmd.extend(["-ss", item.start])
+        if item.end:
+            cmd.extend(["-to", item.end])
+        cmd.extend(["-i", item.path])
+        cmd.extend(_build_encode_args(item))
+        cmd.extend(["-f", "mpegts", ts_path])
         list_ts.append(ts_path)
         run_ffmpeg(cmd)
     logging.info("Finito il ciclo, inizio ad unire i video")
@@ -65,10 +102,15 @@ def concatVideo(file_paths, out_path):
     return out_path
 
 
-def convertOgvToMp4(file_path):
-    """Converte un file OGV in MP4 nella stessa cartella."""
+def convertOgvToMp4(file_path, video_crf="", audio_bitrate=""):
+    """Converte un file OGV in MP4 nella stessa cartella (con qualità opzionale)."""
     out_file = file_path.replace(C_OGV, C_MP4)
-    cmd = ["ffmpeg", "-y", "-i", file_path, "-vcodec", "libx264", out_file]
+    cmd = ["ffmpeg", "-y", "-i", file_path, "-vcodec", "libx264"]
+    if video_crf:
+        cmd.extend(["-crf", video_crf])
+    if audio_bitrate:
+        cmd.extend(["-b:a", audio_bitrate])
+    cmd.append(out_file)
     run_ffmpeg(cmd)
     return out_file
 
@@ -78,7 +120,8 @@ class VideoConcatApp(tk.Tk):
         super().__init__()
         self.title("VideoConcat - ffmpeg")
         self.resizable(True, True)
-        self.minsize(620, 480)
+        self.minsize(760, 520)
+        self.video_items = []
         self._build_ui()
 
     def _build_ui(self):
@@ -104,6 +147,33 @@ class VideoConcatApp(tk.Tk):
         tk.Button(btn_frame, text="⬇ Giù", width=18, command=self._move_down).pack(pady=2)
         tk.Button(btn_frame, text="🗑 Rimuovi", width=18, command=self._remove_selected).pack(pady=2)
         tk.Button(btn_frame, text="🧹 Svuota lista", width=18, command=self._clear_list).pack(pady=2)
+
+        # --- Range frame ---
+        range_frame = tk.LabelFrame(self, text="Intervallo per file selezionati (default: intero video)")
+        range_frame.pack(fill=tk.X, **pad)
+        tk.Label(range_frame, text="Da").pack(side=tk.LEFT, padx=(6, 2))
+        self.from_var = tk.StringVar(value="")
+        tk.Entry(range_frame, textvariable=self.from_var, width=14).pack(side=tk.LEFT, padx=(0, 8), pady=4)
+        tk.Label(range_frame, text="A").pack(side=tk.LEFT, padx=(0, 2))
+        self.to_var = tk.StringVar(value="")
+        tk.Entry(range_frame, textvariable=self.to_var, width=14).pack(side=tk.LEFT, padx=(0, 8), pady=4)
+        tk.Label(range_frame, text="(es: 00:01:10.5 oppure 70.5)").pack(side=tk.LEFT, padx=(0, 10))
+        tk.Button(range_frame, text="Applica ai selezionati", command=self._apply_range_to_selected).pack(side=tk.LEFT, padx=4)
+        tk.Button(range_frame, text="Reset (intero video)", command=self._reset_range_on_selected).pack(side=tk.LEFT, padx=4)
+
+        # --- Quality frame ---
+        quality_frame = tk.LabelFrame(self, text="Qualità per file selezionati (default: copia stream senza ri-codifica)")
+        quality_frame.pack(fill=tk.X, **pad)
+        tk.Label(quality_frame, text="CRF video").pack(side=tk.LEFT, padx=(6, 2))
+        self.crf_var = tk.StringVar(value="")
+        tk.Entry(quality_frame, textvariable=self.crf_var, width=6).pack(side=tk.LEFT, padx=(0, 2), pady=4)
+        tk.Label(quality_frame, text="(0-51, 18=alta, 23=default, 28=bassa; vuoto=copia)").pack(side=tk.LEFT, padx=(0, 10))
+        tk.Label(quality_frame, text="Bitrate audio").pack(side=tk.LEFT, padx=(10, 2))
+        self.audio_var = tk.StringVar(value="")
+        tk.Entry(quality_frame, textvariable=self.audio_var, width=8).pack(side=tk.LEFT, padx=(0, 2), pady=4)
+        tk.Label(quality_frame, text="(es: 128k, 192k; vuoto=copia)").pack(side=tk.LEFT, padx=(0, 10))
+        tk.Button(quality_frame, text="Applica ai selezionati", command=self._apply_quality_to_selected).pack(side=tk.LEFT, padx=4)
+        tk.Button(quality_frame, text="Reset qualità", command=self._reset_quality_on_selected).pack(side=tk.LEFT, padx=4)
 
         # --- Output file frame ---
         out_frame = tk.LabelFrame(self, text="File di output")
@@ -140,8 +210,7 @@ class VideoConcatApp(tk.Tk):
 
     def _add_files(self):
         paths = filedialog.askopenfilenames(title="Seleziona file video", filetypes=C_VIDEO_TYPES)
-        for p in paths:
-            self.listbox.insert(tk.END, p)
+        self._add_video_paths(paths)
 
     def _add_folder(self):
         folder = filedialog.askdirectory(title="Seleziona cartella")
@@ -152,35 +221,151 @@ class VideoConcatApp(tk.Tk):
             join(folder, f) for f in listdir(folder)
             if isfile(join(folder, f)) and os.path.splitext(f)[1].lower() in video_exts
         ])
-        for f in files:
-            self.listbox.insert(tk.END, f)
+        self._add_video_paths(files)
+
+    def _add_video_paths(self, paths):
+        for p in paths:
+            self.video_items.append(VideoItem(path=p))
+        self._refresh_listbox()
+
+    def _refresh_listbox(self):
+        selected = set(self.listbox.curselection())
+        self.listbox.delete(0, tk.END)
+        for i, item in enumerate(self.video_items):
+            rng = f" [{item.start or 'inizio'} → {item.end or 'fine'}]"
+            quality_parts = []
+            if item.video_crf:
+                quality_parts.append(f"CRF={item.video_crf}")
+            if item.audio_bitrate:
+                quality_parts.append(f"audio={item.audio_bitrate}")
+            quality = f" | qualità: {', '.join(quality_parts)}" if quality_parts else ""
+            self.listbox.insert(tk.END, f"{item.path}{rng}{quality}")
+            if i in selected:
+                self.listbox.selection_set(i)
 
     def _remove_selected(self):
         for i in reversed(self.listbox.curselection()):
-            self.listbox.delete(i)
+            del self.video_items[i]
+        self._refresh_listbox()
 
     def _clear_list(self):
-        self.listbox.delete(0, tk.END)
+        self.video_items.clear()
+        self._refresh_listbox()
 
     def _move_up(self):
         selection = self.listbox.curselection()
         for i in selection:
             if i == 0:
                 continue
-            text = self.listbox.get(i)
-            self.listbox.delete(i)
-            self.listbox.insert(i - 1, text)
-            self.listbox.selection_set(i - 1)
+            self.video_items[i - 1], self.video_items[i] = self.video_items[i], self.video_items[i - 1]
+        self._refresh_listbox()
+        for i in selection:
+            if i > 0:
+                self.listbox.selection_set(i - 1)
 
     def _move_down(self):
         selection = self.listbox.curselection()
         for i in reversed(selection):
-            if i == self.listbox.size() - 1:
+            if i == len(self.video_items) - 1:
                 continue
-            text = self.listbox.get(i)
-            self.listbox.delete(i)
-            self.listbox.insert(i + 1, text)
-            self.listbox.selection_set(i + 1)
+            self.video_items[i + 1], self.video_items[i] = self.video_items[i], self.video_items[i + 1]
+        self._refresh_listbox()
+        for i in selection:
+            if i < len(self.video_items) - 1:
+                self.listbox.selection_set(i + 1)
+
+    def _parse_time(self, value):
+        raw = value.strip()
+        if not raw:
+            return None
+        parts = raw.split(":")
+        try:
+            if len(parts) == 1:
+                return float(parts[0])
+            if len(parts) == 2:
+                minutes = float(parts[0])
+                seconds = float(parts[1])
+                return minutes * 60 + seconds
+            if len(parts) == 3:
+                hours = float(parts[0])
+                minutes = float(parts[1])
+                seconds = float(parts[2])
+                return hours * 3600 + minutes * 60 + seconds
+        except ValueError as exc:
+            raise ValueError(f"Formato tempo non valido: '{value}'") from exc
+        raise ValueError(f"Formato tempo non valido: '{value}'")
+
+    def _apply_range_to_selected(self):
+        selection = self.listbox.curselection()
+        if not selection:
+            messagebox.showwarning("Attenzione", "Seleziona almeno un file dalla lista.")
+            return
+
+        start_raw = self.from_var.get().strip()
+        end_raw = self.to_var.get().strip()
+        try:
+            start_seconds = self._parse_time(start_raw)
+            end_seconds = self._parse_time(end_raw)
+        except ValueError as err:
+            messagebox.showerror("Errore", str(err))
+            return
+
+        if start_seconds is not None and end_seconds is not None and start_seconds >= end_seconds:
+            messagebox.showerror("Errore", "L'intervallo non è valido: 'Da' deve essere minore di 'A'.")
+            return
+
+        for i in selection:
+            self.video_items[i].start = start_raw
+            self.video_items[i].end = end_raw
+        self._refresh_listbox()
+        for i in selection:
+            self.listbox.selection_set(i)
+
+    def _reset_range_on_selected(self):
+        selection = self.listbox.curselection()
+        if not selection:
+            messagebox.showwarning("Attenzione", "Seleziona almeno un file dalla lista.")
+            return
+        for i in selection:
+            self.video_items[i].start = ""
+            self.video_items[i].end = ""
+        self._refresh_listbox()
+        for i in selection:
+            self.listbox.selection_set(i)
+
+    def _apply_quality_to_selected(self):
+        selection = self.listbox.curselection()
+        if not selection:
+            messagebox.showwarning("Attenzione", "Seleziona almeno un file dalla lista.")
+            return
+        crf = self.crf_var.get().strip()
+        audio = self.audio_var.get().strip()
+        if crf:
+            try:
+                crf_val = int(crf)
+                if not (0 <= crf_val <= 51):
+                    raise ValueError()
+            except ValueError:
+                messagebox.showerror("Errore", "CRF deve essere un numero intero tra 0 e 51.")
+                return
+        for i in selection:
+            self.video_items[i].video_crf = crf
+            self.video_items[i].audio_bitrate = audio
+        self._refresh_listbox()
+        for i in selection:
+            self.listbox.selection_set(i)
+
+    def _reset_quality_on_selected(self):
+        selection = self.listbox.curselection()
+        if not selection:
+            messagebox.showwarning("Attenzione", "Seleziona almeno un file dalla lista.")
+            return
+        for i in selection:
+            self.video_items[i].video_crf = ""
+            self.video_items[i].audio_bitrate = ""
+        self._refresh_listbox()
+        for i in selection:
+            self.listbox.selection_set(i)
 
     def _choose_output(self):
         path = filedialog.asksaveasfilename(
@@ -192,8 +377,7 @@ class VideoConcatApp(tk.Tk):
             self.out_var.set(path)
 
     def _run(self):
-        files = list(self.listbox.get(0, tk.END))
-        if not files:
+        if not self.video_items:
             messagebox.showwarning("Attenzione", "Aggiungi almeno un file video alla lista.")
             return
         out_path = self.out_var.get().strip()
@@ -211,14 +395,15 @@ class VideoConcatApp(tk.Tk):
             try:
                 # Convert any OGV files first
                 converted = []
-                for f in files:
-                    if f.lower().endswith(C_OGV):
-                        self._log(f"Conversione OGV→MP4: {f}")
-                        mp4 = convertOgvToMp4(f)
-                        converted.append(mp4)
+                for item in self.video_items:
+                    if item.path.lower().endswith(C_OGV):
+                        self._log(f"Conversione OGV→MP4: {item.path}")
+                        mp4 = convertOgvToMp4(item.path, item.video_crf, item.audio_bitrate)
+                        converted.append(VideoItem(path=mp4, start=item.start, end=item.end,
+                                                   video_crf=item.video_crf, audio_bitrate=item.audio_bitrate))
                         self._log(f"  → {mp4}")
                     else:
-                        converted.append(f)
+                        converted.append(VideoItem(path=item.path, start=item.start, end=item.end))
 
                 self._log(f"Avvio concatenazione di {len(converted)} file...")
                 result = concatVideo(converted, out_path)
