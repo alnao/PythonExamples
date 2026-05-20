@@ -26,7 +26,7 @@ def check_shutdown_condition():
 
 def check_and_run_plans():
     plans = db_session.query(Plan).filter(
-        Plan.status.in_(['PENDING', 'WAITING_CREDITS']),
+        Plan.status == 'PENDING',
         Plan.schedule_time <= datetime.utcnow()
     ).all()
 

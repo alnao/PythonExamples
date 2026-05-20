@@ -1,7 +1,7 @@
 from datetime import datetime
 import os
 import subprocess
-from python.cli_providers import CLIProviderFactory
+from python.providers.cli_provider_factory import CLIProviderFactory
 from python.agent_builder import AgentContextBuilder
 from python.database import Plan, Task, Log, db_session
 from python.logger import get_logger
@@ -24,11 +24,12 @@ class SingleStepRunner:
         return re.sub(r'[^a-z0-9]+', '-', str(text).lower()).strip('-')
 
     def run_task(self, task_id: int):
+        self.log_cb(f"-------------------------------------------------------------------------- NEW TASK: {task_id}")
         task = db_session.query(Task).get(task_id)
         if not task:
             logger.warning(f"Task {task_id} not found")
             return {"status": "error", "message": "Task not found"}
-
+        
         plan_id = task.plan_id
         plan = db_session.query(Plan).get(plan_id)
         cli = CLIProviderFactory.get_provider(task.model)
@@ -45,15 +46,37 @@ class SingleStepRunner:
         attempts = 0
         success = False
         log_content = ""
+        
+        waiting_retries = 0
+        max_waiting_retries = int(os.getenv('WAITING_CREDITS_MAX_RETRIES', '10'))
+        waiting_delay_base_minutes = int(os.getenv('WAITING_CREDITS_DELAY_MINUTES', '5'))
 
         while attempts < self.max_fix_attempts:
             result = cli.execute(prompt, self.log_cb, cwd=self.workspace_dir)
+            self.log_cb(f"Result: {result}")
             
             out_str = (result.get('stdout') or '') + "\n" + (result.get('stderr') or '')
             if cli.check_rate_limit(out_str):
-                task.status = 'WAITING_CREDITS'
-                db_session.commit()
-                return {"status": "waiting_credits", "message": "Rate limit hit"}
+                self.log_cb(f"--------------------------------------------------------------------------")
+                self.log_cb(f"RATE LIMIT HIT")
+                self.log_cb("OUT: \n" + out_str)
+                self.log_cb("ERR: \n" + result.get('stderr') or 'NO_ERROR') 
+                self.log_cb(f"--------------------------------------------------------------------------")
+                log_content += f"\n[RATE LIMIT HIT]\n"
+
+                self.log_cb("Rate limit hit. Checking retry policy...")
+                if waiting_retries < max_waiting_retries:
+                    waiting_retries += 1
+                    current_delay = waiting_delay_base_minutes * waiting_retries
+                    self.log_cb(f"Waiting {current_delay} minutes before retrying (Attempt {waiting_retries}/{max_waiting_retries})...")
+                    import time
+                    time.sleep(current_delay * 60)
+                    continue
+                else:
+                    task.status = 'WAITING_CREDITS'
+                    self.log_cb("Max waiting retries reached. Exiting task with WAITING_CREDITS status.")
+                    break
+                    
             if attempts>0:
                 log_content += f"\n--------------------------\n Attempt {attempts + 1}"
             log_content += f"{result['stdout']}\n"
@@ -71,8 +94,10 @@ class SingleStepRunner:
                 prompt += f"\nTests failed. Output:\n{test_output}\nPlease fix."
                 log_content += f"\nTests failed:\n{test_output}\n"
                 attempts += 1
+                
         # Update Task status
-        task.status = 'COMPLETED' if success else 'FAILED'
+        if task.status != 'WAITING_CREDITS':
+            task.status = 'COMPLETED' if success else 'FAILED'
 
         # Save log file
         slug_title = self.slugify(self.plan_title)

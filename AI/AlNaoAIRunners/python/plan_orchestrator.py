@@ -78,6 +78,7 @@ class PlanOrchestrator:
                 .order_by(Task.step_order).all()
 
             for task in tasks:
+                self._log(plan_id, f"--------------------------------------------------------------------------")                    
                 self._log(plan_id, f"Executing Step {task.step_order} with agent {task.agent}...")
                 task.status = 'RUNNING'
                 db_session.commit()
@@ -85,7 +86,9 @@ class PlanOrchestrator:
                 result = runner.run_task(task.id)
 
                 if result['status'] == 'WAITING_CREDITS':
-                    self._log(plan_id, f"Step {task.step_order} hit rate limit.")
+
+                    self._log(plan_id, f"Step {task.step_order} hit rate limit. retring in 1 minute")
+
                     plan.status = 'WAITING_CREDITS'
                     db_session.commit()
                     return
@@ -106,6 +109,14 @@ class PlanOrchestrator:
                     self._log(plan_id, f"Step {task.step_order} completed. Commit: {commit_hash}")
                 else:
                     self._log(plan_id, f"Step {task.step_order} completed. (No commit executed as requested)")
+
+                # Apply inter-task delay if there are more tasks to run
+                if task != tasks[-1]:
+                    delay = plan.task_delay_seconds if plan.task_delay_seconds is not None else int(os.getenv('TASK_DELAY_SECONDS', 30))
+                    if delay > 0:
+                        self._log(plan_id, f"Waiting {delay} seconds before next task...")
+                        import time
+                        time.sleep(delay)
 
             # Step 4: Copy logs to repo
             import shutil

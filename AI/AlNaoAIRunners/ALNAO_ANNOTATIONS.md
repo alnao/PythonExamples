@@ -89,7 +89,22 @@ ti spiego ogni step scrive worker.log su cartelle diverse, voglio uniformare tut
 
 - fai una modifica alla pagina, quando si clicca nel titolo si deve tornare nella home
 
+- ciao voglio questo: creare una cartella providers (al livello di utils) con dentro un file per ogni providers, poi voglio che aggiungi il provider Antigravity che chiama la CLI/SK di Antigravity. Let's go
+
+- ciao, voglio questa modifica: nel setup_work_branch se il work_branch è indietro rispetto al main_branch deve importare le commit mancanti come marge da main a work. Se invece il work_branch è avanti rispetto al main_branch non faccia nulla perchè non serve. Let's go 
+
+- due cose: di default push automatico a no. poi se c'è WAITING_CREDITS lui esce dal single_step_runner e non si salva nulla, c'è un play nel web ma sembra non faccia nulla. quello che voglio è questo: se il task va in WAITING_CREDITS deve prima loggare che è andato in WAITING_CREDITS nel file di log, poi riprovare dopo n minuti (dove N è parametrizzabile nel env con default 1 minuto la prima volta, dalla seconda volta aspetta il "play" da utente. Verifica: quando utente preme play deve riprende dallo step WAITING_CREDITS perchè ora mi sa che non lo fa e non salva il md di quello step.
+
+- ora vorrei questa modifica: ti ho detto di riprovare dopo 1 minuto, voglio questa modifica, metti di default x=5 miunti. La prima volta tenta dopo X minuti, la seconda 2*X minuti, la terza 3*x, e così via fino a 10 volte. poi si ferma e aspetta che utente prema play
+
+- aggiungi un'altra cosa: un parametro nel plan che indica quanti secondi aspettare tra un task e il successivo, di default 30 secondi ma modificabile nel .env
+    - sqlite3 alnaoagents.db "ALTER TABLE plans ADD COLUMN task_delay_seconds INTEGER DEFAULT 30;"
+
+
+
 ## TODO
+- sistemare check_rate_limit perchè così non funziona!
+
 - analizza il progetto (è un motore che fa clone di un repository, chiama dei comandi CLI detti task e poi operazioni nel repository). Letti i "python/utils" così da avere panoramica tutte le operazioni possibili. 
 - Quando si crea / modifica un plan, aggiungi campo "Global Commit suffix" e imposta come default " - alnao-ai-runner" e aggiungilo al commento dei commit. Poi per ogni tasks fai un flag SI/NO "esegui commit dopo operazione" di default SI. 
 

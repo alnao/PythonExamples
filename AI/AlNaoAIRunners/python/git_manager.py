@@ -93,25 +93,15 @@ class GitManager:
                 # Pull latest work branch
                 self._run_soft(['git', '-C', ws, 'pull', 'origin', work_branch])
 
-            # Compare main and work branch trees to see if there are differences
-            main_tree_res = self._run(['git', '-C', ws, 'rev-parse', f'origin/{main_branch}^{{tree}}'])
-            main_tree = main_tree_res.stdout.strip()
-            
-            work_tree_res = self._run(['git', '-C', ws, 'rev-parse', 'HEAD^{tree}'])
-            work_tree = work_tree_res.stdout.strip()
+            # Check if work branch is behind main branch
+            behind_check = self._run(['git', '-C', ws, 'rev-list', f'HEAD..origin/{main_branch}', '--count'])
+            behind_commits = int(behind_check.stdout.strip())
 
-            if main_tree == work_tree:
-                self.log_cb("Main and work branch are already in sync (trees match).")
+            if behind_commits > 0:
+                self.log_cb(f"Work branch is behind main branch by {behind_commits} commits. Merging main into work...")
+                self._run(['git', '-C', ws, 'merge', f'origin/{main_branch}', '-m', f"Merge {main_branch} into {work_branch}"])
             else:
-                self.log_cb("Branches differ. Aligning work branch exactly to main branch...")
-                # We create a new commit whose tree is exactly main's tree, with work branch's HEAD as parent
-                commit_msg = f"Sync: riallineamento work branch con {main_branch}"
-                commit_tree_res = self._run(['git', '-C', ws, 'commit-tree', main_tree, '-p', 'HEAD', '-m', commit_msg])
-                new_commit = commit_tree_res.stdout.strip()
-                
-                # Reset HEAD to this new commit
-                self._run(['git', '-C', ws, 'reset', '--hard', new_commit])
-                self.log_cb(f"Work branch aligned with main. New commit: {new_commit}")
+                self.log_cb("Work branch is ahead or up to date with main branch. No action needed.")
 
     def commit_step(self, message: str) -> str:
         self._run(['git', '-C', self.workspace_dir, 'add', '.'])

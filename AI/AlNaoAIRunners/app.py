@@ -55,14 +55,19 @@ def create_plan():
             schedule_time = datetime.utcnow()
             
         push_final_val = request.form.get('push_final')
-        push_final = push_final_val == 'yes' if push_final_val else True
+        push_final = push_final_val == 'yes' if push_final_val else False
         common_message = request.form.get('common_message')
+        try:
+            task_delay_seconds = int(request.form.get('task_delay_seconds', os.getenv('TASK_DELAY_SECONDS', 30)))
+        except ValueError:
+            task_delay_seconds = 30
         
         plan_id = f"plan-{str(uuid.uuid4())[:8]}"
         plan = Plan(id=plan_id, title=title, branch=branch, work_branch=work_branch,
                     schedule_time=schedule_time, base_dir=base_dir, repo_url=repo_url,
                     commit_prefix=commit_prefix, commit_suffix=commit_suffix, 
-                    push_final=push_final, common_message=common_message, status='PENDING')
+                    push_final=push_final, common_message=common_message, 
+                    task_delay_seconds=task_delay_seconds, status='PENDING')
         db_session.add(plan)
         
         step_counter = 1
@@ -115,6 +120,7 @@ def create_plan():
                            default_branch=os.getenv('REPO_BRANCH', 'main'),
                            default_work_branch=os.getenv('WORK_BRANCH', 'alnao-ai-agent'),
                            default_repo_url=os.getenv('REPO_URL', ''),
+                           default_task_delay=os.getenv('TASK_DELAY_SECONDS', 30),
                            available_models=available_models)
 
 @app.route('/task/<int:task_id>/action', methods=['POST'])
