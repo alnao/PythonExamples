@@ -165,6 +165,24 @@ def get_video_duration(path: str) -> float:
         return 0.0
 
 
+def get_video_codec(path: str) -> str:
+    """Restituisce il codec video del file tramite ffprobe (stringa vuota se non disponibile)."""
+    try:
+        result = subprocess.run(
+            [
+                "ffprobe", "-v", "error",
+                "-select_streams", "v:0",
+                "-show_entries", "stream=codec_name",
+                "-of", "default=noprint_wrappers=1:nokey=1",
+                path,
+            ],
+            capture_output=True, text=True, timeout=15,
+        )
+        return result.stdout.strip().lower()
+    except Exception:
+        return ""
+
+
 def run_ffmpeg_with_progress(cmd_list: list, duration_secs: float = 0.0,
                              progress_cb=None, proc_cb=None, stop_event=None):
     """
@@ -231,13 +249,15 @@ def run_ffmpeg_with_progress(cmd_list: list, duration_secs: float = 0.0,
         raise RuntimeError(f"ffmpeg failed: {stderr_text}")
 
 
-def build_encode_args(item: VideoItem) -> list:
+def build_encode_args(item: VideoItem, video_codec: str = "") -> list:
     """Restituisce gli argomenti ffmpeg per video/audio basandosi sui parametri di qualità."""
     has_video_quality = bool(item.video_crf.strip())
     has_audio_quality = bool(item.audio_bitrate.strip())
     if not has_video_quality and not has_audio_quality:
-        # Nessuna ri-codifica: copia stream con bitstream filter per mpegts
-        return ["-c", "copy", "-bsf:v", "h264_mp4toannexb"]
+        # h264_mp4toannexb è necessario solo per H.264 (converte da AVCC ad Annex B per mpegts)
+        if video_codec == "h264":
+            return ["-c", "copy", "-bsf:v", "h264_mp4toannexb"]
+        return ["-c", "copy"]
     args = []
     if has_video_quality:
         args.extend(["-c:v", "libx264", "-crf", item.video_crf.strip()])
@@ -264,6 +284,7 @@ def concat_video(file_paths: list[VideoItem], out_path: str,
     n = len(file_paths)
 
     durations = [get_video_duration(item.path) for item in file_paths]
+    codecs = [get_video_codec(item.path) for item in file_paths]
     total_dur = sum(durations)
     completed_dur = 0.0
 
@@ -291,7 +312,7 @@ def concat_video(file_paths: list[VideoItem], out_path: str,
                 f"crf={item.video_crf or 'copy'} audio={item.audio_bitrate or 'copy'}]"
             )
             ts_path = os.path.join(tmp_dir, f"intermediate_{i}.ts")
-            encode_args = build_encode_args(item)
+            encode_args = build_encode_args(item, codecs[i])
             is_reencode = bool(item.video_crf.strip() or item.audio_bitrate.strip())
             fast = is_fast_seek(item, is_reencode)
 
