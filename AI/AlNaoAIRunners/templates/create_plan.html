@@ -33,15 +33,44 @@
                 </div>
             </div>
             <div class="row mb-3">
-                <div class="col-md-8">
+                <div class="col-md-4">
                     <label>Repository URL</label>
                     <input type="text" name="repo_url" class="form-control" placeholder="git@github.com:user/repo.git"
                         value="{{ cloned_plan.repo_url if cloned_plan else default_repo_url }}">
                 </div>
-                <div class="col-md-4">
+                <div class="col-md-2">
+                    <label>Push Finale</label>
+                    <div>
+                        <div class="form-check form-check-inline mt-2">
+                            <input class="form-check-input" type="radio" name="push_final" id="push_yes" value="yes"
+                                {{ 'checked' if not cloned_plan or cloned_plan.push_final else '' }}>
+                            <label class="form-check-label small" for="push_yes">Sì</label>
+                        </div>
+                        <div class="form-check form-check-inline mt-2">
+                            <input class="form-check-input" type="radio" name="push_final" id="push_no" value="no"
+                                {{ 'checked' if cloned_plan and not cloned_plan.push_final else '' }}>
+                            <label class="form-check-label small" for="push_no">No</label>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
                     <label>Global Commit Prefix</label>
                     <input type="text" name="commit_prefix" class="form-control" placeholder="feat: my feature"
                         value="{{ cloned_plan.commit_prefix if cloned_plan else '' }}">
+                </div>
+                <div class="col-md-3">
+                    <label>Global Commit Suffix</label>
+                    <input type="text" name="commit_suffix" class="form-control" placeholder=" - alnao-ai-runner"
+                        value="{{ cloned_plan.commit_suffix if cloned_plan else ' - alnao-ai-runner' }}">
+                </div>
+
+            </div>
+
+            <div class="row mb-3">
+                <div class="col-md-12">
+                    <label>Messaggio Comune (Appeso alla fine di tutti i prompt)</label>
+                    <textarea name="common_message" class="form-control" rows="2" placeholder="Testo comune da aggiungere a tutti i prompt..."
+                        >{{ cloned_plan.common_message if cloned_plan and cloned_plan.common_message else '' }}</textarea>
                 </div>
             </div>
 
@@ -51,7 +80,7 @@
                     <div class="col-md-1">#</div>
                     <div class="col-md-2">Agent & Model</div>
                     <div class="col-md-5">Prompt</div>
-                    <div class="col-md-4">Commit Message</div>
+                    <div class="col-md-4">Commit Message & Options</div>
                 </div>
 
                 {% for i in range(1, 16) %}
@@ -75,7 +104,8 @@
                             {% for group, models in available_models.items() %}
                             <optgroup label="{{ group }}">
                                 {% for val, label in models.items() %}
-                                <option value="{{ val }}" {{ 'selected' if ctask and ctask.model==val }}>{{ label }}</option>
+                                <option value="{{ val }}" {{ 'selected' if ctask and ctask.model==val }}>{{ label }}
+                                </option>
                                 {% endfor %}
                             </optgroup>
                             {% endfor %}
@@ -86,8 +116,20 @@
                             placeholder="Task prompt...">{{ ctask.prompt if ctask else '' }}</textarea>
                     </div>
                     <div class="col-md-4">
-                        <input type="text" name="commit_msg_{{ i }}" class="form-control form-control-sm"
+                        <input type="text" name="commit_msg_{{ i }}" class="form-control form-control-sm mb-1"
                             placeholder="Step commit description..." value="{{ ctask.commit_msg if ctask else '' }}">
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="radio" name="commit_after_task_{{ i }}"
+                                id="commit_yes_{{ i }}" value="yes" {{ 'checked' if not ctask or ctask.commit_after_task
+                                else '' }}>
+                            <label class="form-check-label small" for="commit_yes_{{ i }}">Esegui Commit (Sì)</label>
+                        </div>
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="radio" name="commit_after_task_{{ i }}"
+                                id="commit_no_{{ i }}" value="no" {{ 'checked' if ctask and not ctask.commit_after_task
+                                else '' }}>
+                            <label class="form-check-label small" for="commit_no_{{ i }}">No Commit</label>
+                        </div>
                     </div>
                 </div>
                 {% endfor %}

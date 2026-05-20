@@ -1,8 +1,5 @@
 # Annotazioni alnao: prompt usati per generare questo bellissimo progetto!
---------------------------------------------------------------------------------------------------------------------
-07/05/2026
-ProgettoAlNaoAIRunners (un sistema di EC2 che chiama AI tramite agenti per plan complessi)
-una applicazione (python flask , db dynamo con boto3, Task Queue, APScheduler, gitmanager ) che permetta di inserire piano: un id, un orario, un branch e un orario di inizio e una lista di task con prompt/modello/agenti. 
+ProgettoAlNaoAIRunners (un sistema di EC2 che chiama AI tramite agenti per plan complessi) una applicazione (python flask , db dynamo con boto3, Task Queue, APScheduler, gitmanager ) che permetta di inserire piano: un id, un orario, un branch e un orario di inizio e una lista di task con prompt/modello/agenti. 
 quando è il momento il programma esegue clone del branch, parte dal primo prompt e li esegue uno per uno, ogni step esegue commit nel branch, alla fine fa push nel branch. il prompt viene eseguito con il modello/effort selezionato. 
 se il ritorna “limit/rate raggiunti” aspetta di avere credito e poi riprende con comando “continua”. 
 Ogni task salva un log in .AlNaoAgent/logs/<id_plan>/<id_step>.md cosa ha fatto attraverso un agente, gli agenti possibili saranno del tipo “leggi la documentazione”, “scrivi la documentazione”, “caveman” ecc. 
@@ -88,22 +85,23 @@ l'elenco dei modelli (per gruppo) me li metti su .env con un default? la AVAILAB
 
 ti spiego ogni step scrive worker.log su cartelle diverse, voglio uniformare tutto mettendo i file worker dentro la stessa cartella ma con un incrementale tipo "worker-1.log", poi controlla che le commit vengano fatte con commento "<Global Commit Prefix>: <Commit Message>" e null'altro. il global commit prefix di default deve essere "alnao-ai-runner". torna indietro sulla modifica che hai fatto prima sul workder, rivoglio il file md come era prima
 
-TODO:
-- se il branch esiste già prosegui da quello e non dal main branch
-- mettere un flag se eseguire o meno il checkout prima di iniziare
-- mettere un flag se eseguire o meno il commit dopo ogni step
-- mettere un flag se eseguire o meno il push dopo ogni step e alla fine
-- mettere agente che fa riassunto di tutti gli step così tutti sanno gli steps 
-- mettere agente che scrive un riassunto di tutto il repository (cosa c'è dentro)
+- analizza il progetto (è un motore che fa clone di un repository, chiama dei comandi CLI detti task e poi operazioni nel repository). Letti i "python/utils" così da avere panoramica tutte le operazioni possibili. Quando si crea / modifica un plan, aggiungi campo "Global Commit suffix" e imposta come default " - alnao-ai-runner" e aggiungilo al commento dei commit. Poi per ogni tasks fai un flag SI/NO "esegui commit dopo operazione" di default SI. adesso aggiungi un flag SI/NO per gestire il push finale
+
+- fai una modifica alla pagina, quando si clicca nel titolo si deve tornare nella home
+
+## TODO
+- analizza il progetto (è un motore che fa clone di un repository, chiama dei comandi CLI detti task e poi operazioni nel repository). Letti i "python/utils" così da avere panoramica tutte le operazioni possibili. 
+- Quando si crea / modifica un plan, aggiungi campo "Global Commit suffix" e imposta come default " - alnao-ai-runner" e aggiungilo al commento dei commit. Poi per ogni tasks fai un flag SI/NO "esegui commit dopo operazione" di default SI. 
 
 
 
---- comandi 
-    npm install -g @google/gemini-cli
+
+
+## comandi 
+npm install -g @google/gemini-cli
 /mnt/Dati4/Workspace/PythonExamples
 source .venv/bin/activate
 pip install Flask python-dotenv APScheduler sqlalchemy
 cd AI/AlNaoAIRunners
 python app.py
 
----------------------

@@ -10,19 +10,20 @@ class AgentContextBuilder:
         if not os.path.exists(self.logs_dir):
             os.makedirs(self.logs_dir, exist_ok=True)
 
-    def build_prompt(self, plan_id: str, agent_identity: str, user_prompt: str, workspace_dir: str = None) -> str:
+    def build_prompt(self, plan_id: str, agent_identity: str, user_prompt: str, workspace_dir: str = None, work_logs_dir: str = None) -> str:
         # Read context logs
-        plan_logs_dir = os.path.join(self.logs_path, self.plan_folder)
-        
-        context_logs = ""
+        #plan_logs_dir = os.path.join(self.logs_path, self.plan_folder)
+        plan_logs_dir = work_logs_dir
+
+        #context_logs = ""
         context_logs_list = []
         if os.path.exists(plan_logs_dir):
             for log_file in sorted(os.listdir(plan_logs_dir)):
                 if log_file.endswith(".md"):
-                    rel_path = os.path.join(plan_id, log_file)
-                    context_logs_list.append(rel_path)
-                    with open(os.path.join(plan_logs_dir, log_file), "r") as f:
-                        context_logs += f"\n--- LOG {log_file} ---\n{f.read()}"
+                    #rel_path = os.path.join(plan_logs_dir, log_file)
+                    context_logs_list.append(log_file)
+                    #with open(os.path.join(plan_logs_dir, log_file), "r") as f:
+                    #    context_logs += f"\n--- LOG {log_file} ---\n{f.read()}"
 
         constraint = "Constraint: Se finisci i tentativi di fix, scrivi 'STOP_FAILURE' e non fare il commit."
         
@@ -41,7 +42,7 @@ Context: Leggi lo stato attuale per sapere cosa hanno fatto i predecessori dai f
 {ctx_list_str}
 
 Important: Hai il permesso e gli strumenti per modificare direttamente i file nel workspace corrente se necessario.
-
+Important: Non eseguire mai comandi nel repository come commit, push, pull, merge o altri comandi di git. Non uscire mai dalla cartella di lavoro "workspace".
 
 {constraint}
 

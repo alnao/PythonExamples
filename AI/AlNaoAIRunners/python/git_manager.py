@@ -93,41 +93,36 @@ class GitManager:
                 # Pull latest work branch
                 self._run_soft(['git', '-C', ws, 'pull', 'origin', work_branch])
 
-            # Compare main and work branch
-            # Get the merge base
-            merge_base_res = self._run_soft(['git', '-C', ws, 'merge-base', f'origin/{main_branch}', 'HEAD'])
-            if merge_base_res.returncode != 0:
-                self.log_cb("Cannot find merge base. Resetting work branch to main...")
-                self._run(['git', '-C', ws, 'reset', '--hard', f'origin/{main_branch}'])
-                return
+            # Compare main and work branch trees to see if there are differences
+            main_tree_res = self._run(['git', '-C', ws, 'rev-parse', f'origin/{main_branch}^{{tree}}'])
+            main_tree = main_tree_res.stdout.strip()
+            
+            work_tree_res = self._run(['git', '-C', ws, 'rev-parse', 'HEAD^{tree}'])
+            work_tree = work_tree_res.stdout.strip()
 
-            merge_base = merge_base_res.stdout.strip()
-            main_head_res = self._run(['git', '-C', ws, 'rev-parse', f'origin/{main_branch}'])
-            main_head = main_head_res.stdout.strip()
-            work_head_res = self._run(['git', '-C', ws, 'rev-parse', 'HEAD'])
-            work_head = work_head_res.stdout.strip()
-
-            if main_head == work_head:
-                self.log_cb("Main and work branch are already in sync.")
-            elif merge_base == work_head:
-                # Main is ahead of work → reset work to main
-                self.log_cb(f"Main branch is ahead. Resetting work branch to main...")
-                self._run(['git', '-C', ws, 'reset', '--hard', f'origin/{main_branch}'])
-            elif merge_base == main_head:
-                # Work is ahead of main → nothing to do, work has extra commits
-                self.log_cb(f"Work branch is ahead of main. No sync needed.")
+            if main_tree == work_tree:
+                self.log_cb("Main and work branch are already in sync (trees match).")
             else:
-                # Diverged: merge main into work
-                self.log_cb(f"Branches diverged. Merging main into work branch...")
-                merge_res = self._run_soft(['git', '-C', ws, 'merge', f'origin/{main_branch}', 
-                                           '-m', f'Sync: merge {main_branch} into {work_branch}'])
-                if merge_res.returncode != 0:
-                    self.log_cb("Merge conflict detected. Aborting merge and resetting to main...")
-                    self._run_soft(['git', '-C', ws, 'merge', '--abort'])
-                    self._run(['git', '-C', ws, 'reset', '--hard', f'origin/{main_branch}'])
+                self.log_cb("Branches differ. Aligning work branch exactly to main branch...")
+                # We create a new commit whose tree is exactly main's tree, with work branch's HEAD as parent
+                commit_msg = f"Sync: riallineamento work branch con {main_branch}"
+                commit_tree_res = self._run(['git', '-C', ws, 'commit-tree', main_tree, '-p', 'HEAD', '-m', commit_msg])
+                new_commit = commit_tree_res.stdout.strip()
+                
+                # Reset HEAD to this new commit
+                self._run(['git', '-C', ws, 'reset', '--hard', new_commit])
+                self.log_cb(f"Work branch aligned with main. New commit: {new_commit}")
 
     def commit_step(self, message: str) -> str:
         self._run(['git', '-C', self.workspace_dir, 'add', '.'])
+        
+        # Capture and log staged files before committing
+        diff_res = self._run_soft(['git', '-C', self.workspace_dir, 'diff', '--cached', '--name-status'])
+        diff_output = diff_res.stdout.strip() if diff_res.returncode == 0 else ""
+        if diff_output:
+            self.log_cb(f"Files to commit:\n{diff_output}")
+        else:
+            self.log_cb("No files to commit.")
         
         cmd = ['git', '-C', self.workspace_dir, 'commit', '-m', message]
         self.log_cb(f"EXEC CMD: {' '.join(cmd)}")

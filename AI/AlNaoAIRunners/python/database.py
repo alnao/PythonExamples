@@ -15,6 +15,9 @@ class Plan(Base):
     repo_url = Column(String, nullable=True)
     work_branch = Column(String, nullable=True)
     commit_prefix = Column(String, nullable=True)
+    commit_suffix = Column(String, nullable=True, default=' - alnao-ai-runner')
+    push_final = Column(Boolean, default=True)
+    common_message = Column(Text, nullable=True)
     status = Column(String, default='PENDING')
     created_at = Column(DateTime, default=datetime.utcnow)
 
@@ -27,6 +30,7 @@ class Task(Base):
     model = Column(String, nullable=False)
     prompt = Column(Text, nullable=False)
     commit_msg = Column(String, nullable=True)
+    commit_after_task = Column(Boolean, default=True)
     status = Column(String, default='PENDING')
     last_commit_hash = Column(String, nullable=True)
 

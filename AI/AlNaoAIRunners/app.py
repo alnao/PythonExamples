@@ -47,16 +47,22 @@ def create_plan():
         base_dir = request.form.get('base_dir')
         repo_url = request.form.get('repo_url')
         commit_prefix = request.form.get('commit_prefix') or 'alnao-ai-runner'
+        commit_suffix = request.form.get('commit_suffix') or ' - alnao-ai-runner'
         sched_str = request.form.get('schedule_time')
         try:
             schedule_time = datetime.fromisoformat(sched_str) if sched_str else datetime.utcnow()
         except:
             schedule_time = datetime.utcnow()
             
+        push_final_val = request.form.get('push_final')
+        push_final = push_final_val == 'yes' if push_final_val else True
+        common_message = request.form.get('common_message')
+        
         plan_id = f"plan-{str(uuid.uuid4())[:8]}"
         plan = Plan(id=plan_id, title=title, branch=branch, work_branch=work_branch,
                     schedule_time=schedule_time, base_dir=base_dir, repo_url=repo_url,
-                    commit_prefix=commit_prefix, status='PENDING')
+                    commit_prefix=commit_prefix, commit_suffix=commit_suffix, 
+                    push_final=push_final, common_message=common_message, status='PENDING')
         db_session.add(plan)
         
         step_counter = 1
@@ -67,8 +73,11 @@ def create_plan():
                 if not agent: agent = 'DefaultAgent'
                 model = request.form.get(f'model_{i}', 'claude')
                 commit_msg = request.form.get(f'commit_msg_{i}', '')
+                commit_after_task_val = request.form.get(f'commit_after_task_{i}')
+                commit_after_task = commit_after_task_val == 'yes' if commit_after_task_val else True
+                
                 task = Task(plan_id=plan_id, step_order=step_counter, agent=agent, model=model, 
-                            prompt=prompt, commit_msg=commit_msg, status='PENDING')
+                            prompt=prompt, commit_msg=commit_msg, commit_after_task=commit_after_task, status='PENDING')
                 db_session.add(task)
                 step_counter += 1
                 
