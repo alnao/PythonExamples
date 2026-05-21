@@ -14,6 +14,17 @@ app.config['DB_PATH'] = os.getenv('DB_PATH', 'alnaoagents.db')
 
 # Init DB Session
 db_session = init_db(app.config['DB_PATH'])
+
+# Reset any stuck plans and tasks from a previous interrupted run
+stuck_plans = db_session.query(Plan).filter_by(status='RUNNING').all()
+for plan in stuck_plans:
+    plan.status = 'FAILED'
+stuck_tasks = db_session.query(Task).filter_by(status='RUNNING').all()
+for task in stuck_tasks:
+    task.status = 'FAILED'
+if stuck_plans or stuck_tasks:
+    db_session.commit()
+
 start_worker()
 
 @app.route('/')
@@ -56,6 +67,8 @@ def create_plan():
             
         push_final_val = request.form.get('push_final')
         push_final = push_final_val == 'yes' if push_final_val else False
+        clean_base_dir_val = request.form.get('clean_base_dir')
+        clean_base_dir = clean_base_dir_val == 'yes' if clean_base_dir_val else False
         common_message = request.form.get('common_message')
         try:
             task_delay_seconds = int(request.form.get('task_delay_seconds', os.getenv('TASK_DELAY_SECONDS', 30)))
@@ -66,7 +79,8 @@ def create_plan():
         plan = Plan(id=plan_id, title=title, branch=branch, work_branch=work_branch,
                     schedule_time=schedule_time, base_dir=base_dir, repo_url=repo_url,
                     commit_prefix=commit_prefix, commit_suffix=commit_suffix, 
-                    push_final=push_final, common_message=common_message, 
+                    push_final=push_final, clean_base_dir=clean_base_dir,
+                    common_message=common_message, 
                     task_delay_seconds=task_delay_seconds, status='PENDING')
         db_session.add(plan)
         

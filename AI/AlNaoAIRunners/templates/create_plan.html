@@ -30,6 +30,11 @@
                     <label>Base Directory</label>
                     <input type="text" name="base_dir" class="form-control" placeholder="/mnt/Dati4/todel/"
                         value="{{ cloned_plan.base_dir if cloned_plan else default_base_dir }}">
+                    <div class="form-check mt-1">
+                        <input class="form-check-input" type="checkbox" name="clean_base_dir" id="clean_base_dir" value="yes"
+                            {{ 'checked' if cloned_plan and cloned_plan.clean_base_dir else '' }}>
+                        <label class="form-check-label small" for="clean_base_dir">Cancella sorgente</label>
+                    </div>
                 </div>
             </div>
             <div class="row mb-3">

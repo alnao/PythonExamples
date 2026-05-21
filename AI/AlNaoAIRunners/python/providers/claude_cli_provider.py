@@ -17,22 +17,29 @@ class ClaudeCLIProvider(AbstractCLIProvider):
             result = subprocess.run(cmd, capture_output=True, text=True, check=False, cwd=cwd)
             if result.stdout: log_cb(f"STDOUT: {result.stdout.strip()[:300]}...")
             if result.stderr: log_cb(f"STDERR: {result.stderr.strip()[:300]}...")
+            if "issue with the selected model" in result.stderr or "issue with the selected model" in result.stdout: 
+                log_cb(f"STDOUT FIX: {result.stdout.strip()[:300]}...")
+                return {"stdout": result.stdout, "stderr": result.stderr, "code": 1}                
             return {"stdout": result.stdout, "stderr": result.stderr, "code": result.returncode}
         except Exception as e:
             log_cb(f"EXEC ERROR: {str(e)}")
             return {"stdout": f"Error executing Claude: {str(e)}", "stderr": str(e), "code": 1}
 
     def check_rate_limit(self, response: str) -> bool:
+        """
+        Check if the response indicates a rate limit.
+        """
         resp = str(response).lower()
         keywords = [
+            "you've hit your limit",
             #"rate limit", 
-            "rate_limit", 
+            #"rate_limit", 
             #"quota exceeded", 
-            "quota_exceeded", 
+            #"quota_exceeded", 
             #"exhausted", 
             #"429", 
             #"out of credits", 
-            "insufficient credits", 
+            #"insufficient credits", 
             #"limit exceeded"
         ]
         return any(k in resp for k in keywords)

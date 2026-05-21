@@ -17,6 +17,7 @@ class Plan(Base):
     commit_prefix = Column(String, nullable=True)
     commit_suffix = Column(String, nullable=True, default=' - alnao-ai-runner')
     push_final = Column(Boolean, default=False)
+    clean_base_dir = Column(Boolean, default=False)
     common_message = Column(Text, nullable=True)
     task_delay_seconds = Column(Integer, default=30)
     status = Column(String, default='PENDING')

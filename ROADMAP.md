@@ -1,10 +1,12 @@
 # Python Repository AlNao Roadmap
 - AI
     - **AlNaoAIRunners**
-        - fare commit se indicato nello step e poi commit finale!
-        - come installare claude, gemini e copilot e come devono essere configurati
+        - gestione limit copilot
+        - gemini e google cloud
+        - kiro cli https://kiro.dev/docs/cli/authentication/
+        
         - migliorare l'interfaccia grafica
-        - migliorare il commit
+        
     - **BuildLargeLanguageModel**: studio e analisi del famoso libro [Build a Large Language Model](https://github.com/rasbt/LLMs-from-scratch/tree/main)
         - Video [Build an LLM from Scratch 5: Pretraining on Unlabeled Data](https://www.youtube.com/watch?v=Zar2TJv-sE0)
             - interrotto a 1:34:00

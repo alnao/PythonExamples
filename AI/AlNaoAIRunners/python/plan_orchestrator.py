@@ -49,6 +49,20 @@ class PlanOrchestrator:
         # Ensure workspace is a subfolder of base_dir to avoid "not a git repo" on base_dir itself
         workspace_dir_name = os.getenv('REPO_WORKSPACE_DIR_NAME', 'workspace')
         base_path = plan.base_dir if plan.base_dir else self.workspace_dir
+        
+        if getattr(plan, 'clean_base_dir', False) and os.path.exists(base_path):
+            self._log(plan.id, f"Cleaning base directory '{base_path}' as requested...", title=plan.title)
+            import shutil
+            for filename in os.listdir(base_path):
+                file_path = os.path.join(base_path, filename)
+                try:
+                    if os.path.isfile(file_path) or os.path.islink(file_path):
+                        os.unlink(file_path)
+                    elif os.path.isdir(file_path):
+                        shutil.rmtree(file_path)
+                except Exception as e:
+                    self._log(plan.id, f"Failed to delete {file_path}. Reason: {e}", title=plan.title)
+                    
         workspace_path = os.path.join(base_path, workspace_dir_name)
         
         git = GitManager(self.repo_url, workspace_path, log_cb)
