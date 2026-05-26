@@ -3,6 +3,7 @@ from python.providers.claude_cli_provider import ClaudeCLIProvider
 from python.providers.gemini_cli_provider import GeminiCLIProvider
 from python.providers.copilot_cli_provider import CopilotCLIProvider
 from python.providers.antigravity_cli_provider import AntigravityCLIProvider
+from python.providers.kiro_cli_provider import KiroCLIProvider
 
 class CLIProviderFactory:
     @staticmethod
@@ -17,6 +18,8 @@ class CLIProviderFactory:
                 return GeminiCLIProvider(model)
             if provider == "antigravity":
                 return AntigravityCLIProvider(model)
+            if provider == "kiro" or provider == "kiro-cli":
+                return KiroCLIProvider(model)
 
         m = model_name.lower()
         if "copilot" in m or "gpt-5" in m or "gpt-4" in m:
@@ -27,4 +30,6 @@ class CLIProviderFactory:
             return GeminiCLIProvider(model_name)
         elif "antigravity" in m:
             return AntigravityCLIProvider(model_name)
+        elif "kiro" in m:
+            return KiroCLIProvider(model_name)
         return ClaudeCLIProvider(model_name)

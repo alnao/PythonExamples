@@ -3,4 +3,5 @@ from .claude_cli_provider import ClaudeCLIProvider
 from .gemini_cli_provider import GeminiCLIProvider
 from .copilot_cli_provider import CopilotCLIProvider
 from .antigravity_cli_provider import AntigravityCLIProvider
+from .kiro_cli_provider import KiroCLIProvider
 from .cli_provider_factory import CLIProviderFactory

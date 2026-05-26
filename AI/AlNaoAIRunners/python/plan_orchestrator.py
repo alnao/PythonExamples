@@ -1,3 +1,4 @@
+from python.logger import log_plan
 import os
 import re
 from datetime import datetime
@@ -24,10 +25,10 @@ class PlanOrchestrator:
         slug_title = slugify(title)
         if slug_title==UNAMED:
             return
-        plan_folder = f"plan{plan_id}-{slug_title}"
+        plan_folder = f"{plan_id}-{slug_title}"
         plan_logs_dir = os.path.join(self.logs_path, plan_folder)
         os.makedirs(plan_logs_dir, exist_ok=True)
-        orchestrator_log = os.path.join(plan_logs_dir, f"plan{plan_id}.log")
+        orchestrator_log = os.path.join(plan_logs_dir, f"{plan_id}.log")
         with open(orchestrator_log, "a") as f:
             f.write(f"[{datetime.utcnow().isoformat()}] {msg}\n")
         logger.info(f"[{plan_id}] {msg}")
@@ -37,15 +38,16 @@ class PlanOrchestrator:
         if not plan:
             return
 
+        def log_cb(msg):
+            self._log(plan.id, msg, title=plan.title)
+
         plan.status = 'RUNNING'
         db_session.commit()
         
         slug_title = slugify(plan.title)
-        plan_folder = f"plan{plan.id}-{slug_title}"
+        plan_folder = f"{plan.id}-{slug_title}"
+        plan_folder_into_repo=f"{plan.id}-{slug_title}"
 
-        def log_cb(msg):
-            self._log(plan.id, msg, title=plan.title)
-            
         # Ensure workspace is a subfolder of base_dir to avoid "not a git repo" on base_dir itself
         workspace_dir_name = os.getenv('REPO_WORKSPACE_DIR_NAME', 'workspace')
         base_path = plan.base_dir if plan.base_dir else self.workspace_dir
@@ -62,16 +64,20 @@ class PlanOrchestrator:
                         shutil.rmtree(file_path)
                 except Exception as e:
                     self._log(plan.id, f"Failed to delete {file_path}. Reason: {e}", title=plan.title)
-                    
+            self._log(plan.id, f"Finished cleaning base directory '{base_path}'", title=plan.title)
+        
+        # Log complete plan information, including the list of tasks and their details
+        tasks = db_session.query(Task).filter_by(plan_id=plan.id).order_by(Task.step_order).all()
+        log_plan(self._log,plan,tasks)
+
         workspace_path = os.path.join(base_path, workspace_dir_name)
         
         git = GitManager(self.repo_url, workspace_path, log_cb)
-        runner = SingleStepRunner(workspace_path, self.logs_path, log_cb, plan_folder=plan_folder, plan_title=plan.title)
+        runner = SingleStepRunner(workspace_path, self.logs_path, log_cb, plan_folder=plan_folder_into_repo, plan_title=plan.title)
         
         main_branch = plan.branch
         work_branch = plan.work_branch or os.getenv('WORK_BRANCH', 'alnao-ai-agent')
         agent_logs_dir_name = os.getenv('REPO_AGENT_LOGS_DIR', '.alNaoAgentLogs')
-        repo_logs_dir = os.path.join(workspace_path, agent_logs_dir_name, f"plan{plan_id}-{slug_title}")
 
         self._log(plan.id, f"Plan started. Main branch: {main_branch}, Work branch: {work_branch}", title=plan.title)
 
@@ -144,7 +150,7 @@ class PlanOrchestrator:
             else:
                 self._log(plan_id, "No files modified/added/removed in this plan.", title=plan.title)
                 
-            repo_logs_dir = os.path.join(workspace_path, agent_logs_dir_name, f"plan-{slug_title}")
+            repo_logs_dir = os.path.join(workspace_path, agent_logs_dir_name, plan_folder_into_repo)
             os.makedirs(repo_logs_dir, exist_ok=True)
             plan_logs_dir = os.path.join(self.logs_path, plan_folder)
             if os.path.exists(plan_logs_dir):
