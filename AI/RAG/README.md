@@ -1,9 +1,9 @@
-# IA RAD Annotazioni
+# IA RAG Annotazioni
 
 Piccolo progetto in Python con due entrypoint (FastAPI e Flask) per gestione e ricerca annotazioni dentro ad un RAG, con UI web Flask per inserire annotazioni, eseguire ricerche e generare abstract sui chunk restituiti.
 - ispirato al video [Come ho implemento l'AI in Typescript](https://www.youtube.com/watch?v=xDOUTqlnJuY)
-- in futuro sarà evoluto per integratsi con il sistema [AlNao J-Annotazioni](https://github.com/alnao/JavaSpringBootExample) *coming soon*
-- attenzione: usando un RAD locale, anche con piccoli modelli come il `codellama-7b-instruct.Q8_0`, risulta necessaria una grande quantità di risorse: usando Debian 13, CPU 12 CORE, servono 10Gb di ram e 10Gb di memoria swap (*non mi posso permettere una GPU con quello che costano!*)
+- in futuro sarà evoluto per integrarsi con il sistema [AlNao J-Annotazioni](https://github.com/alnao/JavaSpringBootExample) *coming soon*
+- attenzione: l'uso di un LLM locale richiede risorse significative. Grazie all'ottimizzazione del modello condiviso, la memoria RAM richiesta circa 8-10 GB totali per CPU, senza bisogno di caricare due istanze del modello.
 
 ## Creazione del progetto
 Questo *progetto* è stato creato interamente usando l'IA GitHub copilot con i seguenti prompt
@@ -24,12 +24,13 @@ Questo *progetto* è stato creato interamente usando l'IA GitHub copilot con i s
 
 
 ## Architettura rapida
-- Ingestion: testo suddiviso in chunk, vettorizzato via modello locale GGUF (llama.cpp) o OpenAI come fallback ibrido.
+- Ingestion: testo suddiviso in chunk tramite uno splitter ricorsivo avanzato (preserva newline, rispetta frasi/paragrafi/parole per evitare tagli a metà), vettorizzato via modello locale GGUF (llama.cpp) o OpenAI come fallback ibrido.
+- Condivisione Modello: l'istanza del modello locale GGUF è condivisa in memoria (singleton) tra l'EmbeddingProvider e il Summarizer, riducendo a metà i requisiti hardware.
 - Persistenza: ChromaDB in locale (SQLite) in `./data/vectordb` con metadati `annotation_id` e indice chunk.
 - API/UI: [app_fastapi.py](app_fastapi.py) e [app_flask.py](app_flask.py); stessi endpoint `/annotations`, `/search`, `/health` più UI Flask (home e prompt search).
 - Coda: hook asincroni per Kafka o SQS in [rag_annotations/queue_handlers/consumer.py](rag_annotations/queue_handlers/consumer.py). Non attivati di default.
 - Core pipeline riusabile in [rag_annotations/pipeline.py](rag_annotations/pipeline.py).
-- Prompt Search: pagina `/prompt-search` con selezione backend (local/openai/hybrid), scelta Top K, limite chunk da sintetizzare e tabella abstract (originale + traduzione italiana).
+- Prompt Search: pagina `/prompt-search` con selezione backend (local/openai/hybrid), scelta Top K, limite chunk da sintetizzare e tabella abstract (originale + traduzione italiana) con fallback automatico a OpenAI in modalità hybrid.
 
 ## Quickstart
 1. Crea venv e installa: `pip install -r requirements.txt`
@@ -66,11 +67,10 @@ Questo *progetto* è stato creato interamente usando l'IA GitHub copilot con i s
 
 ## Note
 - Modello locale atteso in `RAG_MODEL_PATH` (default `/mnt/Virtuali/codellama-7b-instruct.Q8_0.gguf`).
-    - Attenzione: usando un RAD locale, anche con piccoli modelli, risulta necessaria una grande quantità di risorse: usando Debian 13, CPU 12 CORE, servono 10Gb di ram e 10Gb di memoria swap (*non mi posso permettere una GPU con quello che costano!*)
-    - feature rendere i modelli dinamici
+    - Grazie al modello condiviso, l'allocazione della RAM è ottimizzata (~10GB RAM/swap su CPU Debian 13).
 - Database vettoriale locale su disco `data/vectordb`; cancellalo per reset.
     - aggiunto nel gitignore del progetto così non si versiona!
-- Chunking configurabile con `RAG_CHUNK_SIZE` e `RAG_CHUNK_OVERLAP` in `.env`.
+- Chunking intelligente configurabile con `RAG_CHUNK_SIZE` (default 500) e `RAG_CHUNK_OVERLAP` (default 50) in `.env`. Lo splitter rispetta i limiti strutturali (paragrafi, frasi, parole).
 - Limite abstract: `summary_limit` controlla quanti chunk con score migliore vengono sintetizzati nella Prompt Search (default 5).
 
 

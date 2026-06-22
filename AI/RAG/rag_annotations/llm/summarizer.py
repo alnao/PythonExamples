@@ -12,14 +12,10 @@ class BaseSummarizer:
 
 class LocalLlamaSummarizer(BaseSummarizer):
     def __init__(self, model_path: str | None):
-        try:
-            from llama_cpp import Llama
-        except Exception as exc:  # pragma: no cover
-            raise RuntimeError("llama_cpp_python is not installed or failed to import") from exc
+        from .shared import get_shared_llama
         if not model_path:
             raise ValueError("model_path is required for local summarizer")
-        # Reuse the model for generation
-        self._llama = Llama(model_path=str(model_path), n_ctx=4096, n_gpu_layers=-1, embedding=False)
+        self._llama = get_shared_llama(model_path)
 
     def summarize(self, text: str) -> Tuple[str, str]:  # pragma: no cover - integration
         prompt = (
@@ -72,6 +68,18 @@ class OpenAISummarizer(BaseSummarizer):
         return abstract_en, abstract_it
 
 
+class FallbackSummarizer(BaseSummarizer):
+    def __init__(self, primary: BaseSummarizer, backup: BaseSummarizer):
+        self.primary = primary
+        self.backup = backup
+
+    def summarize(self, text: str) -> Tuple[str, str]:
+        try:
+            return self.primary.summarize(text)
+        except Exception:
+            return self.backup.summarize(text)
+
+
 def build_summarizer(backend_override: str | None = None) -> BaseSummarizer:
     backend = (backend_override or settings.llm_backend).lower()
     if backend == "local":
@@ -79,6 +87,7 @@ def build_summarizer(backend_override: str | None = None) -> BaseSummarizer:
     if backend == "openai":
         return OpenAISummarizer(api_key=settings.openai_api_key, model=settings.openai_model)
     if backend == "hybrid":
-        # Prefer local; fallback handled by caller if desired
-        return LocalLlamaSummarizer(model_path=settings.model_path)
+        primary = LocalLlamaSummarizer(model_path=settings.model_path)
+        backup = OpenAISummarizer(api_key=settings.openai_api_key, model=settings.openai_model)
+        return FallbackSummarizer(primary, backup)
     raise ValueError(f"Unknown summarizer backend: {backend}")

@@ -14,13 +14,10 @@ class EmbeddingProvider(ABC):
 
 class LocalLlamaProvider(EmbeddingProvider):
     def __init__(self, model_path: str | None):
-        try:
-            from llama_cpp import Llama
-        except Exception as exc:  # pragma: no cover
-            raise RuntimeError("llama_cpp_python is not installed or failed to import") from exc
+        from .shared import get_shared_llama
         if not model_path:
             raise ValueError("model_path is required for local backend")
-        self._llama = Llama(model_path=str(model_path), embedding=True, n_ctx=2048)
+        self._llama = get_shared_llama(model_path)
 
     def embed(self, texts: Iterable[str]) -> List[List[float]]:
         # llama_cpp embed returns a list of floats in newer versions, but some builds
