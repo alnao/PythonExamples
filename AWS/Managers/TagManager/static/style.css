@@ -1,0 +1,58 @@
+body {
+    background-color: #f4f6f9;
+}
+
+.tag-badge {
+    font-weight: 500;
+    margin: 1px 2px 1px 0;
+    background-color: #e7f1ff;
+    color: #0a58ca;
+    border: 1px solid #cfe2ff;
+}
+
+.tag-badge .tag-key {
+    font-weight: 700;
+}
+
+.no-tag-badge {
+    background-color: #fff2f2;
+    color: #b02a37;
+    border: 1px solid #f5c2c7;
+}
+
+#resourcesTable td {
+    font-size: 0.875rem;
+    vertical-align: middle;
+}
+
+.arn-cell {
+    font-family: monospace;
+    font-size: 0.78rem;
+    color: #6c757d;
+    word-break: break-all;
+}
+
+.resource-name {
+    font-weight: 600;
+    word-break: break-all;
+}
+
+.detail-json {
+    background-color: #212529;
+    color: #e9ecef;
+    padding: 12px;
+    border-radius: 6px;
+    font-size: 0.78rem;
+    max-height: 320px;
+    overflow: auto;
+}
+
+.spinner-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(255, 255, 255, 0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2000;
+}

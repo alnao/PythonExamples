@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AWS Tag Manager</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="{{ url_for('static', filename='style.css') }}" rel="stylesheet">
+</head>
+<body>
+
+<nav class="navbar navbar-dark bg-dark">
+    <div class="container-fluid">
+        <span class="navbar-brand mb-0 h1">
+            <i class="fas fa-tags me-2"></i>AWS Tag Manager
+        </span>
+        <span class="navbar-text text-white-50 small">
+            resourcegroupstaggingapi &middot; resource-explorer-2
+        </span>
+    </div>
+</nav>
+
+<div class="container-fluid mt-3 px-4">
+
+    <!-- Barra di selezione region / profilo / filtro -->
+    <div class="card mb-3">
+        <div class="card-body">
+            <div class="row g-3 align-items-end">
+                <div class="col-md-2">
+                    <label for="region" class="form-label fw-semibold">
+                        <i class="fas fa-globe me-1"></i>Region
+                    </label>
+                    <select class="form-select" id="region">
+                        {% for r in regions %}
+                        <option value="{{ r }}" {% if r == default_region %}selected{% endif %}>{{ r }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label for="profile" class="form-label fw-semibold">
+                        <i class="fas fa-user me-1"></i>Profilo AWS
+                    </label>
+                    <select class="form-select" id="profile">
+                        {% for p in profiles %}
+                        <option value="{{ p }}" {% if p == default_profile %}selected{% endif %}>{{ p }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label for="source" class="form-label fw-semibold">
+                        <i class="fas fa-database me-1"></i>Sorgente
+                    </label>
+                    <select class="form-select" id="source"
+                            title="La Tagging API vede solo le risorse gia' taggate almeno una volta, Resource Explorer le vede tutte">
+                        <option value="both">Entrambe (completo)</option>
+                        <option value="tagging">Solo Tagging API</option>
+                        <option value="explorer">Solo Resource Explorer</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label for="filterMode" class="form-label fw-semibold">
+                        <i class="fas fa-filter me-1"></i>Filtro
+                    </label>
+                    <select class="form-select" id="filterMode">
+                        <option value="all">Tutte le risorse</option>
+                        <option value="untagged">Solo risorse SENZA tag</option>
+                        <option value="tagged">Solo risorse CON almeno un tag</option>
+                        <option value="with_key">Con una chiave tag specifica</option>
+                        <option value="without_key">Senza una chiave tag specifica</option>
+                        <option value="with_key_value">Con chiave = valore</option>
+                    </select>
+                </div>
+                <div class="col-md-2 tag-filter-input d-none">
+                    <label for="filterTagKey" class="form-label fw-semibold">Chiave tag</label>
+                    <input type="text" class="form-control" id="filterTagKey" list="tagKeysList" placeholder="es. Environment">
+                </div>
+                <div class="col-md-2 tag-value-input d-none">
+                    <label for="filterTagValue" class="form-label fw-semibold">Valore tag</label>
+                    <input type="text" class="form-control" id="filterTagValue" list="tagValuesList" placeholder="es. prod">
+                </div>
+                <div class="col-md-4">
+                    <button class="btn btn-primary" id="btnLoad">
+                        <i class="fas fa-search me-1"></i>Carica risorse
+                    </button>
+                    <button class="btn btn-outline-secondary" id="btnRefresh" title="Rilegge da AWS ignorando la cache">
+                        <i class="fas fa-sync"></i>
+                    </button>
+                    <button class="btn btn-outline-secondary" id="btnRefreshRegions" title="Aggiorna la lista delle region da AWS">
+                        <i class="fas fa-globe-europe"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <datalist id="tagKeysList">
+        {% for k in suggested_tag_keys %}<option value="{{ k }}">{% endfor %}
+    </datalist>
+    <datalist id="tagValuesList"></datalist>
+
+    <div id="alertBox"></div>
+
+    <!-- Riepilogo -->
+    <div class="row g-3 mb-3 d-none" id="summaryRow">
+        <div class="col-md-3">
+            <div class="card text-bg-primary h-100">
+                <div class="card-body py-2">
+                    <div class="small text-uppercase opacity-75">Risorse totali</div>
+                    <div class="fs-3 fw-bold" id="statTotal">0</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-bg-danger h-100">
+                <div class="card-body py-2">
+                    <div class="small text-uppercase opacity-75">Senza tag</div>
+                    <div class="fs-3 fw-bold" id="statUntagged">0</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-bg-success h-100">
+                <div class="card-body py-2">
+                    <div class="small text-uppercase opacity-75">Con tag</div>
+                    <div class="fs-3 fw-bold" id="statTagged">0</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-bg-secondary h-100">
+                <div class="card-body py-2">
+                    <div class="small text-uppercase opacity-75">Servizi / chiavi tag</div>
+                    <div class="fs-3 fw-bold"><span id="statServices">0</span> / <span id="statTagKeys">0</span></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabella risorse -->
+    <div class="card">
+        <div class="card-header bg-white">
+            <div class="row g-2 align-items-center">
+                <div class="col-md-3">
+                    <input type="text" class="form-control form-control-sm" id="searchBox"
+                           placeholder="Cerca in nome, ARN o tag...">
+                </div>
+                <div class="col-md-2">
+                    <select class="form-select form-select-sm" id="serviceFilter">
+                        <option value="">Tutti i servizi</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <span class="text-muted small" id="tableInfo">Nessuna risorsa caricata</span>
+                </div>
+                <div class="col-md-4 text-end">
+                    <div id="bulkActions" class="d-none">
+                        <span class="badge bg-dark me-2" id="selectedCount">0 selezionate</span>
+                        <button class="btn btn-sm btn-success" id="btnBulkAdd">
+                            <i class="fas fa-plus me-1"></i>Aggiungi tag
+                        </button>
+                        <button class="btn btn-sm btn-danger" id="btnBulkRemove">
+                            <i class="fas fa-minus me-1"></i>Rimuovi tag
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tag rapido: si compila qui e si applica riga per riga con il pulsante fulmine -->
+            <div class="row g-2 align-items-center mt-1 pt-2 border-top">
+                <div class="col-auto">
+                    <span class="fw-semibold small"><i class="fas fa-bolt text-warning me-1"></i>Tag rapido</span>
+                </div>
+                <div class="col-md-3">
+                    <input type="text" class="form-control form-control-sm" id="fastTagKey"
+                           list="tagKeysList" placeholder="chiave (es. Owner)">
+                </div>
+                <div class="col-md-3">
+                    <input type="text" class="form-control form-control-sm" id="fastTagValue"
+                           placeholder="valore (es. alnao)">
+                </div>
+                <div class="col-md-2">
+                    <button class="btn btn-sm btn-warning w-100 d-none" id="btnFastTagSelected">
+                        <i class="fas fa-bolt me-1"></i>Alle selezionate
+                    </button>
+                </div>
+                <div class="col text-muted small" id="fastTagHint">
+                    Compila chiave e valore, poi usa il pulsante <i class="fas fa-bolt"></i> sulla riga:
+                    verde se aggiunge, arancione se aggiorna un valore diverso.
+                </div>
+            </div>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-hover table-sm align-middle mb-0" id="resourcesTable">
+                <thead class="table-light">
+                    <tr>
+                        <th style="width:32px"><input type="checkbox" class="form-check-input" id="checkAll"></th>
+                        <th>Servizio</th>
+                        <th>Tipo</th>
+                        <th>Nome risorsa</th>
+                        <th>Tag</th>
+                        <th style="width:90px">Origine</th>
+                        <th style="width:150px" class="text-end">Azioni</th>
+                    </tr>
+                </thead>
+                <tbody id="resourcesBody">
+                    <tr><td colspan="7" class="text-center text-muted py-4">
+                        Seleziona una region e premi <strong>Carica risorse</strong>
+                    </td></tr>
+                </tbody>
+            </table>
+        </div>
+        <div class="card-footer bg-white d-none" id="paginationFooter">
+            <nav><ul class="pagination pagination-sm mb-0" id="pagination"></ul></nav>
+        </div>
+    </div>
+
+    <p class="text-muted small mt-3 mb-4">
+        Equivalente CLI: <code>aws resourcegroupstaggingapi get-resources --region "$R"</code>
+        unito a <code>aws resource-explorer-2 search --query-string "region:$R"</code> &mdash;
+        il primo vede solo le risorse gia' taggate almeno una volta, il secondo tutte quelle
+        indicizzate. La lista delle region si configura in <code>config.json</code>.
+    </p>
+</div>
+
+<!-- Modale dettaglio risorsa -->
+<div class="modal fade" id="detailModal" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-circle-info me-2"></i>Dettaglio risorsa</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="detailBody"></div>
+        </div>
+    </div>
+</div>
+
+<!-- Modale gestione tag -->
+<div class="modal fade" id="tagModal" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-tags me-2"></i>Gestione tag</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-secondary py-2 small" id="tagModalTarget"></div>
+                <div id="tagModalAlert"></div>
+
+                <h6 class="fw-semibold">Tag attuali</h6>
+                <div id="currentTags" class="mb-4"></div>
+
+                <h6 class="fw-semibold">Aggiungi / modifica tag</h6>
+                <div class="row g-2 align-items-end mb-4">
+                    <div class="col-md-5">
+                        <label class="form-label small mb-1">Chiave</label>
+                        <input type="text" class="form-control" id="newTagKey" list="tagKeysList" placeholder="es. Environment">
+                    </div>
+                    <div class="col-md-5">
+                        <label class="form-label small mb-1">Valore</label>
+                        <input type="text" class="form-control" id="newTagValue" placeholder="es. produzione">
+                    </div>
+                    <div class="col-md-2">
+                        <button class="btn btn-success w-100" id="btnAddTag">
+                            <i class="fas fa-plus me-1"></i>Salva
+                        </button>
+                    </div>
+                </div>
+
+                <h6 class="fw-semibold">Rimuovi tag per chiave</h6>
+                <div class="row g-2 align-items-end">
+                    <div class="col-md-10">
+                        <input type="text" class="form-control" id="removeTagKey" list="tagKeysList"
+                               placeholder="chiave da rimuovere (piu' chiavi separate da virgola)">
+                    </div>
+                    <div class="col-md-2">
+                        <button class="btn btn-danger w-100" id="btnRemoveTag">
+                            <i class="fas fa-trash me-1"></i>Rimuovi
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+<script src="{{ url_for('static', filename='app.js') }}"></script>
+</body>
+</html>

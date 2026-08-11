@@ -1,0 +1,32 @@
+{
+  "_comment": "Lista parametrica delle region e valori di default. Modificare questo file per aggiungere/rimuovere region dalla tendina, oppure usare la variabile d'ambiente AWS_REGIONS='eu-west-1,us-east-1'. Il pulsante 'Aggiorna da AWS' riscrive la sezione 'regions' con l'elenco reale delle region abilitate sull'account.",
+  "default_region": "eu-central-1",
+  "default_profile": "default",
+  "regions": [
+    "eu-central-1",
+    "eu-west-1",
+    "eu-west-2",
+    "eu-west-3",
+    "eu-south-1",
+    "eu-north-1",
+    "us-east-1",
+    "us-east-2",
+    "us-west-1",
+    "us-west-2",
+    "ca-central-1",
+    "sa-east-1",
+    "ap-south-1",
+    "ap-southeast-1",
+    "ap-southeast-2",
+    "ap-northeast-1",
+    "ap-northeast-2"
+  ],
+  "suggested_tag_keys": [
+    "Name",
+    "Environment",
+    "Project",
+    "Owner",
+    "CostCenter",
+    "ManagedBy"
+  ]
+}
