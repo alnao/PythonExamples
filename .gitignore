@@ -8,6 +8,11 @@ node_modules
 # AI AlnaoAIrunners
 alnaoagents.db
 
+#AI FaceRecognition
+face_rec_cache.db
+face_rec_cache_test.db
+AI/FaceRecognition/face_rec_cache.db
+
 FromOthersSites/BuildRAG/rules.pdf
 #AI /BuildLargeLanguageModel/ch5_file6_text_generation.py
 the-verdict.txt

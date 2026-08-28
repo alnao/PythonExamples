@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="it" data-bs-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>👤 Face Recognition Photo Analyzer</title>
+
+    <!-- Bootstrap 5 CSS CDN -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons CDN -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <!-- Custom Style -->
+    <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+</head>
+<body class="bg-dark text-light">
+
+    <!-- ── Navbar Header ────────────────────────────────────────────── -->
+    <nav class="navbar navbar-expand-lg bg-body-tertiary border-bottom border-secondary sticky-top px-3">
+        <div class="container-fluid">
+            <a class="navbar-brand fw-bold fs-4 text-white" href="#">
+                👤 Face Recognition Analyzer
+            </a>
+            
+            <div class="d-flex align-items-center gap-3">
+                <div class="d-flex align-items-center me-2">
+                    <label for="sizeSelect" class="form-label mb-0 me-2 text-secondary small text-nowrap">Dimensione Foto:</label>
+                    <select id="sizeSelect" class="form-select form-select-sm bg-secondary-subtle border-secondary text-light">
+                        <option value="190">Piccolo</option>
+                        <option value="280" selected>Medio</option>
+                        <option value="380">Grande</option>
+                    </select>
+                </div>
+
+                <button class="btn btn-outline-info btn-sm fw-bold px-3" onclick="openJobsModal()">
+                    📋 Scansioni ed Esiti (<span id="jobsCountBadge">0</span>)
+                </button>
+                <button class="btn btn-outline-secondary btn-sm fw-bold px-3" onclick="openHistoryModal()">
+                    📜 Cronologia DB
+                </button>
+                <button id="btnSelectFolder" class="btn btn-primary btn-sm fw-bold px-3" onclick="selectFolder()">
+                    📁 Seleziona Cartella
+                </button>
+                <button id="btnStartScan" class="btn btn-success btn-sm fw-bold px-3" onclick="startScan()" disabled>
+                    ▶ Analizza
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- ── Active Folder Status Banner ──────────────────────────────── -->
+    <div class="bg-body-secondary border-bottom border-secondary py-2 px-4 d-flex justify-content-between align-items-center">
+        <div class="d-flex align-items-center overflow-hidden">
+            <span class="badge bg-primary me-3 uppercase-tracking">CARTELLA ATTIVA</span>
+            <span id="lblActivePath" class="text-secondary font-monospace text-truncate">Nessuna cartella selezionata</span>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+            <div class="form-check form-switch m-0 me-2" title="Analizza anche le foto contenute nelle sottocartelle">
+                <input class="form-check-input" type="checkbox" role="switch" id="chkRecursive" onchange="setRecursive(this.checked)">
+                <label class="form-check-label text-secondary small fw-bold" for="chkRecursive">🔁 Includi sottocartelle</label>
+            </div>
+            <span id="activeJobStatusBadge" class="badge bg-secondary d-none">--</span>
+            <button id="btnCopyPath" class="btn btn-link btn-sm text-secondary text-decoration-none" onclick="copyActivePath()">
+                📋 Copia Percorso
+            </button>
+        </div>
+    </div>
+
+    <!-- ── Welcome View (Default) ────────────────────────────────────── -->
+    <div id="welcomeView" class="container text-center my-5 py-5">
+        <div class="py-5">
+            <div class="display-1 mb-3">👤</div>
+            <h1 class="fw-bold text-white mb-3">Face Recognition Photo Analyzer</h1>
+            <p class="lead text-secondary max-width-600 mx-auto mb-4">
+                Analisi asincrona ad alte prestazioni in background.<br>
+                Lancia scansioni di cartelle e consulta istantaneamente gli esiti passati e presenti.
+            </p>
+            <div class="d-flex justify-content-center gap-3">
+                <button class="btn btn-primary btn-lg px-4 fw-bold" onclick="selectFolder()">
+                    📁 Seleziona Cartella
+                </button>
+                <button class="btn btn-outline-info btn-lg px-4 fw-bold" onclick="openJobsModal()">
+                    📋 Scansioni ed Esiti
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── Main App Content (Hidden initially) ─────────────────────── -->
+    <div id="mainContentView" class="container-fluid py-3 d-none">
+        <div class="row g-3">
+            <!-- Sidebar: Volti Trovati -->
+            <div class="col-12 col-md-4 col-lg-3">
+                <div class="card bg-body-tertiary border-secondary h-100 shadow-sm">
+                    <div class="card-header bg-dark border-secondary py-3">
+                        <h5 class="card-title mb-0 fw-bold text-white">
+                            👥 Volti Identificati
+                        </h5>
+                    </div>
+                    <div class="card-body p-2 overflow-y-auto max-height-sidebar" id="facesList">
+                        <!-- Rendered by JS -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main Content Area: Stats + Tabs + Grid -->
+            <div class="col-12 col-md-8 col-lg-9">
+                <!-- Stats Header Card -->
+                <div class="card bg-body-tertiary border-secondary mb-3 shadow-sm">
+                    <div class="card-body py-2 px-3">
+                        <div id="statsSummary" class="text-light fw-medium">
+                            📊 Caricamento risultati in corso...
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tabs Container -->
+                <ul class="nav nav-pills mb-3 border-bottom border-secondary pb-2" id="photoTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active fw-bold me-2" id="tab-with-target" data-bs-toggle="pill" data-bs-target="#content-with" type="button">
+                            ✅ Con Persona (<span id="countWith">0</span>)
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link fw-bold me-2" id="tab-without-target" data-bs-toggle="pill" data-bs-target="#content-without" type="button">
+                            ❌ Senza Persona (<span id="countWithout">0</span>)
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link fw-bold" id="tab-no-faces" data-bs-toggle="pill" data-bs-target="#content-nofaces" type="button">
+                            🚫 Nessun Volto (<span id="countNoFaces">0</span>)
+                        </button>
+                    </li>
+                </ul>
+
+                <!-- Tab Panels -->
+                <div class="tab-content" id="photoTabsContent">
+                    <div class="tab-pane fade show active" id="content-with" role="tabpanel">
+                        <div class="photo-grid" id="gridWith"></div>
+                    </div>
+                    <div class="tab-pane fade" id="content-without" role="tabpanel">
+                        <div class="photo-grid" id="gridWithout"></div>
+                    </div>
+                    <div class="tab-pane fade" id="content-nofaces" role="tabpanel">
+                        <div class="photo-grid" id="gridNoFaces"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── Modal: Folder Picker / Browser ───────────────────────────── -->
+    <div class="modal fade" id="folderPickerModal" tabindex="-1">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content bg-dark border-secondary text-light">
+                <div class="modal-header border-secondary py-3">
+                    <h5 class="modal-title fw-bold text-white">📁 Seleziona Cartella Foto</h5>
+                    <button type="button" class="btn btn-outline-info btn-sm ms-auto me-2 fw-bold" onclick="triggerNativeDialog()">🖥️ Apri Dialogo OS (Zenity)</button>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-3">
+                    <div class="input-group mb-3">
+                        <button class="btn btn-outline-secondary fw-bold" onclick="browseGoUp()">⬆️ Su</button>
+                        <input type="text" id="folderPathInput" class="form-control bg-secondary-subtle border-secondary text-light font-monospace" placeholder="/mnt/..." onkeydown="if(event.key==='Enter') browseNavigate(this.value)">
+                        <button class="btn btn-primary fw-bold" onclick="browseNavigate(document.getElementById('folderPathInput').value)">Vai</button>
+                    </div>
+
+                    <div class="d-flex flex-wrap gap-2 mb-3">
+                        <button class="btn btn-sm btn-outline-secondary" onclick="browseNavigate('~')">🏠 Home</button>
+                        <button class="btn btn-sm btn-outline-secondary" onclick="browseNavigate('~/Pictures')">🖼️ Immagini</button>
+                        <button class="btn btn-sm btn-outline-secondary" onclick="browseNavigate('~/Downloads')">📥 Downloads</button>
+                        <button class="btn btn-sm btn-outline-secondary" onclick="browseNavigate('~/Desktop')">🖥️ Desktop</button>
+                        <button class="btn btn-sm btn-outline-secondary" onclick="browseNavigate('/mnt/Dati4/Workspace/PythonExamples')">💼 Workspace</button>
+                    </div>
+
+                    <div class="card bg-body-tertiary border-secondary mb-3">
+                        <div class="card-header bg-dark border-secondary text-secondary small fw-bold">Sottocartelle disponibili</div>
+                        <div id="subfolderList" class="card-body p-2 overflow-y-auto" style="max-height: 280px;"></div>
+                    </div>
+                </div>
+                <div class="modal-footer border-secondary d-flex justify-content-between">
+                    <div class="d-flex align-items-center gap-3">
+                        <span id="folderPreviewInfo" class="text-success small fw-bold">--</span>
+                        <div class="form-check form-switch m-0" title="Conta e analizza anche le foto nelle sottocartelle">
+                            <input class="form-check-input" type="checkbox" role="switch" id="chkRecursiveModal" onchange="setRecursive(this.checked)">
+                            <label class="form-check-label text-secondary small fw-bold" for="chkRecursiveModal">🔁 Includi sottocartelle</label>
+                        </div>
+                    </div>
+                    <div>
+                        <button type="button" class="btn btn-secondary me-2" data-bs-dismiss="modal">Annulla</button>
+                        <button type="button" class="btn btn-success fw-bold px-4" onclick="confirmFolderSelection()">✅ Conferma Cartella Selezionata</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── Modal: Jobs & Results Dashboard ────────────────────────── -->
+    <div class="modal fade" id="jobsModal" tabindex="-1">
+        <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+            <div class="modal-content bg-dark border-secondary text-light">
+                <div class="modal-header border-secondary">
+                    <h5 class="modal-title fw-bold text-white">📋 Elenco Scansioni ed Esiti</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-3" id="jobsListContainer">
+                    <!-- Rendered by JS -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── Modal: Cronologia DB ───────────────────────────────────── -->
+    <div class="modal fade" id="historyModal" tabindex="-1">
+        <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+            <div class="modal-content bg-dark border-secondary text-light">
+                <div class="modal-header border-secondary">
+                    <h5 class="modal-header-title modal-title fw-bold text-white">📜 Cronologia Salvata nel DB</h5>
+                    <button class="btn btn-outline-danger btn-sm fw-bold" onclick="clearAllHistory()">🗑️ Pulisci Tutto</button>
+                    <button type="button" class="btn-close btn-close-white ms-3" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-3" id="historyListContainer"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── Modal: Preview Ingrandita Immagine ───────────────────────── -->
+    <div class="modal fade" id="previewModal" tabindex="-1">
+        <div class="modal-dialog modal-xl modal-dialog-centered">
+            <div class="modal-content bg-dark border-secondary text-light">
+                <div class="modal-header border-secondary py-2">
+                    <span id="previewCounter" class="badge bg-secondary me-2">0 / 0</span>
+                    <h6 id="previewFilename" class="modal-title font-monospace text-truncate text-white">--</h6>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-2 d-flex align-items-center justify-content-between position-relative bg-black min-height-preview">
+                    <button id="btnPrevImage" class="btn btn-outline-secondary btn-lg position-absolute start-0 ms-3 z-3 opacity-75 hover-opacity-100" onclick="navigatePreview(-1)">
+                        ◀
+                    </button>
+                    
+                    <div class="w-100 text-center">
+                        <img id="previewImg" src="" class="img-fluid rounded shadow-lg max-height-preview" alt="Anteprima">
+                    </div>
+
+                    <button id="btnNextImage" class="btn btn-outline-secondary btn-lg position-absolute end-0 me-3 z-3 opacity-75 hover-opacity-100" onclick="navigatePreview(1)">
+                        ▶
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap 5 Bundle JS CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Custom JS -->
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>

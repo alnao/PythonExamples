@@ -1,0 +1,5 @@
+face_recognition
+customtkinter
+Pillow
+numpy
+flask
