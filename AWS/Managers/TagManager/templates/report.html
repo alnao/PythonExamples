@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Report - AWS Tag Manager</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="{{ url_for('static', filename='style.css') }}" rel="stylesheet">
+</head>
+<body>
+<nav class="navbar navbar-dark bg-dark">
+    <div class="container-fluid">
+        <a class="navbar-brand text-white" href="/">&larr; Torna</a>
+        <span class="navbar-text text-white-50 small">Report multi-region</span>
+    </div>
+</nav>
+
+<div class="container-fluid mt-3 px-4">
+    <div class="card mb-3">
+        <div class="card-body">
+            <div class="row g-3 align-items-end">
+                <div class="col-md-3">
+                    <label class="form-label fw-semibold">Cerca</label>
+                    <input class="form-control" id="search" placeholder="Cerca nome, arn o tag...">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label fw-semibold">Region</label>
+                    <div class="d-flex flex-nowrap">
+                        <select id="regionFilter" class="form-select me-2">
+                            <option value="">Tutte</option>
+                            {% for r in regions %}
+                            <option value="{{ r }}">{{ r }}</option>
+                            {% endfor %}
+                        </select>
+                        <button class="btn btn-sm btn-primary" id="btnLoadReport">Carica</button>
+                    </div>
+                </div>
+                <div class="col-md-2 d-flex align-items-center">
+                    <div class="form-check form-switch ms-2">
+                        <input class="form-check-input" type="checkbox" id="showSystem">
+                        <label class="form-check-label small" for="showSystem">Mostra system</label>
+                    </div>
+                </div>
+            </div>
+            <div class="row g-2">
+                <div id="suggestedFilters" class="col-12">
+                    <div class="d-flex flex-row flex-wrap align-items-center" id="suggestedFiltersRow">
+                        <!-- Select per suggested tags con lista: generati da JS -->
+                    </div>
+                </div>
+            </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="alertBox"></div>
+
+    <div class="card">
+        <div class="table-responsive">
+            <table class="table table-sm table-hover align-middle mb-0" id="reportTable">
+                <thead class="table-light" id="reportHeader">
+                    <!-- intestazione generata da JS -->
+                </thead>
+                <tbody id="reportBody">
+                    <tr><td class="text-center text-muted py-4" colspan="4">Premi <strong>Carica report</strong> per iniziare</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+    window.suggestedTags = {{ suggested_tags|tojson }};
+    window.suggestedTagKeys = {{ suggested_tag_keys|tojson }};
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+<script src="{{ url_for('static', filename='report.js') }}"></script>
+</body>
+</html>

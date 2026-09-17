@@ -64,7 +64,8 @@ def load_config():
     sul file, cosi' come AWS_REGION e AWS_PROFILE per i valori di default.
     """
     config = {'default_region': 'eu-central-1', 'default_profile': 'default',
-              'regions': ['eu-central-1', 'eu-west-1', 'us-east-1'], 'suggested_tag_keys': []}
+              'regions': ['eu-central-1', 'eu-west-1', 'us-east-1'], 'suggested_tag_keys': [],
+              'suggested_tags': {}}
 
     if CONFIG_FILE.exists():
         try:
@@ -135,12 +136,73 @@ def handle_aws_errors(f):
 def index():
     """Pagina principale."""
     config = load_config()
+    suggested_tags = config.get('suggested_tags', {})
+    # Per la datalist dei suggerimenti, servono solo le chiavi
+    suggested_tag_keys = list(suggested_tags.keys()) if isinstance(suggested_tags, dict) else config.get('suggested_tag_keys', [])
+    compliant_tags = config.get('compliant_tags', {})
     return render_template('index.html',
                            regions=config['regions'],
                            profiles=list_profiles(),
                            default_region=config['default_region'],
                            default_profile=config['default_profile'],
-                           suggested_tag_keys=config.get('suggested_tag_keys', []))
+                           suggested_tag_keys=suggested_tag_keys,
+                           suggested_tags=suggested_tags,
+                           compliant_tags=compliant_tags)
+
+
+@app.route('/report')
+def report_page():
+    """Pagina report aggregata su tutte le region."""
+    config = load_config()
+    suggested_tags = config.get('suggested_tags', {})
+    # Per la datalist dei suggerimenti, servono solo le chiavi
+    suggested_tag_keys = list(suggested_tags.keys()) if isinstance(suggested_tags, dict) else config.get('suggested_tag_keys', [])
+    return render_template('report.html',
+                           regions=config['regions'],
+                           suggested_tag_keys=suggested_tag_keys,
+                           suggested_tags=suggested_tags)
+
+
+@app.route('/api/report/resources')
+@handle_aws_errors
+def api_report_resources():
+    """Ritorna le risorse aggregate su tutte le region configurate.
+
+    Query params:
+        profile: profilo AWS (opzionale)
+        refresh: 1 per ignorare la cache
+    """
+    config = load_config()
+    profile = request.args.get('profile') or config['default_profile']
+    refresh = request.args.get('refresh') == '1'
+
+    all_resources = []
+    all_warnings = []
+
+    for region in config['regions']:
+        manager = TagManager(region_name=region, aws_profile=profile)
+        cache_key = f"{profile}|{region}|both"
+        from_cache = not refresh and cache_key in _cache
+        if not from_cache:
+            _cache[cache_key] = manager.get_all_resources()
+        dati = _cache[cache_key]
+        for r in dati['resources']:
+            # Assicura il campo region e mantiene l'origine
+            r['region'] = r.get('region') or region
+            all_resources.append(r)
+        if dati.get('warnings'):
+            all_warnings.extend([f"{region}: {w}" for w in dati.get('warnings', [])])
+
+    # Ordina per region, service, tipo, nome
+    all_resources.sort(key=lambda r: (r.get('region', ''), r.get('service', ''), r.get('resource_type', ''), r.get('name', '')))
+
+    return jsonify({
+        'regions': config['regions'],
+        'profile': profile,
+        'resources': all_resources,
+        'warnings': all_warnings,
+        'total': len(all_resources),
+    })
 
 
 # ----------------------------------------------------------------------
@@ -285,6 +347,35 @@ def remove_tags():
         'message': f"{len(result['succeeded'])} risorse aggiornate, {len(result['failed'])} errori",
         **result
     })
+
+
+@app.route('/api/config/suggested-tags', methods=['POST'])
+def save_suggested_tags():
+    """
+    Salva i tag consigliati nel config.json.
+    
+    Body: {suggested_tags: {tagName: value, ...}}
+    I tag con valore vuoto non vengono salvati (rimossi se presenti).
+    """
+    data = request.json or {}
+    suggested_tags = data.get('suggested_tags', {})
+    
+    if not isinstance(suggested_tags, dict):
+        return jsonify({'error': 'suggested_tags deve essere un dizionario'}), 400
+    
+    try:
+        config = json.loads(CONFIG_FILE.read_text()) if CONFIG_FILE.exists() else {}
+        
+        # Filtra i tag: mantieni solo quelli con valore non vuoto
+        filtered_tags = {k: v for k, v in suggested_tags.items() if v and v.strip()}
+        
+        config['suggested_tags'] = filtered_tags
+        CONFIG_FILE.write_text(json.dumps(config, indent=2) + '\n')
+        logger.info(f"Salvati {len(filtered_tags)} tag consigliati in config.json")
+        return jsonify({'message': f"Salvati {len(filtered_tags)} tag consigliati"})
+    except Exception as e:
+        logger.error(f"Errore nel salvataggio dei suggested tags: {e}")
+        return jsonify({'error': f"Errore nel salvataggio: {e}"}), 500
 
 
 @app.errorhandler(404)

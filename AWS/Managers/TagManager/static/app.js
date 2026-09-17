@@ -14,6 +14,9 @@ const state = {
     selected: new Set(),
     page: 1,
     tagTargets: [],     // ARN su cui agisce la modale dei tag
+    expandedArn: new Set(),  // ARN per cui è visibile l'ARN nella tabella
+    suggestedTagKeys: [],    // tag consigliati da config.json
+    suggestedTagValues: {},  // valori dei tag suggeriti: {tagName: value}
 };
 
 // ---------------------------------------------------------------- utility
@@ -115,24 +118,15 @@ async function loadResources(refresh = false) {
         populateServiceFilter(data.summary.services);
         applyClientFilters();
 
-        const origine = data.cached ? 'da cache' : 'lette da AWS';
-        const soloExplorer = data.summary.sources.explorer || 0;
-        const dettaglio = soloExplorer
-            ? ` Di queste, ${soloExplorer} sono visibili solo tramite Resource Explorer `
-              + '(mai taggate, quindi assenti dalla Tagging API).'
-            : '';
-        showAlert(`${data.filtered_count} risorse mostrate su ${data.summary.total} totali `
-            + `nella region ${data.region} (${origine}).${dettaglio}`, 'info');
-
         // I problemi della sorgente Resource Explorer non bloccano il caricamento,
         // ma vanno detti: altrimenti l'elenco sembra completo quando non lo e'.
         if ((data.warnings || []).length > 0) {
-            $('alertBox').insertAdjacentHTML('beforeend', `
+            $('alertBox').innerHTML = `
                 <div class="alert alert-warning alert-dismissible fade show py-2" role="alert">
                     <i class="fas fa-triangle-exclamation me-1"></i>
                     ${data.warnings.map(escapeHtml).join('<br>')}
                     <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                </div>`);
+                </div>`;
         }
     } catch (e) {
         showAlert('Errore nel caricamento: ' + e.message, 'danger');
@@ -192,9 +186,16 @@ function populateServiceFilter(services) {
 function applyClientFilters() {
     const testo = $('searchBox').value.trim().toLowerCase();
     const servizio = $('serviceFilter').value;
+    const hideSystem = $('hideSystemResources').checked;
 
     state.visible = state.resources.filter((r) => {
+        // Filtra risorse system se il flag è attivo
+        if (hideSystem && r.is_system) return false;
+        
+        // Filtra per servizio
         if (servizio && r.service !== servizio) return false;
+        
+        // Filtra per testo
         if (!testo) return true;
         const tagText = Object.entries(r.tags).map(([k, v]) => `${k}=${v}`).join(' ');
         return (r.name + ' ' + r.arn + ' ' + tagText).toLowerCase().includes(testo);
@@ -240,11 +241,44 @@ function fastTagButtonState(r) {
              titolo: `Aggiorna il tag ${key}: da "${attuale}" a "${value}"` };
 }
 
+/* Controlla se una risorsa ha tutti i tag obbligatori. */
+const REQUIRED_TAGS = ['Project', 'Name', 'Environment', 'ManagedBy'];
+
+function isCompliantByConfig(r) {
+    // Controlla se la risorsa ha tutti i tag di almeno un set di compliant_tags
+    const compliantSets = (window.compliantTags || {}).sets || [];
+    
+    return compliantSets.some((tagSet) => {
+        // Ogni chiave del set deve esistere con il valore corretto nella risorsa
+        return Object.entries(tagSet).every(([key, value]) => {
+            return r.tags[key] === value;
+        });
+    });
+}
+
+function getMissingTags(r) {
+    // Se è una risorsa di sistema, non controllare i tag
+    if (r.is_system) {
+        return [];
+    }
+    
+    // Se la risorsa ha tutti i tag di un set compliant, è OK
+    if (isCompliantByConfig(r)) {
+        return [];
+    }
+    
+    return REQUIRED_TAGS.filter((tag) => !(tag in r.tags));
+}
+
+function hasAllRequiredTags(r) {
+    return getMissingTags(r).length === 0;
+}
+
 function renderTable() {
     const body = $('resourcesBody');
 
     if (state.visible.length === 0) {
-        body.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-4">'
+        body.innerHTML = '<tr><td colspan="5" class="text-center text-muted py-4">'
             + 'Nessuna risorsa corrisponde ai criteri selezionati</td></tr>';
         $('tableInfo').textContent = '0 risorse';
         $('paginationFooter').classList.add('d-none');
@@ -256,27 +290,60 @@ function renderTable() {
     const pagina = state.visible.slice(start, start + PAGE_SIZE);
 
     body.innerHTML = pagina.map((r) => {
-        const tags = Object.keys(r.tags).length === 0
-            ? '<span class="badge no-tag-badge"><i class="fas fa-triangle-exclamation me-1"></i>nessun tag</span>'
-            : Object.entries(r.tags).map(([k, v]) =>
-                `<span class="badge tag-badge"><span class="tag-key">${escapeHtml(k)}</span>: ${escapeHtml(v)}</span>`
-            ).join(' ');
-
         const checked = state.selected.has(r.arn) ? 'checked' : '';
         const src = SOURCE_LABELS[r.source] || SOURCE_LABELS.tagging;
         const fast = fastTagButtonState(r);
+        
+        // Controllo tag obbligatori
+        const missingTags = getMissingTags(r);
+        const hasAllTags = hasAllRequiredTags(r);
+        const rowClass = hasAllTags ? '' : 'table-danger';
+        
+        // Mostra ARN se la riga è espansa
+        const arnVisible = state.expandedArn.has(r.arn);
+        const arnDisplay = arnVisible 
+            ? `<div class="arn-cell" style="margin-top: 4px; font-size: 0.75rem;">${escapeHtml(r.arn)}</div>` 
+            : '';
+        
+        // Colonna Tag: mostra system badge MA anche i tag se presenti
+        let tagContent = '';
+        if (r.is_system) {
+            tagContent += '<span class="badge bg-success"><i class="fas fa-cog me-1"></i>system</span> ';
+        }
+        if (Object.keys(r.tags).length === 0) {
+            // Non mostrare "nessun tag" per le risorse di sistema
+            if (!r.is_system) {
+                tagContent += '<span class="badge no-tag-badge"><i class="fas fa-triangle-exclamation me-1"></i>nessun tag</span>';
+            }
+        } else {
+            tagContent += Object.entries(r.tags).map(([k, v]) =>
+                `<span class="badge tag-badge"><span class="tag-key">${escapeHtml(k)}</span>: ${escapeHtml(v)}</span>`
+            ).join(' ');
+        }
+        
+        // Badge dei tag mancanti nella colonna Tag
+        if (!r.is_system && missingTags.length > 0) {
+            tagContent += `<div style="margin-top: 4px;">${missingTags.map((tag) => 
+                `<span class="badge bg-danger" style="font-size: 0.7rem;">manca ${tag}</span>`
+              ).join(' ')}</div>`;
+        }
+
         return `
-            <tr>
+            <tr class="${rowClass}">
                 <td><input type="checkbox" class="form-check-input row-check" data-arn="${escapeHtml(r.arn)}" ${checked}></td>
-                <td><span class="badge bg-secondary">${escapeHtml(r.service)}</span></td>
-                <td class="text-muted">${escapeHtml(r.resource_type || '-')}</td>
                 <td>
-                    <div class="resource-name">${escapeHtml(r.name)}</div>
-                    <div class="arn-cell">${escapeHtml(r.arn)}</div>
+                    <span class="badge bg-secondary">${escapeHtml(r.service)}</span>
+                    <div class="text-muted small" style="margin-top: 2px;">${escapeHtml(r.resource_type || '-')}</div>
                 </td>
-                <td>${tags}</td>
-                <td><span class="badge ${src.classe}" title="${escapeHtml(src.titolo)}">${src.testo}</span></td>
+                <td>
+                    <div class="resource-name" style="cursor: pointer;" data-arn="${escapeHtml(r.arn)}" title="Clicca per mostrare/nascondere ARN">
+                        ${escapeHtml(r.name)}
+                    </div>
+                    ${arnDisplay}
+                </td>
+                <td>${tagContent}</td>
                 <td class="text-end text-nowrap">
+                    <span class="badge ${src.classe} me-2" title="${escapeHtml(src.titolo)}">${src.testo}</span>
                     <button class="btn btn-sm ${fast.classe} btn-fast-tag" data-arn="${escapeHtml(r.arn)}"
                             title="${escapeHtml(fast.titolo)}" ${fast.disabilitato ? 'disabled' : ''}>
                         <i class="fas ${fast.icona}"></i>
@@ -296,6 +363,8 @@ function renderTable() {
 
     body.querySelectorAll('.row-check').forEach((cb) =>
         cb.addEventListener('change', onRowCheck));
+    body.querySelectorAll('.resource-name').forEach((el) =>
+        el.addEventListener('click', (e) => toggleArnDisplay(e.target.dataset.arn)));
     body.querySelectorAll('.btn-detail').forEach((btn) =>
         btn.addEventListener('click', () => openDetail(btn.dataset.arn)));
     body.querySelectorAll('.btn-tags').forEach((btn) =>
@@ -305,6 +374,15 @@ function renderTable() {
 
     renderPagination();
     updateSelectionUI();
+}
+
+function toggleArnDisplay(arn) {
+    if (state.expandedArn.has(arn)) {
+        state.expandedArn.delete(arn);
+    } else {
+        state.expandedArn.add(arn);
+    }
+    renderTable();
 }
 
 function renderPagination() {
@@ -474,27 +552,36 @@ function openTagModal(arns) {
             </div>`;
     }
 
-    // Le risorse trovate solo da Resource Explorer non sono mai passate dalla
-    // Tagging API: alcune non supportano il tagging e l'operazione fallira' lato AWS.
-    const soloExplorer = arns.filter((a) => (findResource(a) || {}).source === 'explorer');
-    if (soloExplorer.length > 0 && nonTaggabili.length === 0) {
-        $('tagModalAlert').innerHTML = `
-            <div class="alert alert-warning py-2 small mb-3">
-                <i class="fas fa-triangle-exclamation me-1"></i>
-                ${soloExplorer.length} risorsa/e proviene solo da Resource Explorer e non e' mai stata
-                taggata: se il tipo di risorsa non supporta la Tagging API l'operazione fallira'
-                e l'errore verra' mostrato qui.
-            </div>`;
-    }
-
     $('newTagKey').value = '';
     $('newTagValue').value = '';
     $('removeTagKey').value = '';
 
+    // Carica i valori dei tag suggeriti dalla risorsa, altrimenti dal config
+    if (arns.length === 1) {
+        const r = findResource(arns[0]);
+        // Per ogni tag suggerito, usa il valore della risorsa se presente, altrimenti vuoto
+        state.suggestedTagValues = {};
+        state.suggestedTagKeys.forEach((tagKey) => {
+            // Se la risorsa ha già questo tag, usa il suo valore
+            state.suggestedTagValues[tagKey] = r.tags[tagKey] || '';
+        });
+    } else {
+        // Per selezione multipla, resetta i valori
+        state.suggestedTagValues = {};
+        state.suggestedTagKeys.forEach((tagKey) => {
+            state.suggestedTagValues[tagKey] = '';
+        });
+    }
+    
+    renderSuggestedTags();
+
     if (arns.length === 1) {
         const r = findResource(arns[0]);
         $('tagModalTarget').innerHTML =
-            `<strong>${escapeHtml(r.name)}</strong><br><span class="arn-cell">${escapeHtml(r.arn)}</span>`;
+            `<div class="mb-1"><strong>Servizio:</strong> <span class="badge bg-secondary">${escapeHtml(r.service)}</span> 
+             <strong>Tipo:</strong> <span class="text-muted">${escapeHtml(r.resource_type || '-')}</span></div>
+             <div class="mb-1"><strong>Nome:</strong> ${escapeHtml(r.name)}</div>
+             <div><strong>ARN:</strong> <span class="arn-cell">${escapeHtml(r.arn)}</span></div>`;
         $('currentTags').innerHTML = Object.keys(r.tags).length === 0
             ? '<p class="text-muted mb-0">Nessun tag presente su questa risorsa.</p>'
             : Object.entries(r.tags).map(([k, v]) => `
@@ -518,6 +605,97 @@ function openTagModal(arns) {
     }
 
     bootstrap.Modal.getOrCreateInstance($('tagModal')).show();
+}
+
+function renderSuggestedTags() {
+    // Genera le righe per i tag consigliati
+    const section = $('suggestedTagsSection');
+    if (state.suggestedTagKeys.length === 0) {
+        section.innerHTML = '';
+        return;
+    }
+    
+    section.innerHTML = state.suggestedTagKeys
+        .map((tagKey) => {
+            const currentValue = state.suggestedTagValues[tagKey] || '';
+            const possibleValues = (window.suggestedTags || {})[tagKey] || [];
+            
+            let inputHtml = '';
+            if (Array.isArray(possibleValues) && possibleValues.length > 0) {
+                // Mostra un select con i valori possibili
+                inputHtml = `
+                    <select class="form-control suggested-tag-input" data-key="${escapeHtml(tagKey)}">
+                        <option value="">-- Seleziona --</option>
+                        ${possibleValues.map((val) => {
+                            const selected = val === currentValue ? 'selected' : '';
+                            return `<option value="${escapeHtml(val)}" ${selected}>${escapeHtml(val)}</option>`;
+                        }).join('')}
+                    </select>`;
+            } else {
+                // Lista vuota: mostra input text (qualsiasi valore permesso)
+                inputHtml = `
+                    <input type="text" class="form-control suggested-tag-input" 
+                           data-key="${escapeHtml(tagKey)}"
+                           value="${escapeHtml(currentValue)}"
+                           placeholder="Inserisci valore per ${escapeHtml(tagKey)}">`;
+            }
+            
+            return `
+                <div class="row g-2 align-items-end mb-2">
+                    <div class="col-md-5">
+                        <label class="form-label small mb-1 text-primary"><i class="fas fa-lightbulb me-1"></i>${escapeHtml(tagKey)}</label>
+                        <input type="text" class="form-control form-control-sm" value="${escapeHtml(tagKey)}" disabled>
+                    </div>
+                    <div class="col-md-7">
+                        <label class="form-label small mb-1">Valore</label>
+                        ${inputHtml}
+                    </div>
+                </div>`;
+        })
+        .join('');
+}
+
+async function applyAllSuggestedTags() {
+    // Raccoglie tutti i tag compilati (da select o input)
+    const tags = {};
+    document.querySelectorAll('.suggested-tag-input').forEach((element) => {
+        const key = element.dataset.key;
+        const value = element.value.trim();
+        if (value) {
+            tags[key] = value;
+        }
+    });
+    
+    if (Object.keys(tags).length === 0) {
+        showAlert('Nessun tag compilato da applicare', 'warning', 'tagModalAlert');
+        return;
+    }
+    
+    showSpinner(true);
+    try {
+        const data = await apiPost('/api/tags/add', {
+            ...currentContext(),
+            arns: state.tagTargets,
+            tags: tags,
+        });
+        await afterTagChange(data);
+    } catch (e) {
+        showAlert('Errore: ' + e.message, 'danger', 'tagModalAlert');
+    } finally {
+        showSpinner(false);
+    }
+}
+
+function removeSuggestedTag(tag) {
+    // Non più usato
+}
+
+function addSuggestedTag() {
+    // Non più usato
+}
+
+async function saveSuggestedTags() {
+    // Non più usato - i tag vengono applicati direttamente alla risorsa
 }
 
 // ---------------------------------------------------------------- scrittura tag
@@ -595,6 +773,14 @@ document.addEventListener('DOMContentLoaded', () => {
     onFilterModeChange();
     loadTagKeys();
 
+    // Carica i suggested tag keys dal rendering della pagina (dalla datalist)
+    const tagKeysList = $('tagKeysList');
+    state.suggestedTagKeys = Array.from(tagKeysList.querySelectorAll('option')).map((opt) => opt.value);
+    
+    // Carica i valori dei tag suggeriti (passati dal backend nel template)
+    const suggestedTagsData = window.suggestedTags || {};
+    state.suggestedTagValues = { ...suggestedTagsData };
+
     $('btnLoad').addEventListener('click', () => loadResources(false));
     $('btnRefresh').addEventListener('click', () => loadResources(true));
     $('filterMode').addEventListener('change', onFilterModeChange);
@@ -604,6 +790,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     $('searchBox').addEventListener('input', applyClientFilters);
     $('serviceFilter').addEventListener('change', applyClientFilters);
+    $('hideSystemResources').addEventListener('change', applyClientFilters);
 
     $('region').addEventListener('change', loadTagKeys);
     $('profile').addEventListener('change', loadTagKeys);
@@ -627,6 +814,8 @@ document.addEventListener('DOMContentLoaded', () => {
     $('btnAddTag').addEventListener('click', addTag);
     $('btnRemoveTag').addEventListener('click', () =>
         removeTags($('removeTagKey').value.split(',').map((k) => k.trim())));
+    
+    $('btnApplyAllSuggestedTags').addEventListener('click', applyAllSuggestedTags);
 
     $('btnRefreshRegions').addEventListener('click', async () => {
         if (!confirm('Rileggere da AWS le region abilitate e salvarle in config.json?')) return;

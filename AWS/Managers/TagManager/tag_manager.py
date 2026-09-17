@@ -12,8 +12,10 @@ Le API usate sono:
     - untag_resources  -> rimozione tag (max 20 ARN per chiamata)
 """
 
+import json
 import logging
 import re
+from pathlib import Path
 from typing import Dict, List, Optional
 
 import boto3
@@ -67,6 +69,98 @@ def parse_arn(arn: str) -> Dict[str, str]:
     info['name'] = name
     info['resource_type_filter'] = f"{parts[2]}:{resource_type}" if resource_type else parts[2]
     return info
+
+
+def load_skipped_resources() -> List[Dict]:
+    """
+    Carica la lista delle risorse di sistema da escludere dal config.json.
+    
+    Returns:
+        Lista di dizionari con 'service', 'resource_type', 'name'
+        (resource_type e name possono essere None per significare "tutti")
+    """
+    try:
+        config_file = Path(__file__).parent / 'config.json'
+        if config_file.exists():
+            config = json.loads(config_file.read_text())
+            return config.get('resources_skipped', {}).get('entries', [])
+    except Exception as e:
+        logging.getLogger(__name__).warning(f"Impossibile leggere resources_skipped: {e}")
+    return []
+
+
+def is_system_resource(arn: str, resource_info: Dict, skipped_list: List[Dict]) -> bool:
+    """
+    Verifica se una risorsa è nella lista delle risorse di sistema da escludere.
+    
+    Args:
+        arn: ARN della risorsa
+        resource_info: dizionario con 'service', 'resource_type', 'name', 'tags' (opzionale)
+        skipped_list: lista da load_skipped_resources()
+    
+    Returns:
+        True se la risorsa deve essere considerata di sistema
+    """
+    if not skipped_list:
+        return False
+    
+    service = resource_info.get('service', '')
+    resource_type = resource_info.get('resource_type', '')
+    name = resource_info.get('name', '')  # Questo è l'ID dalla risorsa (es: vpc-123, sg-abc)
+    tags = resource_info.get('tags', {})
+    
+    # Controlli intelligenti basati sui tag
+    tag_name = tags.get('Name', '').lower()
+    
+    # Controllo speciale per VPC default
+    if service == 'ec2' and resource_type == 'vpc':
+        # VPC default ha tag IsDefault=true oppure Name=default
+        if tags.get('IsDefault') == 'true' or tag_name == 'default':
+            return True
+    
+    # Controllo speciale per subnet
+    if service == 'ec2' and resource_type == 'subnet':
+        # Subnet senza tag Name o con Name=default o SubnetId=default
+        if not tag_name or tag_name == 'default' or tags.get('SubnetId', '').lower() == 'default':
+            return True
+    
+    # Controllo speciale per internet-gateway
+    if service == 'ec2' and resource_type == 'internet-gateway':
+        # IGW senza tag Name
+        if not tag_name or tag_name == 'default':
+            return True
+    
+    # Controllo speciale per security group "default"
+    if service == 'ec2' and resource_type == 'security-group':
+        # SG con tag Name="default"
+        # Nota: il GroupName non è un tag, quindi non possiamo usarlo qui
+        # Controlliamo solo il tag Name
+        if tag_name == 'default':
+            return True
+    
+    # Controllo dalla lista configurata
+    for entry in skipped_list:
+        entry_service = entry.get('service', '')
+        entry_type = entry.get('resource_type')
+        entry_name = entry.get('name')
+        
+        # Deve corrispondere il servizio
+        if service != entry_service:
+            continue
+        
+        # Se resource_type è None nell'entry, matcher tutti i tipi di questo servizio
+        if entry_type is None:
+            return True
+        
+        # Se il type corrisponde e name è None, matcher tutti i nomi di questo tipo
+        if resource_type == entry_type and entry_name is None:
+            return True
+        
+        # Se tutti e tre corrispondono esattamente
+        if resource_type == entry_type and name == entry_name:
+            return True
+    
+    return False
 
 
 def check_taggable(arn: str) -> Dict:
@@ -202,6 +296,12 @@ class TagManager:
         arn = item.get('ResourceARN', '')
         tags = {t['Key']: t['Value'] for t in item.get('Tags', [])}
         info = parse_arn(arn)
+        skipped_list = load_skipped_resources()
+        
+        # Passa anche i tags per il controllo intelligente
+        check_info = {**info, 'tags': tags}
+        is_system = is_system_resource(arn, check_info, skipped_list)
+        
         return {
             'arn': arn,
             'tags': tags,
@@ -213,6 +313,7 @@ class TagManager:
             'resource_type_filter': info['resource_type_filter'],
             'name': info['name'],
             'source': SOURCE_TAGGING,
+            'is_system': is_system,
             **check_taggable(arn),
         }
 
@@ -289,6 +390,18 @@ class TagManager:
                 tags = {t['Key']: t.get('Value', '') for t in prop.get('Data', [])}
 
         resource_type = item.get('ResourceType', '')
+        resource_type_parsed = resource_type.split(':', 1)[1] if ':' in resource_type else info['resource_type']
+        skipped_list = load_skipped_resources()
+        
+        # Per Resource Explorer, il matching deve usare il resource_type come fornito da Resource Explorer
+        check_info = {
+            'service': item.get('Service') or info['service'],
+            'resource_type': resource_type_parsed,
+            'name': info['name'],
+            'tags': tags,  # Aggiungi i tags per il controllo intelligente
+        }
+        is_system = is_system_resource(item.get('Arn', ''), check_info, skipped_list)
+        
         return {
             'arn': arn,
             'tags': tags,
@@ -297,11 +410,12 @@ class TagManager:
             'region': item.get('Region') or self.region_name,
             'account': item.get('OwningAccountId') or info['account'],
             # ResourceType di Resource Explorer e' gia' nel formato "servizio:tipo"
-            'resource_type': resource_type.split(':', 1)[1] if ':' in resource_type else info['resource_type'],
+            'resource_type': resource_type_parsed,
             'resource_type_filter': resource_type or info['resource_type_filter'],
             'name': info['name'],
             'source': SOURCE_EXPLORER,
             'last_reported_at': str(item.get('LastReportedAt', '')),
+            'is_system': is_system,
             **check_taggable(arn),
         }
 

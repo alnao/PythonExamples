@@ -56,3 +56,37 @@ body {
     justify-content: center;
     z-index: 2000;
 }
+
+/* Evidenzia le righe con tag obbligatori mancanti */
+#resourcesTable tr.table-danger {
+    background-color: #f8d7da !important;
+}
+
+#resourcesTable tr.table-danger td {
+    vertical-align: top;
+}
+
+/* Rende il nome della risorsa cliccabile */
+.resource-name {
+    cursor: pointer;
+    transition: color 0.2s;
+}
+
+.resource-name:hover {
+    color: #0d6efd;
+    text-decoration: underline;
+}
+
+/* Preview del name nella tabella report: larghezza massima 15% e troncamento */
+.name-preview {
+    display: inline-block;
+    max-width: 100%;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Forza la colonna name a occupare circa il 15% della larghezza (usato inline anche) */
+th[style*="width:15%"], td[style*="width:15%"] {
+    max-width: 15vw; /* usa viewport width per limitare, compatto su schermi piccoli */
+}

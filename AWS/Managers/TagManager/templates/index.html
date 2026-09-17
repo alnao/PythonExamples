@@ -12,12 +12,15 @@
 
 <nav class="navbar navbar-dark bg-dark">
     <div class="container-fluid">
-        <span class="navbar-brand mb-0 h1">
+        <a class="navbar-brand mb-0 h1 text-white" href="/">
             <i class="fas fa-tags me-2"></i>AWS Tag Manager
-        </span>
-        <span class="navbar-text text-white-50 small">
-            resourcegroupstaggingapi &middot; resource-explorer-2
-        </span>
+        </a>
+        <div>
+            <a class="btn btn-sm btn-outline-light me-2" href="/report">Report multi-region</a>
+            <span class="navbar-text text-white-50 small">
+                resourcegroupstaggingapi &middot; resource-explorer-2
+            </span>
+        </div>
     </div>
 </nav>
 
@@ -97,6 +100,9 @@
     <datalist id="tagKeysList">
         {% for k in suggested_tag_keys %}<option value="{{ k }}">{% endfor %}
     </datalist>
+    <datalist id="suggestedTagsList">
+        {% for k in suggested_tag_keys %}<option value="{{ k }}">{% endfor %}
+    </datalist>
     <datalist id="tagValuesList"></datalist>
 
     <div id="alertBox"></div>
@@ -150,10 +156,18 @@
                         <option value="">Tutti i servizi</option>
                     </select>
                 </div>
-                <div class="col-md-3">
+                <div class="col-md-2">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="hideSystemResources" checked>
+                        <label class="form-check-label small" for="hideSystemResources">
+                            Nascondi risorse system
+                        </label>
+                    </div>
+                </div>
+                <div class="col-md-2">
                     <span class="text-muted small" id="tableInfo">Nessuna risorsa caricata</span>
                 </div>
-                <div class="col-md-4 text-end">
+                <div class="col-md-3 text-end">
                     <div id="bulkActions" class="d-none">
                         <span class="badge bg-dark me-2" id="selectedCount">0 selezionate</span>
                         <button class="btn btn-sm btn-success" id="btnBulkAdd">
@@ -165,15 +179,34 @@
                     </div>
                 </div>
             </div>
-
+        </div>
+        <div class="table-responsive">
+            <table class="table table-hover table-sm align-middle mb-0" id="resourcesTable">
+                <thead class="table-light">
+                    <tr>
+                        <th style="width:32px"><input type="checkbox" class="form-check-input" id="checkAll"></th>
+                        <th>Servizio</th>
+                        <th>Nome risorsa</th>
+                        <th>Tag</th>
+                        <th style="width:150px" class="text-end">Azioni</th>
+                    </tr>
+                </thead>
+                <tbody id="resourcesBody">
+                    <tr><td colspan="5" class="text-center text-muted py-4">
+                        Seleziona una region e premi <strong>Carica risorse</strong>
+                    </td></tr>
+                </tbody>
+            </table>
+        </div>
+        <div class="card-footer bg-white">
             <!-- Tag rapido: si compila qui e si applica riga per riga con il pulsante fulmine -->
-            <div class="row g-2 align-items-center mt-1 pt-2 border-top">
+            <div class="row g-2 align-items-center">
                 <div class="col-auto">
                     <span class="fw-semibold small"><i class="fas fa-bolt text-warning me-1"></i>Tag rapido</span>
                 </div>
                 <div class="col-md-3">
                     <input type="text" class="form-control form-control-sm" id="fastTagKey"
-                           list="tagKeysList" placeholder="chiave (es. Owner)">
+                           list="suggestedTagsList" placeholder="chiave (es. Owner)">
                 </div>
                 <div class="col-md-3">
                     <input type="text" class="form-control form-control-sm" id="fastTagValue"
@@ -189,26 +222,6 @@
                     verde se aggiunge, arancione se aggiorna un valore diverso.
                 </div>
             </div>
-        </div>
-        <div class="table-responsive">
-            <table class="table table-hover table-sm align-middle mb-0" id="resourcesTable">
-                <thead class="table-light">
-                    <tr>
-                        <th style="width:32px"><input type="checkbox" class="form-check-input" id="checkAll"></th>
-                        <th>Servizio</th>
-                        <th>Tipo</th>
-                        <th>Nome risorsa</th>
-                        <th>Tag</th>
-                        <th style="width:90px">Origine</th>
-                        <th style="width:150px" class="text-end">Azioni</th>
-                    </tr>
-                </thead>
-                <tbody id="resourcesBody">
-                    <tr><td colspan="7" class="text-center text-muted py-4">
-                        Seleziona una region e premi <strong>Carica risorse</strong>
-                    </td></tr>
-                </tbody>
-            </table>
         </div>
         <div class="card-footer bg-white d-none" id="paginationFooter">
             <nav><ul class="pagination pagination-sm mb-0" id="pagination"></ul></nav>
@@ -248,10 +261,15 @@
                 <div class="alert alert-secondary py-2 small" id="tagModalTarget"></div>
                 <div id="tagModalAlert"></div>
 
-                <h6 class="fw-semibold">Tag attuali</h6>
-                <div id="currentTags" class="mb-4"></div>
-
-                <h6 class="fw-semibold">Aggiungi / modifica tag</h6>
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h6 class="fw-semibold mb-0">Aggiungi / modifica tag</h6>
+                    <button class="btn btn-sm btn-primary" id="btnApplyAllSuggestedTags">
+                        <i class="fas fa-magic me-1"></i>Applica tutti i tag compilati
+                    </button>
+                </div>
+                <div id="suggestedTagsSection" class="mb-3">
+                    <!-- Tag consigliati: riempito da JavaScript -->
+                </div>
                 <div class="row g-2 align-items-end mb-4">
                     <div class="col-md-5">
                         <label class="form-label small mb-1">Chiave</label>
@@ -267,6 +285,9 @@
                         </button>
                     </div>
                 </div>
+
+                <h6 class="fw-semibold">Tag attuali</h6>
+                <div id="currentTags" class="mb-4"></div>
 
                 <h6 class="fw-semibold">Rimuovi tag per chiave</h6>
                 <div class="row g-2 align-items-end">
@@ -286,6 +307,11 @@
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+<script>
+    // Passa i dati dei tag consigliati e compliant dal backend al frontend
+    window.suggestedTags = {{ suggested_tags|tojson }};
+    window.compliantTags = {{ compliant_tags|tojson }};
+</script>
 <script src="{{ url_for('static', filename='app.js') }}"></script>
 </body>
 </html>
