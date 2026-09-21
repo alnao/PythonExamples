@@ -122,6 +122,7 @@
                 <div class="card-body py-2">
                     <div class="small text-uppercase opacity-75">Senza tag</div>
                     <div class="fs-3 fw-bold" id="statUntagged">0</div>
+                    <div class="small opacity-75 d-none" id="statSystemUntagged"></div>
                 </div>
             </div>
         </div>
@@ -147,7 +148,7 @@
     <div class="card">
         <div class="card-header bg-white">
             <div class="row g-2 align-items-center">
-                <div class="col-md-3">
+                <div class="col-md-2">
                     <input type="text" class="form-control form-control-sm" id="searchBox"
                            placeholder="Cerca in nome, ARN o tag...">
                 </div>
@@ -165,6 +166,12 @@
                     </div>
                 </div>
                 <div class="col-md-2">
+                    <!-- Filtro sul tag Project: like con prefisso, opzioni generate da JS (suggested_tags) -->
+                    <select class="form-select form-select-sm" id="projectFilter" title="Filtro sul tag Project (Valore%)">
+                        <option value="">Tutti i Project</option>
+                    </select>
+                </div>
+                <div class="col-md-1">
                     <span class="text-muted small" id="tableInfo">Nessuna risorsa caricata</span>
                 </div>
                 <div class="col-md-3 text-end">
@@ -312,6 +319,7 @@
     window.suggestedTags = {{ suggested_tags|tojson }};
     window.compliantTags = {{ compliant_tags|tojson }};
 </script>
+<script src="{{ url_for('static', filename='tag_match.js') }}"></script>
 <script src="{{ url_for('static', filename='app.js') }}"></script>
 </body>
 </html>

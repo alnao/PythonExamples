@@ -32,6 +32,7 @@ Permessi IAM necessari:
 import json
 import logging
 import os
+import time
 from functools import wraps
 from pathlib import Path
 
@@ -48,8 +49,25 @@ logger = logging.getLogger(__name__)
 CONFIG_FILE = Path(__file__).parent / 'config.json'
 
 # Cache in memoria delle risorse gia' lette: la get_resources su account grandi
-# e' lenta, quindi il risultato viene riusato finche' non si chiede il refresh.
+# e' lenta, quindi il risultato viene riusato finche' non si chiede il refresh
+# o non scade (CACHE_TTL). Ogni voce e' {'data': {...}, 'at': timestamp}.
+CACHE_TTL = 3600  # secondi
 _cache = {}
+
+
+def cache_get(key):
+    """Ritorna (dati, timestamp) se la voce esiste e non e' scaduta, altrimenti (None, None)."""
+    voce = _cache.get(key)
+    if not voce or time.time() - voce['at'] > CACHE_TTL:
+        _cache.pop(key, None)
+        return None, None
+    return voce['data'], voce['at']
+
+
+def cache_set(key, data):
+    """Salva la voce e ritorna (dati, timestamp) come cache_get."""
+    _cache[key] = {'data': data, 'at': time.time()}
+    return data, _cache[key]['at']
 
 
 # ----------------------------------------------------------------------
@@ -178,14 +196,20 @@ def api_report_resources():
 
     all_resources = []
     all_warnings = []
+    # Basta una region servita dalla cache perche' il report sia "in cache";
+    # come data si riporta la piu' vecchia tra le region in cache.
+    any_cached = False
+    oldest_at = None
 
     for region in config['regions']:
         manager = TagManager(region_name=region, aws_profile=profile)
         cache_key = f"{profile}|{region}|both"
-        from_cache = not refresh and cache_key in _cache
-        if not from_cache:
-            _cache[cache_key] = manager.get_all_resources()
-        dati = _cache[cache_key]
+        dati, cached_at = (None, None) if refresh else cache_get(cache_key)
+        if dati is None:
+            dati, cached_at = cache_set(cache_key, manager.get_all_resources())
+        else:
+            any_cached = True
+            oldest_at = cached_at if oldest_at is None else min(oldest_at, cached_at)
         for r in dati['resources']:
             # Assicura il campo region e mantiene l'origine
             r['region'] = r.get('region') or region
@@ -202,6 +226,9 @@ def api_report_resources():
         'resources': all_resources,
         'warnings': all_warnings,
         'total': len(all_resources),
+        'cached': any_cached,
+        'cached_at': oldest_at,
+        'cache_ttl': CACHE_TTL,
     })
 
 
@@ -230,12 +257,12 @@ def get_resources():
     refresh = request.args.get('refresh') == '1'
 
     cache_key = f"{profile}|{region}|{source}"
-    from_cache = not refresh and cache_key in _cache
+    dati, cached_at = (None, None) if refresh else cache_get(cache_key)
+    from_cache = dati is not None
     if not from_cache:
         # Si leggono sempre tutte le risorse (comprese quelle senza tag) e si
         # filtra dopo: e' l'unico modo per poter mostrare anche le "untagged".
-        _cache[cache_key] = manager.get_all_resources(source)
-    dati = _cache[cache_key]
+        dati, cached_at = cache_set(cache_key, manager.get_all_resources(source))
     resources = dati['resources']
 
     filtered = apply_filter(resources, filter_mode, tag_key, tag_value)
@@ -250,13 +277,17 @@ def get_resources():
         'filtered_count': len(filtered),
         'warnings': dati['warnings'],
         'cached': from_cache,
+        'cached_at': cached_at,
+        'cache_ttl': CACHE_TTL,
     })
 
 
 def apply_filter(resources, filter_mode, tag_key, tag_value):
     """Applica il filtro sui tag alla lista di risorse gia' letta da AWS."""
     if filter_mode == 'untagged':
-        return [r for r in resources if not r['tags']]
+        # Le risorse di sistema senza tag non sono un problema: non si mostrano
+        # (coerente con il contatore "senza tag" di build_summary).
+        return [r for r in resources if not r['tags'] and not r.get('is_system')]
     if filter_mode == 'tagged':
         return [r for r in resources if r['tags']]
     if filter_mode == 'with_key' and tag_key:

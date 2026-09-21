@@ -25,6 +25,30 @@ body {
     vertical-align: middle;
 }
 
+/* Filtri del report: tendine compatte con testo piccolo; quelle dei suggested
+   hanno larghezza limitata perche' le sottovoci (like) possono essere lunghe */
+#reportFilters .form-select,
+#reportFilters .form-control,
+#reportFilters .form-label,
+#reportFilters .form-check-label {
+    font-size: 0.8rem;
+}
+
+#reportFilters .suggested-filter {
+    min-width: 150px;
+    max-width: 230px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Tabella del report: molte colonne, testo piu' piccolo e celle compatte */
+#reportTable th,
+#reportTable td {
+    font-size: 0.78rem;
+    padding-top: 0.2rem;
+    padding-bottom: 0.2rem;
+}
+
 .arn-cell {
     font-family: monospace;
     font-size: 0.78rem;

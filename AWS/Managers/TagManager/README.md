@@ -42,18 +42,27 @@ con la sola Tagging API e lo segnala con un avviso giallo.
 - **Dettaglio completo** di ogni risorsa (dati estratti dall'ARN, elenco tag e JSON grezzo)
 - **Filtri sui tag**, calcolati sull'elenco completo:
   - tutte le risorse
-  - solo risorse **senza alcun tag**
+  - solo risorse **senza alcun tag** (le risorse di sistema sono escluse)
   - solo risorse con almeno un tag
   - risorse **con una chiave specifica** (es. tutte quelle con `Environment`)
   - risorse **senza una chiave specifica** (utile per il governo dei costi)
   - risorse con **chiave = valore** (es. `Environment = prod`)
-- **Ricerca testuale** su nome, ARN e tag, e filtro per servizio (lato browser, immediati)
+- **Ricerca testuale** su nome, ARN e tag, filtro per servizio e filtro per `Project`
+  (lato browser, immediati). La tendina `Project` elenca i valori di `suggested_tags` e, dopo
+  il caricamento, sotto ognuno come sottovoce (`↳`) i valori trovati nelle risorse che lo
+  estendono (`Valore%`, es. `Annotazioni-Ec2` sotto `Annotazioni`). Il filtro è sempre di
+  uguaglianza stretta: scegliendo il padre si vedono solo le risorse con esattamente quel
+  valore. "Altri valori" mostra le risorse con un `Project` che non compare in tendina.
+  Stessa tendina nel report
 - **Aggiunta e rimozione dei tag**, sulla singola risorsa o **in massa** sulle risorse selezionate
 - **Tag rapido**: si scrivono chiave e valore sopra la tabella e si applicano con un solo clic
   riga per riga (o a tutte le selezionate). Il pulsante dice in anticipo cosa farà:
   verde ⚡ se **aggiunge** la chiave, arancione ✎ se **aggiorna** un valore diverso
   (col tooltip che mostra vecchio → nuovo), spento ✓ se il tag è già a posto
-- **Card di riepilogo**: totale risorse, quante senza tag, quante con tag, servizi e chiavi distinte
+- **Card di riepilogo**: totale risorse, quante senza tag (escluse le risorse di sistema),
+  quante con tag, servizi e chiavi distinte
+- **Ordinamento della tabella**: prima le risorse con almeno un tag obbligatorio mancante,
+  poi le altre; in ogni gruppo in ordine alfabetico per nome
 
 ## Prerequisiti
 
@@ -114,6 +123,7 @@ TagManager/
 ├── requirements.txt
 ├── static/
 │   ├── app.js          # logica della pagina (filtri, tabella, modali)
+│   ├── tag_match.js    # tendine dei suggested_tags (sottovoci like su Project), condiviso con il report
 │   └── style.css
 └── templates/
     └── index.html      # pagina Bootstrap 5
@@ -123,7 +133,7 @@ TagManager/
 
 | Metodo | Endpoint               | Descrizione                                              |
 |--------|------------------------|----------------------------------------------------------|
-| GET    | `/api/resources`       | risorse della region filtrate (`source`, `filter_mode`, `tag_key`, `tag_value`, `refresh`) |
+| GET    | `/api/resources`       | risorse della region filtrate (`source`, `filter_mode`, `tag_key`, `tag_value`, `refresh`); nella risposta `cached`, `cached_at`, `cache_ttl` |
 | GET    | `/api/tag-keys`        | chiavi tag presenti nella region                          |
 | GET    | `/api/tag-values`      | valori di una chiave (`key`)                              |
 | POST   | `/api/tags/add`        | aggiunge/aggiorna tag (`arns`, `tags`)                    |
@@ -144,6 +154,13 @@ curl -X POST http://localhost:5002/api/tags/add \
 
 - L'applicazione legge sempre l'elenco completo e applica i filtri dopo: con i `TagFilters`
   lato AWS il filtro "senza tag" non sarebbe realizzabile.
+- Le risorse lette vengono tenute in una **cache in memoria** per profilo/region/sorgente, con
+  scadenza di **1 ora** (`CACHE_TTL` in `app.py`). "Carica" riusa la cache; "Ricarica" (index)
+  e "Ricarica senza cache" (report) rileggono da AWS. Aggiungere o togliere tag dall'app
+  invalida la cache della region; modifiche fatte fuori dall'app (console, CLI, IaC) si vedono
+  solo dopo un ricarica o alla scadenza. Il report mostra da quando i dati sono in cache e
+  quando scadono. I tag letti da Resource Explorer possono comunque essere in ritardo di
+  qualche minuto, perché provengono da un indice aggiornato in modo asincrono.
 - I tag mostrati per le risorse trovate solo da Resource Explorer vengono da un indice
   aggiornato in modo **asincrono**, quindi possono essere leggermente arretrati; per le
   risorse presenti in entrambe le sorgenti vincono sempre i tag della Tagging API.

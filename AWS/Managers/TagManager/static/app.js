@@ -116,6 +116,7 @@ async function loadResources(refresh = false) {
 
         renderSummary(data.summary);
         populateServiceFilter(data.summary.services);
+        populateProjectFilter();
         applyClientFilters();
 
         // I problemi della sorgente Resource Explorer non bloccano il caricamento,
@@ -167,10 +168,27 @@ async function loadTagValues(key) {
 function renderSummary(summary) {
     $('statTotal').textContent = summary.total;
     $('statUntagged').textContent = summary.untagged;
+    // Le system senza tag non contano come problema: si dice solo quante sono
+    const sysUntagged = summary.system_untagged || 0;
+    $('statSystemUntagged').textContent = sysUntagged ? `+ ${sysUntagged} system escluse` : '';
+    $('statSystemUntagged').classList.toggle('d-none', !sysUntagged);
     $('statTagged').textContent = summary.tagged;
     $('statServices').textContent = Object.keys(summary.services).length;
     $('statTagKeys').textContent = Object.keys(summary.tag_keys).length;
     $('summaryRow').classList.remove('d-none');
+}
+
+/*
+ * Opzioni del filtro Project: i valori fissi di config, ognuno seguito dalle
+ * sottovoci trovate nelle risorse caricate (es. "Annotazioni-Ec2" sotto
+ * "Annotazioni"), infine "Altri valori". Vedi tag_match.js. Si richiama dopo
+ * ogni caricamento perche' le sottovoci dipendono dalle risorse lette.
+ */
+function populateProjectFilter() {
+    const select = $('projectFilter');
+    const corrente = select.value;
+    select.innerHTML = suggestedFilterOptions('Project', state.resources, 'Tutti i Project');
+    select.value = corrente;
 }
 
 function populateServiceFilter(services) {
@@ -187,6 +205,7 @@ function applyClientFilters() {
     const testo = $('searchBox').value.trim().toLowerCase();
     const servizio = $('serviceFilter').value;
     const hideSystem = $('hideSystemResources').checked;
+    const project = $('projectFilter').value;
 
     state.visible = state.resources.filter((r) => {
         // Filtra risorse system se il flag è attivo
@@ -194,11 +213,32 @@ function applyClientFilters() {
         
         // Filtra per servizio
         if (servizio && r.service !== servizio) return false;
+
+        // Filtra per Project (stessa logica del report): uguaglianza stretta con
+        // la voce scelta; '__other__' = valore presente ma non in tendina
+        if (project) {
+            const have = r.tags.Project;
+            if (project === '__other__') {
+                if (have === undefined || have === null) return false;
+                if (isSuggestedValue('Project', have)) return false;
+            } else if ((have || '') !== project) {
+                return false;
+            }
+        }
         
         // Filtra per testo
         if (!testo) return true;
         const tagText = Object.entries(r.tags).map(([k, v]) => `${k}=${v}`).join(' ');
         return (r.name + ' ' + r.arn + ' ' + tagText).toLowerCase().includes(testo);
+    });
+
+    // Prima le risorse con almeno un tag obbligatorio mancante (quelle su cui
+    // bisogna intervenire), poi le altre; dentro ogni gruppo in ordine alfabetico.
+    state.visible.sort((a, b) => {
+        const mancaA = getMissingTags(a).length > 0 ? 0 : 1;
+        const mancaB = getMissingTags(b).length > 0 ? 0 : 1;
+        if (mancaA !== mancaB) return mancaA - mancaB;
+        return (a.name || '').localeCompare(b.name || '', undefined, { sensitivity: 'base' });
     });
 
     state.page = 1;
@@ -791,6 +831,8 @@ document.addEventListener('DOMContentLoaded', () => {
     $('searchBox').addEventListener('input', applyClientFilters);
     $('serviceFilter').addEventListener('change', applyClientFilters);
     $('hideSystemResources').addEventListener('change', applyClientFilters);
+    populateProjectFilter();
+    $('projectFilter').addEventListener('change', applyClientFilters);
 
     $('region').addEventListener('change', loadTagKeys);
     $('profile').addEventListener('change', loadTagKeys);

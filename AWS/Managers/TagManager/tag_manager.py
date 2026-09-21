@@ -572,8 +572,15 @@ class TagManager:
 
     @staticmethod
     def build_summary(resources: List[Dict]) -> Dict:
-        """Calcola i contatori mostrati nelle card di riepilogo."""
-        untagged = sum(1 for r in resources if not r['tags'])
+        """
+        Calcola i contatori mostrati nelle card di riepilogo.
+
+        Le risorse di sistema (is_system) non entrano nel conteggio "senza tag":
+        non vanno taggate, quindi non sono un problema da mostrare.
+        """
+        untagged = sum(1 for r in resources if not r['tags'] and not r.get('is_system'))
+        tagged = sum(1 for r in resources if r['tags'])
+        system_untagged = sum(1 for r in resources if not r['tags'] and r.get('is_system'))
         services = {}
         tag_keys = {}
         sources = {}
@@ -586,7 +593,8 @@ class TagManager:
         return {
             'total': len(resources),
             'untagged': untagged,
-            'tagged': len(resources) - untagged,
+            'tagged': tagged,
+            'system_untagged': system_untagged,
             'services': dict(sorted(services.items(), key=lambda kv: -kv[1])),
             'tag_keys': dict(sorted(tag_keys.items(), key=lambda kv: -kv[1])),
             'sources': sources,

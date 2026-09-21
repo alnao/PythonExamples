@@ -26,10 +26,10 @@
   "suggested_tags": {
     "Name": [],
     "Environment": ["dev", "test", "temp", "production"],
-    "Project": ["aws_auto", "AlNaoCom", "AlNaoIt","Paths.games","Awwotations" , "Development" , "Proxy"],
-    "Owner": ["AlNao", "aws_auto", "external"],
-    "CostCenter": ["dev", "AlNaoWebsiteProd", "Paths.games","Awwotation"],
-    "ManagedBy": ["Manual", "Terraform", "CloudFormation" , "aws_auto"]
+    "Project": ["aws_auto", "AlNaoCom", "AlNaoIt","Paths.games","Awwotations" , "Development" , "Proxy","Annotazioni"],
+    "Owner": ["AlNao", "aws_auto", "external","Paths.games.opsTeam"],
+    "CostCenter": ["dev", "AlNaoWebsiteProd", "Paths.games","Awwotation","Annotazioni"],
+    "ManagedBy": ["Manual", "Terraform", "CloudFormation" , "aws_auto" , "Sh"]
   },
   "compliant_tags": {
     "_comment": "Lista di coppie chiave/valore che, se TUTTE presenti su una risorsa, la rendono compliant (ignora i tag obbligatori). Ogni oggetto nell'array rappresenta un set di tag che devono essere tutti presenti.",
@@ -221,6 +221,30 @@
         "service": "s3",
         "resource_type": "storage-lens",
         "name": "default-account-dashboard"        
+      },{
+        "service": "apigateway",
+        "resource_type": "apis/routes",
+        "name": null        
+      },{
+        "service": "apigateway",
+        "resource_type": "apis/integrations",
+        "name": null        
+      },{
+        "service": "apigateway",
+        "resource_type": "restapis/resources/methods",
+        "name": "restapis/null/resources/null/methods/null"        
+      },{
+        "service": "lambda",
+        "resource_type": "function/version",
+        "name": null        
+      },{
+        "service": "cloudformation",
+        "resource_type": "stack",
+        "name": "aws-sam-cli-managed-default/cf388af0-371b-11f1-b0b4-0aa6d0904d61"        
+      },{
+        "service": "ssm",
+        "resource_type": "managed-instance",
+        "name": null        
       }
     ]
   }

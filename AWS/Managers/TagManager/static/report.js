@@ -1,5 +1,7 @@
 /* Report multi-region - semplice vista aggregata con filtri per suggested_tags (solo quelli con lista)
  * Mostra colonne: Region, Service, Type, e per ogni suggested_tag con lista mostra il valore.
+ * La tendina Project elenca anche le sottovoci trovate nelle risorse (like Valore%),
+ * ma il filtro e' sempre di uguaglianza stretta: vedi tag_match.js.
  */
 
 const state = {
@@ -19,6 +21,7 @@ function escapeHtml(text){ if(text===null||text===undefined) return ''; return S
 function showAlert(msg, type='success'){
     $('alertBox').innerHTML = `<div class="alert alert-${type} py-2">${escapeHtml(msg)}</div>`;
 }
+function clearAlert(){ $('alertBox').innerHTML = ''; }
 
 async function apiGet(url){
     const r = await fetch(url);
@@ -27,26 +30,41 @@ async function apiGet(url){
     return j;
 }
 
-async function loadReport(){
-    showAlert('Caricamento in corso...', 'info');
+/* Stato della cache del server: da quando sono in cache i dati e quando scadono.
+ * Con piu' region, la data e' quella della region in cache da piu' tempo. */
+function renderCacheInfo(data){
+    const el = $('cacheInfo');
+    const ora = (ts) => new Date(ts * 1000).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' });
+    if (data.cached && data.cached_at) {
+        const scadenza = data.cached_at + (data.cache_ttl || 0);
+        el.innerHTML = `<i class="fas fa-database me-1"></i>Dati in cache dalle ${ora(data.cached_at)}`
+            + (data.cache_ttl ? ` (scade alle ${ora(scadenza)})` : '');
+        el.classList.remove('d-none');
+    } else {
+        el.innerHTML = `<i class="fas fa-cloud me-1"></i>Letti da AWS alle ${ora(Date.now() / 1000)}`;
+        el.classList.remove('d-none');
+    }
+}
+
+async function loadReport(refresh = false){
+    showAlert(refresh ? 'Lettura da AWS in corso (senza cache)...' : 'Caricamento in corso...', 'info');
     try{
-        const data = await apiGet('/api/report/resources');
+        const data = await apiGet('/api/report/resources' + (refresh ? '?refresh=1' : ''));
+        renderCacheInfo(data);
         state.resources = data.resources || [];
         state.visible = [...state.resources];
         // Calcola i valori "other" per ogni suggested key: valori presenti nelle risorse ma non nella lista suggerita
         state.otherValues = {};
-        const suggested = window.suggestedTags || {};
         state.suggestedKeysWithList.forEach((k) => {
             const present = new Set();
             state.resources.forEach((r) => {
                 const v = (r.tags && r.tags[k]);
                 if (v !== undefined && v !== null && String(v).trim() !== '') present.add(String(v));
             });
-            const suggestedSet = new Set((suggested[k] || []).map(String));
-            const others = [...present].filter(v => !suggestedSet.has(v)).sort();
+            const others = [...present].filter(v => !isSuggestedValue(k, v)).sort();
             state.otherValues[k] = others;
         });
-        showAlert(`Caricate ${state.resources.length} risorse da ${data.regions.length} region.`, 'success');
+        clearAlert();
         renderHeaderAndFilters();
         applyFilters();
     }catch(e){ showAlert('Errore: '+e.message, 'danger'); }
@@ -66,24 +84,27 @@ function renderHeaderAndFilters(){
 
     // Costruisce i filtri per suggested keys (layout orizzontale)
     // Include l'opzione '__other__' che significa "qualsiasi valore presente
-    // nelle risorse ma non nella lista suggerita".
+    // nelle risorse ma non in tendina". Per Project i valori trovati nelle
+    // risorse che estendono un suggerito (es. "Annotazioni-Ec2") compaiono come
+    // sottovoci del padre (vedi tag_match.js); la selezione corrente viene mantenuta.
     const container = $('suggestedFiltersRow');
+    const precedenti = {};
+    document.querySelectorAll('.suggested-filter').forEach(s => { precedenti[s.dataset.key] = s.value; });
     container.innerHTML = state.suggestedKeysWithList.map(k => {
-        const vals = window.suggestedTags[k] || [];
-        const options = ['<option value="">Tutti</option>']
-            .concat(vals.map(v => `<option value="${escapeHtml(v)}">${escapeHtml(v)}</option>`))
-            .concat(['<option value="__other__">Altri valori</option>'])
-            .join('');
+        const options = suggestedFilterOptions(k, state.resources, 'Tutti');
 
         return `
-            <div class="col-auto mb-2 d-flex flex-column" style="min-width:200px;">
-                <label class="form-label small">${escapeHtml(k)}</label>
-                <select class="form-select suggested-filter" data-key="${escapeHtml(k)}">${options}</select>
+            <div class="col-auto mb-2 d-flex flex-column">
+                <label class="form-label small mb-1">${escapeHtml(k)}</label>
+                <select class="form-select form-select-sm suggested-filter" data-key="${escapeHtml(k)}">${options}</select>
             </div>`;
     }).join('');
 
     // aggiusta layout se non ci sono filtri
     if(state.suggestedKeysWithList.length===0) container.innerHTML = '<div class="text-muted small">Nessun suggested_tag con lista di valori trovato in config.</div>';
+
+    // ripristina la selezione precedente (se il valore esiste ancora nella tendina)
+    document.querySelectorAll('.suggested-filter').forEach(s => { if (precedenti[s.dataset.key]) s.value = precedenti[s.dataset.key]; });
 
     // eventi
     $('search').addEventListener('input', applyFilters);
@@ -108,10 +129,9 @@ function applyFilters(){
             const want = activeFilters[k];
             const have = (r.tags && r.tags[k]);
             if (want === '__other__') {
-                // accetta qualsiasi valore presente nelle risorse ma non nella lista suggerita
-                const suggestedSet = new Set((window.suggestedTags[k] || []).map(String));
+                // accetta qualsiasi valore presente nelle risorse ma non in tendina
                 if (have === undefined || have === null) return false;
-                if (suggestedSet.has(String(have))) return false;
+                if (isSuggestedValue(k, have)) return false;
                 continue;
             }
             if((have || '') !== want) return false;
@@ -176,5 +196,8 @@ function getNamePreview(name) {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-    $('btnLoadReport').addEventListener('click', loadReport);
+    // le arrow servono: passando loadReport direttamente, l'evento click
+    // finirebbe nel parametro refresh e risulterebbe sempre "vero"
+    $('btnLoadReport').addEventListener('click', () => loadReport(false));
+    $('btnReloadNoCache').addEventListener('click', () => loadReport(true));
 });

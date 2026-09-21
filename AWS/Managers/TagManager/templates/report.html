@@ -17,17 +17,17 @@
 </nav>
 
 <div class="container-fluid mt-3 px-4">
-    <div class="card mb-3">
+    <div class="card mb-3" id="reportFilters">
         <div class="card-body">
             <div class="row g-3 align-items-end">
                 <div class="col-md-3">
-                    <label class="form-label fw-semibold">Cerca</label>
-                    <input class="form-control" id="search" placeholder="Cerca nome, arn o tag...">
+                    <label class="form-label fw-semibold small">Cerca</label>
+                    <input class="form-control form-control-sm" id="search" placeholder="Cerca nome, arn o tag...">
                 </div>
                 <div class="col-md-3">
-                    <label class="form-label fw-semibold">Region</label>
+                    <label class="form-label fw-semibold small">Region</label>
                     <div class="d-flex flex-nowrap">
-                        <select id="regionFilter" class="form-select me-2">
+                        <select id="regionFilter" class="form-select form-select-sm me-2">
                             <option value="">Tutte</option>
                             {% for r in regions %}
                             <option value="{{ r }}">{{ r }}</option>
@@ -42,6 +42,14 @@
                         <label class="form-check-label small" for="showSystem">Mostra system</label>
                     </div>
                 </div>
+                <div class="col-md-4 d-flex align-items-center justify-content-end">
+                    <!-- Stato della cache lato server (valorizzato da JS dopo il caricamento) -->
+                    <span class="small text-muted me-2 d-none" id="cacheInfo"></span>
+                    <button class="btn btn-sm btn-outline-secondary" id="btnReloadNoCache"
+                            title="Rilegge da AWS ignorando la cache del server">
+                        <i class="fas fa-rotate me-1"></i>Ricarica senza cache
+                    </button>
+                </div>
             </div>
             <div class="row g-2">
                 <div id="suggestedFilters" class="col-12">
@@ -49,7 +57,6 @@
                         <!-- Select per suggested tags con lista: generati da JS -->
                     </div>
                 </div>
-            </div>
             </div>
         </div>
     </div>
@@ -75,6 +82,7 @@
     window.suggestedTagKeys = {{ suggested_tag_keys|tojson }};
 </script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+<script src="{{ url_for('static', filename='tag_match.js') }}"></script>
 <script src="{{ url_for('static', filename='report.js') }}"></script>
 </body>
 </html>
