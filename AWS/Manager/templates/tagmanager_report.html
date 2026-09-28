@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% from "_macros.html" import page_header with context %}
+{% block title %}Report tag - AlNao AWS Manager{% endblock %}
+{% block content %}
+
+{% call page_header('Report multi-region', 'Risorse di tutte le region della lista, una colonna per ogni tag suggerito', 'fa-table-list') %}
+<a class="btn btn-sm btn-outline-secondary" href="{{ url_for('tagmanager.index') }}">
+    <i class="fas fa-arrow-left me-1"></i>Tag Manager
+</a>
+{% endcall %}
+
+<div class="card mb-3 toolbar" id="reportFilters">
+    <div class="card-body py-2">
+        <div class="row g-2 align-items-end">
+            <div class="col-md-3">
+                <label class="form-label">Cerca</label>
+                <input class="form-control form-control-sm" id="search" placeholder="Cerca nome, arn o tag...">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Region</label>
+                <div class="d-flex flex-nowrap">
+                    <select id="regionFilter" class="form-select form-select-sm me-2">
+                        <option value="">Tutte</option>
+                        {% for r in regions %}
+                        <option value="{{ r }}">{{ r }}</option>
+                        {% endfor %}
+                    </select>
+                    <button class="btn btn-sm btn-primary" id="btnLoadReport">Carica</button>
+                </div>
+            </div>
+            <div class="col-md-2 d-flex align-items-center">
+                <div class="form-check form-switch ms-2 mb-1">
+                    <input class="form-check-input" type="checkbox" id="showSystem">
+                    <label class="form-check-label" for="showSystem">Mostra system</label>
+                </div>
+            </div>
+            <div class="col-md-4 d-flex align-items-center justify-content-end">
+                <!-- Stato della cache lato server (valorizzato da JS dopo il caricamento) -->
+                <span class="text-muted me-2 d-none" id="cacheInfo"></span>
+                <button class="btn btn-sm btn-outline-secondary" id="btnReloadNoCache"
+                        title="Rilegge da AWS ignorando la cache del server">
+                    <i class="fas fa-rotate me-1"></i>Ricarica senza cache
+                </button>
+            </div>
+        </div>
+        <div class="row g-2 mt-1">
+            <div id="suggestedFilters" class="col-12">
+                <div class="d-flex flex-row flex-wrap align-items-center gap-2" id="suggestedFiltersRow">
+                    <!-- Select per suggested tags con lista: generati da JS -->
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="alertBox"></div>
+
+<div class="card">
+    <div class="table-responsive">
+        <table class="table table-sm table-hover align-middle mb-0" id="reportTable">
+            <thead class="table-light" id="reportHeader">
+                <!-- intestazione generata da JS -->
+            </thead>
+            <tbody id="reportBody">
+                <tr><td class="text-center text-muted py-4" colspan="4">Premi <strong>Carica</strong> per iniziare</td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% endblock %}
+{% block scripts %}
+<script>
+    window.suggestedTags = {{ suggested_tags|tojson }};
+    window.suggestedTagKeys = {{ suggested_tag_keys|tojson }};
+    Object.assign(window.APP, { prefixMatchKeys: {{ tag_config.prefix_match_keys|tojson }} });
+</script>
+<script src="{{ url_for('static', filename='js/tag_match.js') }}"></script>
+<script src="{{ url_for('static', filename='js/tagmanager_report.js') }}"></script>
+{% endblock %}

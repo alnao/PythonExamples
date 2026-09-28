@@ -1,0 +1,148 @@
+{
+  "_comment": "Configurazione unica dell'AlNao AWS Manager: raccoglie i parametri dei tool di AWS/Managers (TagManager, CostExplorer, PanoramicResources, ManagerFlask, ManagerFlaskCloudWatch). Le variabili d'ambiente AWS_PROFILE, AWS_REGION, AWS_REGIONS e PORT hanno la precedenza sui valori di default. Il pulsante 'Aggiorna region da AWS' del Tag Manager riscrive la sezione 'regions'.",
+  "port": 5042,
+  "default_profile": "default",
+  "default_region": "eu-central-1",
+  "regions": [
+    "eu-central-1",
+    "eu-west-1",
+    "eu-west-2",
+    "eu-west-3",
+    "us-east-1",
+    "us-east-2"
+  ],
+  "old_regions": [
+    "us-west-1",
+    "us-west-2",
+    "ca-central-1",
+    "sa-east-1",
+    "ap-south-1",
+    "ap-southeast-1",
+    "ap-southeast-2",
+    "ap-northeast-1",
+    "ap-northeast-2",
+    "eu-south-1",
+    "eu-north-1"
+  ],
+  "max_workers": 8,
+  "suggested_tags": {
+    "Name": [],
+    "Environment": ["dev", "test", "temp", "production"],
+    "Project": ["aws_auto", "AlNaoCom", "AlNaoIt", "Paths.games", "Awwotations", "Development", "Proxy", "Annotazioni"],
+    "Owner": ["AlNao", "aws_auto", "external", "Paths.games.opsTeam"],
+    "CostCenter": ["dev", "AlNaoWebsiteProd", "Paths.games", "Awwotation", "Annotazioni"],
+    "ManagedBy": ["Manual", "Terraform", "CloudFormation", "aws_auto", "Sh"]
+  },
+  "compliant_tags": {
+    "_comment": "Lista di coppie chiave/valore che, se TUTTE presenti su una risorsa, la rendono compliant (ignora i tag obbligatori). Ogni oggetto nell'array rappresenta un set di tag che devono essere tutti presenti.",
+    "sets": [
+      {
+        "Owner": "aws_auto"
+      },
+      {
+        "ManagedBy": "aws_auto"
+      },
+      {
+        "Owner": "AlNao",
+        "CostCenter": "mah"
+      }
+    ]
+  },
+  "resources_skipped": {
+    "_comment": "Risorse di sistema AWS che non devono essere analizzate. Ogni entry ha 'service', 'resource_type' (opzionale), e 'name' (opzionale). Se 'resource_type' o 'name' mancano, vengono considerate tutte le risorse di quel servizio/tipo.",
+    "entries": [
+      {"service": "events", "resource_type": "event-bus", "name": "default"},
+      {"service": "apprunner", "resource_type": "autoscalingconfiguration", "name": null},
+      {"service": "athena", "resource_type": "datacatalog", "name": "AwsDataCatalog"},
+      {"service": "athena", "resource_type": "workgroup", "name": "primary"},
+      {"service": "iam", "resource_type": "role", "name": "AWSServiceRoleForAPIGateway"},
+      {"service": "iam", "resource_type": "role", "name": "AWSServiceRoleForAWSCloud9"},
+      {"service": "iam", "resource_type": "role", "name": "AWSServiceRoleForAmazonSSM"},
+      {"service": "iam", "resource_type": "role", "name": "AWSServiceRoleForLambda"},
+      {"service": "iam", "resource_type": "role", "name": "AWSServiceRoleForOrganizations"},
+      {"service": "iam", "resource_type": "role", "name": "AWSServiceRoleForSupport"},
+      {"service": "iam", "resource_type": "role", "name": "AWSServiceRoleForTrustedAdvisor"},
+      {"service": "ec2", "resource_type": "vpc", "name": "default"},
+      {"service": "ec2", "resource_type": "security-group", "name": "default"},
+      {"service": "ec2", "resource_type": "security-group-rule", "name": null},
+      {"service": "ec2", "resource_type": "network-interface", "name": null},
+      {"service": "ec2", "resource_type": "dhcp-options", "name": null},
+      {"service": "ec2", "resource_type": "route-table", "name": null},
+      {"service": "ec2", "resource_type": "network-acl", "name": null},
+      {"service": "lambda", "resource_type": "layer", "name": null},
+      {"service": "lambda", "resource_type": "layer/version", "name": null},
+      {"service": "elasticache", "resource_type": "user", "name": "default"},
+      {"service": "events", "resource_type": "rule", "name": "AutoScalingManagedRule"},
+      {"service": "memorydb", "resource_type": "parametergroup", "name": null},
+      {"service": "memorydb", "resource_type": "user", "name": "default"},
+      {"service": "memorydb", "resource_type": "acl", "name": null},
+      {"service": "rds", "resource_type": "og", "name": null},
+      {"service": "rds", "resource_type": "pg", "name": null},
+      {"service": "rds", "resource_type": "cluster-pg", "name": null},
+      {"service": "rds", "resource_type": "subgrp", "name": "default"},
+      {"service": "xray", "resource_type": "sampling-rule", "name": "Default"},
+      {"service": "kms", "resource_type": "key", "name": null},
+      {"service": "resource-explorer-2", "resource_type": "index", "name": null},
+      {"service": "resource-explorer-2", "resource_type": "view", "name": null},
+      {"service": "iam", "resource_type": "oidc-provider", "name": null},
+      {"service": "payments", "resource_type": "payment-instrument", "name": null},
+      {"service": "s3", "resource_type": "storage-lens", "name": "default-account-dashboard"},
+      {"service": "apigateway", "resource_type": "apis/routes", "name": null},
+      {"service": "apigateway", "resource_type": "apis/integrations", "name": null},
+      {"service": "apigateway", "resource_type": "restapis/resources/methods", "name": "restapis/null/resources/null/methods/null"},
+      {"service": "lambda", "resource_type": "function/version", "name": null},
+      {"service": "cloudformation", "resource_type": "stack", "name": "aws-sam-cli-managed-default/cf388af0-371b-11f1-b0b4-0aa6d0904d61"},
+      {"service": "ssm", "resource_type": "managed-instance", "name": null},
+      {"service": "cloudformation", "resource_type": "stack", "name": "aws-sam-cli-managed-default"}
+    ]
+  },
+  "tag_manager": {
+    "_comment": "required_tags: tag che ogni risorsa deve avere (le righe senza sono evidenziate); prefix_match_keys: tag i cui valori che estendono un suggerito (Paths.games.aws sotto Paths.games) compaiono come sottovoci; cache_ttl: secondi di validita' della cache delle risorse lette; page_size: righe per pagina.",
+    "required_tags": ["Project", "Name", "Environment", "ManagedBy"],
+    "prefix_match_keys": ["Project"],
+    "cache_ttl": 3600,
+    "page_size": 50
+  },
+  "cost_explorer": {
+    "_comment": "Ogni richiesta a Cost Explorer costa 0,01 $: i risultati restano in cache su disco (cartella cache/, un file per mese) senza scadenza. Il Data Export su S3 (gratis) si configura nel file .env.",
+    "default_months": 1,
+    "default_metric": "UnblendedCost",
+    "default_group": "TAG:Project",
+    "prefix_match_keys": ["Project"],
+    "cur_service_names": {},
+    "service_aliases": {
+      "Amazon Elastic Compute Cloud - Compute": "EC2 - Compute",
+      "EC2 - Other": "EC2 - Other",
+      "Amazon Relational Database Service": "RDS",
+      "Amazon Simple Storage Service": "S3",
+      "Amazon DynamoDB": "DynamoDB",
+      "Amazon API Gateway": "API Gateway",
+      "Amazon Route 53": "Route 53",
+      "Amazon Virtual Private Cloud": "VPC",
+      "Amazon ElastiCache": "ElastiCache",
+      "Amazon Elastic Container Service": "ECS",
+      "Amazon EC2 Container Registry (ECR)": "ECR",
+      "Amazon Elastic Load Balancing": "ELB",
+      "Amazon Elastic File System": "EFS",
+      "Amazon CloudFront": "CloudFront",
+      "Amazon Simple Notification Service": "SNS",
+      "Amazon Simple Queue Service": "SQS",
+      "AmazonCloudWatch": "CloudWatch",
+      "AWS Key Management Service": "KMS",
+      "AWS Certificate Manager": "ACM",
+      "AWS Secrets Manager": "Secrets Manager",
+      "AWS Step Functions": "Step Functions",
+      "AWS Lambda": "Lambda"
+    }
+  },
+  "panoramic": {
+    "_comment": "Servizi letti dal pulsante 'Servizi principali'; 'Tutti i servizi' li legge tutti. Chiavi possibili: vpc, subnets, security_groups, ec2, rds, s3, cloudfront, lambda, dynamodb, apigateway, sqs, sns, ecr, eks, eks_nodes, cloudformation, cloudwatch_alarms, iam_users, iam_roles, route53, elasticache, load_balancers, secrets, ssm_parameters, kinesis, step_functions, efs.",
+    "main_services": ["vpc", "ec2", "rds", "s3", "cloudfront", "lambda", "dynamodb", "apigateway", "sqs", "sns"]
+  },
+  "manager": {
+    "_comment": "max_upload_mb: dimensione massima dei file caricati su S3; list_limit: massimo di oggetti S3, righe DynamoDB, eventi di log ed esecuzioni mostrati.",
+    "max_upload_mb": 10,
+    "list_limit": 500,
+    "logs_limit": 100
+  }
+}

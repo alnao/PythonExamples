@@ -1,0 +1,350 @@
+{% extends "base.html" %}
+{% from "_macros.html" import page_header with context %}
+{% block title %}Cost Explorer - AlNao AWS Manager{% endblock %}
+{% block content %}
+
+{% call page_header('Cost Explorer', 'Costi per servizio e per tag · ogni richiesta a Cost Explorer costa ' ~ ('%.2f'|format(api_cost)) ~ ' $, i dati letti restano in cache', 'fa-coins') %}
+<div class="d-flex align-items-center gap-2">
+    <span class="badge d-none" id="curStatus"></span>
+    <span class="badge text-bg-light border" id="apiCalls"
+          title="Richieste a Cost Explorer fatte da quando e' partita l'app: ognuna costa {{ '%.2f'|format(api_cost) }} $">
+        <i class="fas fa-receipt me-1"></i>Chiamate CE: 0
+    </span>
+</div>
+{% endcall %}
+
+<!-- Filtri: la prima riga richiede una lettura da AWS, la seconda filtra nel browser -->
+<div class="card mb-3 toolbar" id="filters">
+    <div class="card-body py-2">
+        <div class="row g-2 align-items-end">
+            <div class="col-auto w-presets">
+                <label class="form-label">Periodo</label>
+                <div class="btn-group btn-group-sm w-100" role="group" id="presets">
+                    <button class="btn btn-outline-secondary" data-months="1">Mese</button>
+                    <button class="btn btn-outline-secondary" data-months="3">3M</button>
+                    <button class="btn btn-outline-secondary" data-months="6">6M</button>
+                    <button class="btn btn-outline-secondary" data-months="12">12M</button>
+                </div>
+            </div>
+            <div class="col-auto w-month">
+                <label for="startMonth" class="form-label">Da</label>
+                <input type="month" class="form-control form-control-sm" id="startMonth">
+            </div>
+            <div class="col-auto w-month">
+                <label for="endMonth" class="form-label">A</label>
+                <input type="month" class="form-control form-control-sm" id="endMonth">
+            </div>
+            <div class="col-auto w-select">
+                <label for="metric" class="form-label"
+                       title="Unblended: costo come in fattura. Amortized: spalma su tutto il periodo gli anticipi di Savings Plans e RI. Net: al netto degli sconti.">
+                    Metrica <i class="fas fa-circle-info text-muted"></i>
+                </label>
+                <select class="form-select form-select-sm" id="metric">
+                    {% for m in metrics %}
+                    <option value="{{ m }}" {% if m == default_metric %}selected{% endif %}>{{ m }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-auto w-select">
+                <label for="group" class="form-label">Secondo grafico per</label>
+                <select class="form-select form-select-sm" id="group">
+                    <option value="{{ default_group }}">{{ default_group }}</option>
+                </select>
+            </div>
+            <div class="col-auto w-region">
+                <label for="region" class="form-label" title="Filtro sui costi: e' indipendente dalla region scelta nelle altre sezioni">Region costi</label>
+                <select class="form-select form-select-sm" id="region">
+                    <option value="">Tutte</option>
+                    <option value="global">global</option>
+                    {% for r in cost_regions %}
+                    <option value="{{ r }}">{{ r }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-auto">
+                <div class="form-check form-switch mb-1"
+                     title="Esclude tasse, crediti e rimborsi (record Tax, Credit e Refund)">
+                    <input class="form-check-input" type="checkbox" id="exclude">
+                    <label class="form-check-label" for="exclude">Senza tasse</label>
+                </div>
+            </div>
+            <div class="col-auto d-flex gap-1 ms-auto">
+                <button class="btn btn-sm btn-primary btn-cloud" id="btnCloud" disabled>
+                    <i class="fas fa-cloud-arrow-down me-1"></i>Carica i dati dal cloud
+                </button>
+                <button class="btn btn-sm btn-outline-secondary" id="btnRefresh"
+                        title="Aggiorna i mesi letti prima della loro fine (chiede conferma: ogni richiesta costa 0,01 $)">
+                    <i class="fas fa-rotate"></i>
+                </button>
+                <a class="btn btn-sm btn-outline-secondary" href="{{ url_for('tagmanager.index') }}" title="Apre il Tag Manager">
+                    <i class="fas fa-tags"></i>
+                </a>
+            </div>
+        </div>
+
+        <hr class="my-2">
+
+        <div class="row g-2 align-items-end">
+            <div class="col-6 col-md-3 col-xl-2">
+                <label for="serviceFilter" class="form-label">Servizio</label>
+                <select class="form-select form-select-sm" id="serviceFilter">
+                    <option value="">Tutti</option>
+                </select>
+            </div>
+            <div class="col-6 col-md-3 col-xl-2">
+                <label for="groupFilter" class="form-label" id="groupFilterLabel">Valore</label>
+                <select class="form-select form-select-sm" id="groupFilter">
+                    <option value="">Tutti</option>
+                </select>
+            </div>
+            <div class="col-6 col-md-2 col-xl-1">
+                <label for="topN" class="form-label" title="Le voci oltre queste confluiscono in 'Altri'">Voci</label>
+                <select class="form-select form-select-sm" id="topN">
+                    <option value="3">Top 3</option>
+                    <option value="5">Top 5</option>
+                    <option value="8" selected>Top 8</option>
+                </select>
+            </div>
+            <div class="col-6 col-md-2 col-xl-1">
+                <label for="minAmount" class="form-label" title="Nasconde le voci che nel periodo costano meno di questa cifra">Soglia $</label>
+                <input type="number" class="form-control form-control-sm" id="minAmount" value="0" min="0" step="0.01">
+            </div>
+            <div class="col-12 col-sm-6 col-md-3 col-xl-auto w-toggle">
+                <label class="form-label">Barre</label>
+                <div class="btn-group btn-group-sm w-100" role="group">
+                    <input type="radio" class="btn-check" name="barMode" id="barStacked" value="stacked" checked>
+                    <label class="btn btn-outline-secondary" for="barStacked">Impilate</label>
+                    <input type="radio" class="btn-check" name="barMode" id="barGrouped" value="grouped">
+                    <label class="btn btn-outline-secondary" for="barGrouped">Affiancate</label>
+                </div>
+            </div>
+            <div class="col-6 col-md-3 col-xl-auto" id="rollupBox">
+                <div class="form-check form-switch mb-1"
+                     title="Somma i valori che estendono un valore suggerito (es. Paths.games.aws.serverless sotto Paths.games)">
+                    <input class="form-check-input" type="checkbox" id="rollup" checked>
+                    <label class="form-check-label" for="rollup">Raggruppa i sottovalori</label>
+                </div>
+            </div>
+            <div class="col-6 col-md-3 col-xl-auto d-flex gap-1 justify-content-end ms-auto">
+                <button class="btn btn-sm btn-outline-secondary" id="btnReset">
+                    <i class="fas fa-filter-circle-xmark me-1"></i>Azzera filtri
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="alertBox"></div>
+
+<!-- Dati non in cache: si leggono da AWS solo dopo la conferma nella modale -->
+<div class="card cloud-prompt mb-3 d-none" id="cloudPrompt">
+    <div class="card-body d-flex flex-wrap align-items-center gap-3">
+        <i class="fas fa-cloud fa-2x text-primary"></i>
+        <div class="flex-fill">
+            <div class="fw-semibold" id="cloudPromptTitle">Dati non in cache</div>
+            <div class="small text-muted" id="cloudPromptText"></div>
+        </div>
+        <button class="btn btn-sm btn-primary btn-cloud" id="btnCloudPrompt">
+            <i class="fas fa-cloud-arrow-down me-1"></i>Carica i dati dal cloud
+        </button>
+    </div>
+</div>
+
+<!-- Riepilogo -->
+<div class="row g-2 mb-3" id="kpis">
+    <div class="col-6 col-lg-3"><div class="card stat h-100"><div class="card-body">
+        <div class="stat-label" id="kpiTotalLabel">Totale del periodo</div>
+        <div class="stat-value" id="kpiTotal">&ndash;</div>
+        <div class="stat-note" id="kpiTotalNote"></div>
+    </div></div></div>
+    <div class="col-6 col-lg-3"><div class="card stat h-100"><div class="card-body">
+        <div class="stat-label">Mese in corso</div>
+        <div class="stat-value" id="kpiCurrent">&ndash;</div>
+        <div class="stat-note" id="kpiCurrentNote"></div>
+    </div></div></div>
+    <div class="col-6 col-lg-3"><div class="card stat h-100"><div class="card-body">
+        <div class="stat-label" id="kpiLastLabel">Ultimo mese chiuso</div>
+        <div class="stat-value" id="kpiLast">&ndash;</div>
+        <div class="stat-note" id="kpiLastNote"></div>
+    </div></div></div>
+    <div class="col-6 col-lg-3"><div class="card stat h-100"><div class="card-body">
+        <div class="stat-label" id="kpiUntaggedLabel">Costi senza tag</div>
+        <div class="stat-value" id="kpiUntagged">&ndash;</div>
+        <div class="stat-note" id="kpiUntaggedNote"></div>
+    </div></div></div>
+</div>
+
+<!-- Zoom: periodo mostrato da grafici, tabelle e totale, e raggruppamento del tempo -->
+<div class="card mb-3" id="zoomBar">
+    <div class="card-body py-2">
+        <div class="d-flex flex-wrap align-items-center gap-2">
+            <button class="btn btn-sm btn-outline-secondary" id="btnZoomOut" title="Torna al livello precedente">
+                <i class="fas fa-magnifying-glass-minus"></i>
+            </button>
+            <nav aria-label="Zoom" class="me-2">
+                <ol class="breadcrumb mb-0" id="zoomCrumbs"></ol>
+            </nav>
+            <div class="ms-auto d-flex flex-wrap align-items-center gap-2">
+                <label for="zoomSelect" class="text-secondary fw-semibold mb-0">Vai a</label>
+                <select class="form-select form-select-sm w-auto" id="zoomSelect"></select>
+                <span class="text-secondary fw-semibold ms-2">Raggruppa per</span>
+                <div class="btn-group btn-group-sm" role="group" id="bucketGroup">
+                    <input type="radio" class="btn-check" name="bucket" id="bucketMonth" value="month">
+                    <label class="btn btn-outline-secondary" for="bucketMonth">Mesi</label>
+                    <input type="radio" class="btn-check" name="bucket" id="bucketWeek" value="week">
+                    <label class="btn btn-outline-secondary" for="bucketWeek">Settimane</label>
+                    <input type="radio" class="btn-check" name="bucket" id="bucketDay" value="day">
+                    <label class="btn btn-outline-secondary" for="bucketDay">Giorni</label>
+                </div>
+            </div>
+        </div>
+        <div class="footer-note mt-1">
+            <i class="fas fa-magnifying-glass-plus me-1"></i>Zoom: trascina sul grafico per scegliere un intervallo,
+            doppio clic su una colonna (o clic sulla sua etichetta) per entrare nel mese o nella settimana.
+            Settimane e giorni usano i dati giornalieri.
+        </div>
+    </div>
+</div>
+
+<!-- Grafici -->
+<div class="row g-3 mb-3" id="chartsRow">
+    <div class="col-xl-6">
+        <div class="card h-100">
+            <div class="card-header">
+                <div id="chartServiceTitle">Costi per servizio</div>
+                <div class="card-hint">Clic su una barra per filtrare quel servizio</div>
+            </div>
+            <div class="card-body"><div class="chart-box"><canvas id="chartService"></canvas></div></div>
+        </div>
+    </div>
+    <div class="col-xl-6">
+        <div class="card h-100">
+            <div class="card-header">
+                <div id="chartGroupTitle">Costi per tag</div>
+                <div class="card-hint">Clic su una barra per filtrare quel valore</div>
+            </div>
+            <div class="card-body"><div class="chart-box"><canvas id="chartGroup"></canvas></div></div>
+        </div>
+    </div>
+</div>
+<div class="footer-note mb-3" id="estimatedNote"></div>
+
+<!-- Tabelle -->
+<div class="card mb-3">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <span id="tableServiceTitle">Dettaglio per servizio</span>
+        <button class="btn btn-sm btn-outline-secondary" data-csv="service"><i class="fas fa-file-csv me-1"></i>CSV</button>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-sm table-hover align-middle mb-0 cost-table" id="tableService"></table>
+    </div>
+</div>
+<div class="card mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <span id="tableGroupTitle">Dettaglio per tag</span>
+        <button class="btn btn-sm btn-outline-secondary" data-csv="group"><i class="fas fa-file-csv me-1"></i>CSV</button>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-sm table-hover align-middle mb-0 cost-table" id="tableGroup"></table>
+    </div>
+</div>
+
+<!-- Conferma prima di chiamare Cost Explorer -->
+<div class="modal fade" id="cloudModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header py-2">
+                <h6 class="modal-title"><i class="fas fa-cloud-arrow-down me-2"></i>Carica i dati dal cloud</h6>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p class="mb-2" id="cloudModalIntro"></p>
+                <table class="table table-sm align-middle cost-table mb-3">
+                    <thead class="table-light">
+                        <tr><th></th><th>Richiesta a Cost Explorer</th><th class="num">Richieste</th><th class="num">Costo</th></tr>
+                    </thead>
+                    <tbody id="cloudModalBody"></tbody>
+                    <tfoot id="cloudModalFoot"></tfoot>
+                </table>
+                <div class="alert alert-warning d-flex align-items-start gap-2 mb-0" id="cloudModalWarning"></div>
+            </div>
+            <div class="modal-footer py-2">
+                <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Annulla</button>
+                <button type="button" class="btn btn-sm btn-warning" id="btnCloudConfirm">
+                    <i class="fas fa-cloud-arrow-down me-1"></i>Conferma e carica
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Dettaglio di un servizio per usage type -->
+<div class="modal fade" id="drillModal" tabindex="-1">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header py-2">
+                <h6 class="modal-title"><i class="fas fa-magnifying-glass-chart me-2"></i><span id="drillTitle"></span></h6>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row g-2 align-items-end mb-3 toolbar" id="drillFilters">
+                    <div class="col-md-3">
+                        <label for="drillDimension" class="form-label">Raggruppa per</label>
+                        <select class="form-select form-select-sm" id="drillDimension">
+                            {% for k, v in drill_dimensions.items() %}
+                            <option value="{{ k }}">{{ v }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="drillGranularity" class="form-label">Granularità</label>
+                        <select class="form-select form-select-sm" id="drillGranularity">
+                            <option value="MONTHLY">Mensile (tutto il periodo)</option>
+                            <option value="DAILY">Giornaliera (un mese)</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3 d-none" id="drillMonthBox">
+                        <label for="drillMonth" class="form-label">Mese</label>
+                        <select class="form-select form-select-sm" id="drillMonth"></select>
+                    </div>
+                    <div class="col-md-3 small text-muted" id="drillInfo"></div>
+                </div>
+                <div class="alert alert-warning d-none align-items-center gap-3" id="drillCloud">
+                    <i class="fas fa-triangle-exclamation fa-lg"></i>
+                    <div class="flex-fill small" id="drillCloudText"></div>
+                    <button class="btn btn-sm btn-warning" id="btnDrillCloud">
+                        <i class="fas fa-cloud-arrow-down me-1"></i>Carica i dati dal cloud
+                    </button>
+                </div>
+                <div id="drillContent">
+                    <div class="chart-box chart-box-drill"><canvas id="chartDrill"></canvas></div>
+                    <div class="d-flex justify-content-between align-items-center mt-3 mb-1">
+                        <code class="small text-muted" id="drillCommand"></code>
+                        <button class="btn btn-sm btn-outline-secondary" data-csv="drill"><i class="fas fa-file-csv me-1"></i>CSV</button>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover align-middle mb-0 cost-table" id="tableDrill"></table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+{% block scripts %}
+<script>
+    Object.assign(window.APP, {
+        defaultMonths: {{ default_months }},
+        defaultGroup: {{ default_group|tojson }},
+        secondDimensions: {{ second_dimensions|tojson }},
+        suggestedTags: {{ suggested_tags|tojson }},
+        prefixMatchKeys: {{ prefix_match_keys|tojson }},
+        serviceAliases: {{ service_aliases|tojson }},
+        apiCost: {{ api_cost }}
+    });
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="{{ url_for('static', filename='js/charts.js') }}"></script>
+<script src="{{ url_for('static', filename='js/costexplorer.js') }}"></script>
+{% endblock %}

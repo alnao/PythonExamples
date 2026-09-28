@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}AlNao AWS Manager{% endblock %}</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/app.css') }}" rel="stylesheet">
+</head>
+<body>
+
+<nav class="navbar navbar-expand-lg navbar-dark app-navbar">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="{{ url_for('home.index') }}">
+            <i class="fab fa-aws me-1"></i> AlNao AWS Manager
+        </a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav"
+                aria-controls="mainNav" aria-expanded="false" aria-label="Menu">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="mainNav">
+            <ul class="navbar-nav me-auto gap-1">
+                {% for bp_name, endpoint, label, icon in nav %}
+                <li class="nav-item">
+                    <a class="nav-link {% if request.blueprint == bp_name %}active{% endif %}" href="{{ url_for(endpoint) }}">
+                        <i class="fas {{ icon }} me-1"></i>{{ label }}
+                    </a>
+                </li>
+                {% endfor %}
+            </ul>
+            <div class="input-group input-group-sm profile-picker w-auto" title="Profilo AWS usato da tutte le sezioni">
+                <span class="input-group-text"><i class="fas fa-user"></i></span>
+                <select class="form-select form-select-sm" id="navProfile">
+                    {% for p in profiles %}
+                    <option value="{{ p }}" {% if p == current_profile %}selected{% endif %}>{{ p }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+    </div>
+</nav>
+
+{% block subnav %}{% endblock %}
+
+<main class="page container-fluid">
+    {% block content %}{% endblock %}
+</main>
+
+<!-- Conferma delle operazioni che modificano AWS (confirmAction in common.js) -->
+<div class="modal fade" id="confirmModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header py-2">
+                <h6 class="modal-title" id="confirmTitle">Conferma operazione</h6>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="confirmBody"></div>
+            <div class="modal-footer py-2">
+                <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Annulla</button>
+                <button type="button" class="btn btn-sm btn-primary" id="confirmOk">Conferma</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    window.APP = {
+        profile: {{ current_profile|tojson }},
+        region: {{ current_region|tojson }},
+        regions: {{ regions|tojson }},
+        tagRules: {{ tag_rules|tojson }}
+    };
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/js/bootstrap.bundle.min.js"></script>
+<script src="{{ url_for('static', filename='js/common.js') }}"></script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

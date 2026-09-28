@@ -1,2 +1,0 @@
-yaml
-urllib3<2

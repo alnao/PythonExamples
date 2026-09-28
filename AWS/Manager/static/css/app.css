@@ -1,0 +1,589 @@
+/* AlNao AWS Manager - grafica unica per tutte le sezioni.
+ *
+ * Base a 13px: tutte le misure di Bootstrap sono in rem, quindi l'intera interfaccia
+ * (testi, campi, pulsanti, tabelle) diventa piu' compatta in modo uniforme.
+ * I colori sono definiti per ruolo; la palette dei grafici (8 colori categorici in
+ * ordine fisso, validati per il daltonismo) viene dal Cost Explorer ed e' letta da charts.js.
+ */
+
+:root {
+    --page: #f4f6f9;
+    --surface-1: #fcfcfb;
+    --surface-2: #ffffff;
+    --border: #dfe3e8;
+    --text-primary: #16191d;
+    --text-secondary: #52514e;
+    --text-muted: #898781;
+    --gridline: #e1e0d9;
+    --baseline: #c3c2b7;
+    --nav-bg: #1d2733;
+    --nav-bg-2: #2a3644;
+    --accent: #ff9900;
+    --series-1: #2a78d6;
+    --series-2: #eb6834;
+    --series-3: #1baf7a;
+    --series-4: #eda100;
+    --series-5: #e87ba4;
+    --series-6: #008300;
+    --series-7: #4a3aa7;
+    --series-8: #e34948;
+    --series-untagged: #a8a69e;
+    --series-other: #d6d4cc;
+    --delta-good: #006300;
+    --delta-bad: #d03b3b;
+    --bs-body-bg: var(--page);
+    --bs-body-color: var(--text-primary);
+}
+
+html {
+    font-size: 13px;
+}
+
+body {
+    background-color: var(--page);
+    color: var(--text-primary);
+    min-height: 100vh;
+}
+
+/* ------------------------------------------------------------------ navbar */
+
+.app-navbar {
+    background-color: var(--nav-bg);
+    padding-top: 0.25rem;
+    padding-bottom: 0.25rem;
+}
+
+.app-navbar .navbar-brand {
+    font-weight: 600;
+    font-size: 1.1rem;
+    color: #fff;
+}
+
+.app-navbar .navbar-brand i {
+    color: var(--accent);
+}
+
+.app-navbar .nav-link {
+    color: #c9d1da;
+    padding: 0.45rem 0.7rem;
+    border-radius: 4px;
+}
+
+.app-navbar .nav-link:hover {
+    color: #fff;
+    background-color: var(--nav-bg-2);
+}
+
+.app-navbar .nav-link.active {
+    color: #fff;
+    background-color: var(--nav-bg-2);
+    box-shadow: inset 0 -2px 0 var(--accent);
+}
+
+.app-navbar .profile-picker {
+    min-width: 150px;
+}
+
+.app-navbar .profile-picker .input-group-text {
+    background-color: var(--nav-bg-2);
+    border-color: var(--nav-bg-2);
+    color: #c9d1da;
+}
+
+/* Seconda barra (servizi del Manager) */
+.sub-navbar {
+    background-color: var(--surface-2);
+    border-bottom: 1px solid var(--border);
+    padding: 0.3rem 0;
+}
+
+.sub-navbar .nav {
+    flex-wrap: wrap;
+    row-gap: 2px;
+}
+
+.sub-navbar .nav-link {
+    color: var(--text-secondary);
+    padding: 0.3rem 0.6rem;
+    white-space: nowrap;
+    border-radius: 4px;
+}
+
+.sub-navbar .nav-link:hover {
+    background-color: var(--page);
+    color: var(--text-primary);
+}
+
+.sub-navbar .nav-link.active {
+    background-color: #e7f1ff;
+    color: #0a58ca;
+    font-weight: 600;
+}
+
+/* ------------------------------------------------------------------ pagina */
+
+.page {
+    padding: 0.8rem 1rem 2rem;
+}
+
+.page-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin: 0;
+}
+
+.page-subtitle {
+    color: var(--text-muted);
+    font-size: 0.9rem;
+}
+
+.card {
+    border-color: var(--border);
+    border-radius: 6px;
+}
+
+.card-header {
+    background-color: var(--surface-2);
+    border-bottom-color: var(--border);
+    font-weight: 600;
+}
+
+.card-header .card-hint {
+    font-weight: 400;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+}
+
+/* Barra dei filtri di una sezione */
+.toolbar .form-label,
+.toolbar .form-check-label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    margin-bottom: 0.15rem;
+}
+
+.form-label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+}
+
+.region-picker {
+    min-width: 140px;
+}
+
+/* Riquadri di riepilogo (KPI) */
+.stat .card-body {
+    padding: 0.7rem 0.9rem;
+}
+
+.stat-label {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+}
+
+.stat-value {
+    font-size: 1.6rem;
+    font-weight: 600;
+    line-height: 1.3;
+}
+
+.stat-note {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    min-height: 1.1em;
+}
+
+.stat.stat-warning {
+    border-left: 3px solid var(--series-4);
+}
+
+.stat.stat-danger {
+    border-left: 3px solid var(--delta-bad);
+}
+
+.stat.stat-ok {
+    border-left: 3px solid var(--series-3);
+}
+
+.delta-bad { color: var(--delta-bad); font-weight: 600; }
+.delta-good { color: var(--delta-good); font-weight: 600; }
+
+/* ------------------------------------------------------------------ tabelle */
+
+.table {
+    --bs-table-bg: var(--surface-2);
+    margin-bottom: 0;
+}
+
+.table > :not(caption) > * > * {
+    padding: 0.28rem 0.5rem;
+}
+
+.table thead th {
+    font-weight: 600;
+    color: var(--text-secondary);
+    white-space: nowrap;
+}
+
+.table-kv th {
+    width: 32%;
+    color: var(--text-secondary);
+    font-weight: 600;
+    word-break: break-word;
+}
+
+.table-kv td {
+    word-break: break-word;
+}
+
+.num {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+}
+
+.mono,
+.arn-cell {
+    font-family: SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    word-break: break-all;
+}
+
+pre.json,
+.detail-json {
+    background-color: #1f252c;
+    color: #e9ecef;
+    padding: 0.6rem 0.75rem;
+    border-radius: 5px;
+    font-size: 0.88rem;
+    max-height: 360px;
+    overflow: auto;
+    margin: 0;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+pre.log {
+    white-space: pre-wrap;
+    word-break: break-word;
+    margin: 0;
+    font-size: 0.88rem;
+}
+
+.empty-state {
+    color: var(--text-muted);
+    text-align: center;
+    padding: 1.2rem 0.5rem;
+}
+
+.badge-region {
+    background-color: #eef1f5;
+    color: var(--text-secondary);
+    border: 1px solid var(--border);
+    font-weight: 500;
+}
+
+/* ------------------------------------------------------------------ elenchi (Manager) */
+
+.item-list {
+    max-height: calc(100vh - 230px);
+    overflow-y: auto;
+}
+
+.item-list .list-group-item {
+    padding: 0.35rem 0.6rem;
+    border-color: #eef0f3;
+    cursor: pointer;
+}
+
+.item-list .list-group-item:hover {
+    background-color: #f5f8fc;
+}
+
+.item-list .list-group-item.active {
+    background-color: #e7f1ff;
+    color: var(--text-primary);
+    border-color: #cfe2ff;
+}
+
+.item-list .item-title {
+    font-weight: 600;
+    word-break: break-all;
+}
+
+.item-list .item-sub {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    word-break: break-all;
+}
+
+.panel-body {
+    max-height: calc(100vh - 200px);
+    overflow-y: auto;
+}
+
+.service-card {
+    color: inherit;
+    text-decoration: none;
+}
+
+.service-card:hover .card {
+    border-color: var(--series-1);
+    box-shadow: 0 1px 4px rgba(42, 120, 214, 0.15);
+}
+
+.service-card i {
+    color: var(--series-1);
+}
+
+/* ------------------------------------------------------------------ Tag Manager */
+
+.tag-badge {
+    font-weight: 500;
+    margin: 1px 2px 1px 0;
+    background-color: #e7f1ff;
+    color: #0a58ca;
+    border: 1px solid #cfe2ff;
+}
+
+.tag-badge .tag-key {
+    font-weight: 700;
+}
+
+.no-tag-badge {
+    background-color: #fff2f2;
+    color: #b02a37;
+    border: 1px solid #f5c2c7;
+}
+
+.resource-name {
+    font-weight: 600;
+    word-break: break-all;
+    cursor: pointer;
+}
+
+.resource-name:hover {
+    color: #0d6efd;
+    text-decoration: underline;
+}
+
+#resourcesTable tr.table-danger {
+    --bs-table-bg: #f8d7da;
+}
+
+#resourcesTable tr.table-danger td {
+    vertical-align: top;
+}
+
+#reportFilters .suggested-filter {
+    min-width: 150px;
+    max-width: 230px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.name-preview {
+    display: inline-block;
+    max-width: 100%;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    cursor: pointer;
+}
+
+/* ------------------------------------------------------------------ Cost Explorer */
+
+#filters .w-presets { width: 185px; }
+#filters .w-month { width: 150px; }
+#filters .w-select { width: 175px; }
+#filters .w-region { width: 130px; }
+
+@media (min-width: 1200px) {
+    #filters .w-toggle { width: 200px; }
+}
+
+@media (max-width: 576px) {
+    #filters .col-auto { width: 50%; }
+    #filters .col-auto.w-presets { width: 100%; }
+}
+
+#groupFilter option.child {
+    color: var(--text-secondary);
+}
+
+.chart-box {
+    position: relative;
+    height: 380px;
+}
+
+.chart-box-drill {
+    height: 340px;
+}
+
+.chart-box-small {
+    position: relative;
+    height: 220px;
+}
+
+.cost-table th,
+.cost-table td {
+    white-space: nowrap;
+}
+
+.cost-table td.num,
+.cost-table th.num {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+}
+
+.cost-table .cost-tiny {
+    color: #b5b3ab;
+}
+
+.cost-table tbody tr.clickable {
+    cursor: pointer;
+}
+
+.cost-table tbody tr.active-filter td {
+    background-color: #e7f1ff;
+}
+
+.cost-table tfoot td {
+    font-weight: 600;
+    border-top: 2px solid var(--baseline);
+}
+
+.cost-table .entity {
+    max-width: 320px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.swatch {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    border-radius: 2px;
+    margin-right: 6px;
+    vertical-align: baseline;
+}
+
+.child-row .entity {
+    padding-left: 1.6rem;
+    color: var(--text-secondary);
+}
+
+.share-bar {
+    display: inline-block;
+    height: 6px;
+    border-radius: 3px;
+    background-color: var(--series-1);
+    opacity: 0.35;
+    vertical-align: middle;
+    margin-right: 6px;
+}
+
+.zoom-select {
+    position: absolute;
+    background-color: rgba(42, 120, 214, 0.12);
+    border-left: 1px solid var(--series-1);
+    border-right: 1px solid var(--series-1);
+    pointer-events: none;
+    display: none;
+}
+
+#zoomCrumbs .breadcrumb-item a {
+    text-decoration: none;
+}
+
+/* Con molti giorni le tabelle scorrono: la prima colonna resta ferma */
+.cost-table th:first-child,
+.cost-table td:first-child {
+    position: sticky;
+    left: 0;
+    z-index: 1;
+    background-color: #fff;
+}
+
+.cost-table thead th:first-child {
+    background-color: var(--bs-table-bg, #f8f9fa);
+}
+
+.cloud-prompt {
+    border-left: 4px solid var(--series-1);
+}
+
+#btnCloud:disabled {
+    background-color: transparent;
+    color: var(--text-secondary);
+    border-color: var(--baseline);
+}
+
+/* ------------------------------------------------------------------ Panoramic */
+
+.section-index a {
+    text-decoration: none;
+}
+
+.section-index .badge {
+    font-weight: 500;
+}
+
+.back-to-top {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    border: none;
+    background-color: var(--nav-bg);
+    color: #fff;
+    display: none;
+    z-index: 1000;
+}
+
+.back-to-top.show {
+    display: block;
+}
+
+/* ------------------------------------------------------------------ icone dei tag */
+
+.tag-icon {
+    cursor: help;
+    font-size: 0.95em;
+}
+
+.tooltip-pre .tooltip-inner {
+    white-space: pre-line;
+    text-align: left;
+}
+
+/* ------------------------------------------------------------------ varie */
+
+/* La conferma puo' aprirsi sopra un'altra modale (es. gestione tag): sta sempre in cima */
+#confirmModal {
+    z-index: 1070;
+}
+
+.spinner-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(255, 255, 255, 0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2000;
+}
+
+.btn-xs {
+    padding: 0.05rem 0.35rem;
+    font-size: 0.85rem;
+}
+
+.footer-note {
+    color: var(--text-muted);
+    font-size: 0.85rem;
+}

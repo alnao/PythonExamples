@@ -1,0 +1,211 @@
+{% extends "base.html" %}
+{% from "_macros.html" import region_select, page_header with context %}
+{% block title %}CloudWatch - AlNao AWS Manager{% endblock %}
+{% block content %}
+
+{% call page_header('CloudWatch', 'Allarmi e log', 'fa-chart-line') %}
+<div class="toolbar">{{ region_select('cwRegion') }}</div>
+{% endcall %}
+
+<div id="alertBox"></div>
+
+<ul class="nav nav-tabs" id="cwTabs" role="tablist">
+    <li class="nav-item" role="presentation">
+        <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tabAlarms" type="button" role="tab">
+            <i class="fas fa-bell me-1"></i>Allarmi
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tabLogs" type="button" role="tab">
+            <i class="fas fa-file-lines me-1"></i>Log
+        </button>
+    </li>
+</ul>
+
+<div class="tab-content pt-3">
+    <!-- Allarmi -->
+    <div class="tab-pane fade show active" id="tabAlarms" role="tabpanel">
+        <div class="card">
+            <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-2">
+                <span>Allarmi <span class="badge text-bg-light border ms-1" id="alarmsCount">0</span></span>
+                <div class="d-flex gap-2 align-items-center fw-normal">
+                    <select class="form-select form-select-sm w-auto" id="stateFilter" title="Filtra per stato (lato AWS)">
+                        <option value="">Tutti gli stati</option>
+                        <option value="ALARM">ALARM</option>
+                        <option value="OK">OK</option>
+                        <option value="INSUFFICIENT_DATA">INSUFFICIENT_DATA</option>
+                    </select>
+                    <input type="text" class="form-control form-control-sm" style="width: 180px" id="alarmSearch" placeholder="Cerca...">
+                    <button class="btn btn-sm btn-outline-secondary" id="btnAlarms" title="Rilegge gli allarmi"><i class="fas fa-rotate"></i></button>
+                    <button class="btn btn-sm btn-outline-primary" data-bs-toggle="collapse" data-bs-target="#newAlarm">
+                        <i class="fas fa-plus me-1"></i>Nuovo allarme CPU
+                    </button>
+                </div>
+            </div>
+            <div class="collapse" id="newAlarm">
+                <div class="card-body border-bottom toolbar">
+                    <div class="row g-2 align-items-end">
+                        <div class="col-md-3"><label class="form-label" for="alarmName">Nome allarme</label>
+                            <input type="text" class="form-control form-control-sm" id="alarmName"></div>
+                        <div class="col-md-3"><label class="form-label" for="asgName">Auto Scaling Group</label>
+                            <input type="text" class="form-control form-control-sm" id="asgName"></div>
+                        <div class="col-md-2"><label class="form-label" for="threshold">Soglia CPU (%)</label>
+                            <input type="number" class="form-control form-control-sm" id="threshold" value="80"></div>
+                        <div class="col-md-1"><label class="form-label" for="evaluationPeriods">Periodi</label>
+                            <input type="number" class="form-control form-control-sm" id="evaluationPeriods" value="2"></div>
+                        <div class="col-md-1"><label class="form-label" for="period">Secondi</label>
+                            <input type="number" class="form-control form-control-sm" id="period" value="300"></div>
+                        <div class="col-md-2"><button class="btn btn-sm btn-primary w-100" id="btnCreateAlarm">Crea allarme</button></div>
+                    </div>
+                </div>
+            </div>
+            <div id="alarmsTable"><div class="empty-state">Caricamento...</div></div>
+        </div>
+    </div>
+
+    <!-- Log -->
+    <div class="tab-pane fade" id="tabLogs" role="tabpanel">
+        <div class="row g-3">
+            <div class="col-xl-6">
+                <div class="card">
+                    <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-2">
+                        <span>Log group <span class="badge text-bg-light border ms-1" id="groupsCount">0</span></span>
+                        <div class="d-flex gap-2 align-items-center fw-normal">
+                            <input type="text" class="form-control form-control-sm" style="width: 200px" id="groupPrefix"
+                                   placeholder="Prefisso (es. /aws/lambda/)" title="Filtro lato AWS sul prefisso del nome">
+                            <button class="btn btn-sm btn-outline-secondary" id="btnGroups" title="Rilegge i log group"><i class="fas fa-rotate"></i></button>
+                            <button class="btn btn-sm btn-outline-primary" data-bs-toggle="collapse" data-bs-target="#newGroup">
+                                <i class="fas fa-plus me-1"></i>Nuovo
+                            </button>
+                        </div>
+                    </div>
+                    <div class="collapse" id="newGroup">
+                        <div class="card-body border-bottom toolbar">
+                            <div class="row g-2 align-items-end">
+                                <div class="col-md-6"><label class="form-label" for="newGroupName">Nome del log group</label>
+                                    <input type="text" class="form-control form-control-sm" id="newGroupName"></div>
+                                <div class="col-md-3"><label class="form-label" for="retentionDays" title="0 = illimitata">Giorni di conservazione</label>
+                                    <input type="number" class="form-control form-control-sm" id="retentionDays" value="30"></div>
+                                <div class="col-md-3"><button class="btn btn-sm btn-primary w-100" id="btnCreateGroup">Crea</button></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="panel-body" id="groupsTable"><div class="empty-state">Apri la scheda per caricare i log group</div></div>
+                </div>
+            </div>
+            <div class="col-xl-6">
+                <div class="card d-none" id="streamsCard">
+                    <div class="card-header">
+                        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+                            <span class="text-break">Stream di <span id="currentGroup" class="mono"></span></span>
+                            <div class="d-flex gap-2 fw-normal">
+                                <button class="btn btn-sm btn-outline-secondary" id="btnStreams" title="Rilegge gli stream"><i class="fas fa-rotate"></i></button>
+                                <button class="btn btn-sm btn-outline-primary" data-bs-toggle="collapse" data-bs-target="#newStream">
+                                    <i class="fas fa-plus me-1"></i>Nuovo stream
+                                </button>
+                            </div>
+                        </div>
+                        <div class="input-group input-group-sm mt-2 fw-normal">
+                            <input type="text" class="form-control" id="filterPattern" placeholder="Filter pattern (es. ERROR) su tutti gli stream">
+                            <select class="form-select" id="filterHours" style="max-width: 130px">
+                                <option value="1">ultima ora</option>
+                                <option value="24" selected>ultime 24 ore</option>
+                                <option value="168">ultimi 7 giorni</option>
+                                <option value="720">ultimi 30 giorni</option>
+                            </select>
+                            <button class="btn btn-outline-secondary" id="btnFilter"><i class="fas fa-filter me-1"></i>Cerca</button>
+                        </div>
+                    </div>
+                    <div class="collapse" id="newStream">
+                        <div class="card-body border-bottom toolbar">
+                            <div class="row g-2 align-items-end">
+                                <div class="col-md-8"><label class="form-label" for="newStreamName">Nome dello stream</label>
+                                    <input type="text" class="form-control form-control-sm" id="newStreamName"></div>
+                                <div class="col-md-4"><button class="btn btn-sm btn-primary w-100" id="btnCreateStream">Crea</button></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="panel-body" id="streamsTable"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Storico di un allarme -->
+<div class="modal fade" id="historyModal" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header py-2">
+                <h6 class="modal-title">Storico di <span id="historyTitle"></span></h6>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="historyBody"></div>
+        </div>
+    </div>
+</div>
+
+<!-- Stato forzato di un allarme -->
+<div class="modal fade" id="stateModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header py-2">
+                <h6 class="modal-title">Forza lo stato di <span id="stateTitle"></span></h6>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body toolbar">
+                <label class="form-label" for="newState">Nuovo stato</label>
+                <select class="form-select form-select-sm mb-2" id="newState">
+                    <option value="ALARM">ALARM</option>
+                    <option value="OK">OK</option>
+                    <option value="INSUFFICIENT_DATA">INSUFFICIENT_DATA</option>
+                </select>
+                <label class="form-label" for="stateReason">Motivo</label>
+                <input type="text" class="form-control form-control-sm" id="stateReason" value="Cambio di stato manuale">
+                <div class="footer-note mt-2">Lo stato torna quello reale alla valutazione successiva; se le azioni
+                    sono attive, il passaggio in ALARM le esegue (es. notifiche SNS).</div>
+            </div>
+            <div class="modal-footer py-2">
+                <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Annulla</button>
+                <button type="button" class="btn btn-sm btn-warning" id="btnSetState">Forza stato</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Eventi di uno stream o risultato di una ricerca -->
+<div class="modal fade" id="eventsModal" tabindex="-1">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header py-2">
+                <h6 class="modal-title text-break" id="eventsTitle">Eventi</h6>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="eventsBody"></div>
+        </div>
+    </div>
+</div>
+
+<!-- Scrittura di un evento in uno stream -->
+<div class="modal fade" id="putEventModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header py-2">
+                <h6 class="modal-title text-break">Scrivi un evento in <span id="putEventTitle"></span></h6>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <textarea class="form-control form-control-sm" id="putEventMessage" rows="4" placeholder="Messaggio"></textarea>
+            </div>
+            <div class="modal-footer py-2">
+                <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Annulla</button>
+                <button type="button" class="btn btn-sm btn-primary" id="btnPutEvent">Scrivi</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/cloudwatch.js') }}"></script>
+{% endblock %}

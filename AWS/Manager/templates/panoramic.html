@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% from "_macros.html" import region_select, page_header with context %}
+{% block title %}Panoramic - AlNao AWS Manager{% endblock %}
+{% block content %}
+
+{% call page_header('Panoramic', "Panoramica delle risorse dell'account, servizio per servizio", 'fa-binoculars') %}{% endcall %}
+
+<div class="card mb-3 toolbar">
+    <div class="card-body py-2">
+        <div class="d-flex flex-wrap align-items-end gap-2">
+            {{ region_select('panoramicRegion') }}
+            <button class="btn btn-sm btn-primary" id="btnMain"
+                    title="{{ main_services|join(', ') }} (panoramic.main_services in config.json)">
+                <i class="fas fa-star me-1"></i>Servizi principali
+            </button>
+            <button class="btn btn-sm btn-outline-primary" id="btnAll" title="Tutti i {{ services|length }} servizi">
+                <i class="fas fa-layer-group me-1"></i>Tutti i servizi
+            </button>
+            <div class="form-check form-switch ms-2 mb-1">
+                <input class="form-check-input" type="checkbox" id="hideEmpty">
+                <label class="form-check-label" for="hideEmpty">Nascondi servizi vuoti</label>
+            </div>
+            <input type="text" class="form-control form-control-sm ms-auto" style="max-width: 260px"
+                   id="search" placeholder="Cerca in tutte le tabelle...">
+        </div>
+    </div>
+</div>
+
+<div id="alertBox"></div>
+
+<!-- Indice delle sezioni con il numero di risorse -->
+<div class="card mb-3 d-none" id="indexCard">
+    <div class="card-body py-2 section-index" id="sectionIndex"></div>
+</div>
+
+<div id="sections">
+    <div class="empty-state py-5">
+        <i class="fas fa-binoculars fa-2x mb-3 d-block"></i>
+        Scegli la region (o Tutte) e premi <strong>Servizi principali</strong> o <strong>Tutti i servizi</strong>.
+        <div class="mt-1">Le letture sono gratuite (describe/list), ma con molte region e tutti i servizi richiedono qualche secondo.</div>
+    </div>
+</div>
+
+<button class="back-to-top" id="backToTop" title="Torna all'inizio"><i class="fas fa-chevron-up"></i></button>
+
+{% endblock %}
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/panoramic.js') }}"></script>
+{% endblock %}

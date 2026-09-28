@@ -1,0 +1,7 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="empty-state py-5">
+    <i class="fas fa-circle-exclamation fa-2x mb-3 d-block"></i>
+    {{ message }} &middot; <a href="{{ url_for('home.index') }}">torna alla Home</a>
+</div>
+{% endblock %}

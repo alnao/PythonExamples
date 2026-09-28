@@ -1,2 +1,0 @@
-Flask>3
-Flask-Session
