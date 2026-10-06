@@ -22,19 +22,24 @@ from flask import Blueprint, abort, jsonify, redirect, render_template, request
 
 from aws.cloudwatch_manager import CloudWatchAlarmManager, CloudWatchLogsManager
 from aws.services.apigateway import AwsApiGateway
+from aws.services.cloudformation import AwsCloudFormation
 from aws.services.cloudfront import AwsCloudFront
 from aws.services.dynamodb import AwsDynamoDB
+from aws.services.ecs import AwsEcs
 from aws.services.ec2 import AwsEc2, AwsElasticIp, AwsSecurityGroups
 from aws.services.eventbridge import AwsEventBridge
 from aws.services.glue import AwsGlue
 from aws.services.infrastructure import AwsAutoScaling, AwsEcr, AwsEfs, AwsLoadBalancers
 from aws.services.lambda_function import AwsLambda
 from aws.services.rds import AwsRds
+from aws.services.route53 import AwsRoute53
 from aws.services.s3 import AwsS3
+from aws.services.secrets import AwsSecrets
 from aws.services.sns import AwsSns
 from aws.services.sqs import AwsSqs
 from aws.services.ssm import AwsSsmParameters
 from aws.services.stepfunctions import AwsStepFunctions
+from aws.services.vpc import AwsVpc
 from common import (GLOBAL_REGION, api_errors, aws_session, current_profile, current_region,
                     load_config, region_list, run_parallel)
 from sections.tagmanager import TagLookup
@@ -113,9 +118,10 @@ SERVICES = {
         get={'detail': lambda o, a: o.detail(need(a, 'id'), a.get('type', 'REST'))}),
     'dynamodb': dict(
         tags=lambda i: ('arn', 'arn:aws:dynamodb:{region}:{account}:table/' + i['TableName']),
-        title='DynamoDB', icon='fa-table', desc='Tabelle, descrizione e prime righe',
+        title='DynamoDB', icon='fa-table', desc='Tabelle e righe a pagine, con Query sulle chiavi e filtri',
         cls=AwsDynamoDB, list=lambda o: o.tables(),
-        get={'detail': lambda o, a: {'table': o.describe(need(a, 'table')), **o.scan(need(a, 'table'), limit())}}),
+        get={'describe': lambda o, a: o.describe(need(a, 'table')),
+             'items': lambda o, a: dynamodb_read(o, a)}),
     'rds': dict(
         tags=lambda i: ('inline', i.get('TagList')),
         title='RDS', icon='fa-database', desc='Istanze database',
@@ -174,7 +180,47 @@ SERVICES = {
         title='ECR', icon='fa-box', desc='Repository e immagini',
         cls=AwsEcr, list=lambda o: o.repositories(),
         get={'images': lambda o, a: o.images(need(a, 'name'))}),
+    'cloudformation': dict(
+        tags=lambda i: ('inline', i.get('Tags')),
+        title='CloudFormation', icon='fa-layer-group', desc='Stack: parametri, output, risorse, eventi e template',
+        cls=AwsCloudFormation, list=lambda o: o.stacks(),
+        get={'detail': lambda o, a: {'resources': o.resources(need(a, 'stack')),
+                                     'events': o.events(need(a, 'stack'), limit('logs_limit'))},
+             'template': lambda o, a: o.template(need(a, 'stack'))}),
+    'route53': dict(
+        tags=lambda i: ('arn', 'arn:aws:route53:::hostedzone/' + i['Id'].rsplit('/', 1)[-1]),
+        title='Route53', icon='fa-signs-post', desc='Zone ospitate e record DNS',
+        global_=True, cls=AwsRoute53, list=lambda o: o.zones(),
+        get={'records': lambda o, a: o.records(need(a, 'id'), limit())}),
+    'secrets': dict(
+        tags=lambda i: ('inline', i.get('Tags')),
+        title='Secrets', icon='fa-key', desc='Secrets Manager: metadati, rotazione, versioni; valore a richiesta',
+        cls=AwsSecrets, list=lambda o: o.secrets(),
+        get={'detail': lambda o, a: o.describe(need(a, 'id')),
+             'value': lambda o, a: o.value(need(a, 'id'))}),
+    'ecs': dict(
+        tags=lambda i: ('inline', i.get('tags')),
+        title='ECS', icon='fa-cubes', desc='Cluster, servizi e task',
+        cls=AwsEcs, list=lambda o: o.clusters(),
+        get={'detail': lambda o, a: {'services': o.services(need(a, 'cluster')),
+                                     'tasks': o.tasks(need(a, 'cluster'), limit())}}),
+    'vpc': dict(
+        tags=lambda i: ('inline', i.get('Tags')),
+        title='VPC', icon='fa-sitemap', desc='Reti, subnet, route table, internet e NAT gateway',
+        cls=AwsVpc, list=lambda o: o.vpcs(),
+        get={'network': lambda o, a: o.network(need(a, 'id'))}),
 }
+
+
+def dynamodb_read(o, a):
+    """Una pagina di righe DynamoDB (Query o Scan, vedi AwsDynamoDB.read) dai parametri della pagina."""
+    page_size = max(1, min(int(a.get('page_size') or 100), limit()))
+    return o.read(need(a, 'table'), index=a.get('index', ''), pk=a.get('pk', ''),
+                  sort_op=a.get('sort_op', ''), sort_value=a.get('sort_value', ''),
+                  sort_value2=a.get('sort_value2', ''), filter_attr=a.get('filter_attr', '').strip(),
+                  filter_op=a.get('filter_op', ''), filter_value=a.get('filter_value', ''),
+                  filter_type=a.get('filter_type', 'S'), descending=a.get('descending') == '1',
+                  page_size=page_size, max_read=limit('dynamodb_max_read'), start=a.get('start'))
 
 
 def service(name):
@@ -208,7 +254,8 @@ def service_page(name):
     service(name)
     services = nav_services()
     return render_template('manager.html', services=services, service=name,
-                           current=next(s for s in services if s['id'] == name))
+                           current=next(s for s in services if s['id'] == name),
+                           ddb_max_read=limit('dynamodb_max_read'))
 
 
 # ----------------------------------------------------------------------

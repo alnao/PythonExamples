@@ -87,9 +87,12 @@
       {"service": "iam", "resource_type": "oidc-provider", "name": null},
       {"service": "payments", "resource_type": "payment-instrument", "name": null},
       {"service": "s3", "resource_type": "storage-lens", "name": "default-account-dashboard"},
+      {"service": "apigateway", "resource_type": "apis/stages", "name": null},
       {"service": "apigateway", "resource_type": "apis/routes", "name": null},
       {"service": "apigateway", "resource_type": "apis/integrations", "name": null},
-      {"service": "apigateway", "resource_type": "restapis/resources/methods", "name": "restapis/null/resources/null/methods/null"},
+      {"service": "apigateway", "resource_type": "restapis/resources", "name": null},
+      {"service": "apigateway", "resource_type": "restapis/deployments", "name": null},
+      {"service": "apigateway", "resource_type": "restapis/resources/methods", "name": null},
       {"service": "lambda", "resource_type": "function/version", "name": null},
       {"service": "cloudformation", "resource_type": "stack", "name": "aws-sam-cli-managed-default/cf388af0-371b-11f1-b0b4-0aa6d0904d61"},
       {"service": "ssm", "resource_type": "managed-instance", "name": null},
@@ -105,7 +108,7 @@
   },
   "cost_explorer": {
     "_comment": "Ogni richiesta a Cost Explorer costa 0,01 $: i risultati restano in cache su disco (cartella cache/, un file per mese) senza scadenza. Il Data Export su S3 (gratis) si configura nel file .env.",
-    "default_months": 1,
+    "default_months": 3,
     "default_metric": "UnblendedCost",
     "default_group": "TAG:Project",
     "prefix_match_keys": ["Project"],
@@ -139,10 +142,22 @@
     "_comment": "Servizi letti dal pulsante 'Servizi principali'; 'Tutti i servizi' li legge tutti. Chiavi possibili: vpc, subnets, security_groups, ec2, rds, s3, cloudfront, lambda, dynamodb, apigateway, sqs, sns, ecr, eks, eks_nodes, cloudformation, cloudwatch_alarms, iam_users, iam_roles, route53, elasticache, load_balancers, secrets, ssm_parameters, kinesis, step_functions, efs.",
     "main_services": ["vpc", "ec2", "rds", "s3", "cloudfront", "lambda", "dynamodb", "apigateway", "sqs", "sns"]
   },
+  "terraform": {
+    "_comment": "Bucket S3 con gli state di Terraform (backend s3): la sezione Terraform legge i file che finiscono con uno dei state_suffixes (al massimo max_states per bucket) e mostra le risorse gestite con tipo, region e tag.",
+    "buckets": [
+      "alnao-production-terraform",
+      "alnao-dev-terraform",
+      "pathsgames-production-iac",
+      "pathsgames-test-iac"
+    ],
+    "state_suffixes": [".tfstate"],
+    "max_states": 200
+  },
   "manager": {
-    "_comment": "max_upload_mb: dimensione massima dei file caricati su S3; list_limit: massimo di oggetti S3, righe DynamoDB, eventi di log ed esecuzioni mostrati.",
+    "_comment": "max_upload_mb: dimensione massima dei file caricati su S3; list_limit: massimo di oggetti S3, righe DynamoDB per pagina, eventi di log ed esecuzioni mostrati; dynamodb_max_read: righe lette al massimo da uno Scan con filtro per ogni 'Carica dati' (le righe lette consumano capacita' anche se il filtro le scarta).",
     "max_upload_mb": 10,
     "list_limit": 500,
-    "logs_limit": 100
+    "logs_limit": 100,
+    "dynamodb_max_read": 5000
   }
 }

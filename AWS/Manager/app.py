@@ -8,6 +8,8 @@ Sezioni (una voce della navbar ciascuna, un blueprint in sections/):
     - Tag Manager    elenco e modifica dei tag delle risorse, report multi-region (ex TagManager)
     - Manager        gestione dei singoli servizi: S3, EC2, Lambda, SQS... (ex ManagerFlask)
     - CloudWatch     allarmi e log (ex ManagerFlaskCloudWatch)
+    - Terraform      risorse gestite da Terraform, dagli state sui bucket S3 configurati
+    - CloudFormation risorse gestite da CloudFormation, stack per stack, con i tag
 
 Il profilo AWS si sceglie nella navbar, la region dentro le sezioni che la usano
 (con l'opzione "Tutte" dove possibile). Ogni operazione che modifica risorse AWS chiede
@@ -29,7 +31,7 @@ import os
 from flask import Flask, jsonify, render_template, request, session
 
 from common import ALL, JsonProvider, list_profiles, load_config
-from sections import cloudwatch, costexplorer, home, manager, panoramic, tagmanager
+from sections import cloudformation, cloudwatch, costexplorer, home, manager, panoramic, tagmanager, terraform
 
 logging.basicConfig(level=logging.INFO)
 
@@ -39,7 +41,7 @@ app.json = JsonProvider(app)
 app.secret_key = os.getenv('FLASK_SECRET_KEY', 'alnao-aws-manager-locale')
 app.config['MAX_CONTENT_LENGTH'] = int(load_config()['manager']['max_upload_mb']) * 1024 * 1024
 
-for section in (home, costexplorer, panoramic, tagmanager, manager, cloudwatch):
+for section in (home, costexplorer, panoramic, tagmanager, manager, cloudwatch, terraform, cloudformation):
     app.register_blueprint(section.bp)
 
 # Voci della navbar: (blueprint, endpoint, etichetta, icona)
@@ -50,6 +52,8 @@ NAV = [
     ('tagmanager', 'tagmanager.index', 'Tag Manager', 'fa-tags'),
     ('manager', 'manager.index', 'Manager', 'fa-screwdriver-wrench'),
     ('cloudwatch', 'cloudwatch.index', 'CloudWatch', 'fa-chart-line'),
+    ('terraform', 'terraform.index', 'Terraform', 'fa-cubes-stacked'),
+    ('cloudformation', 'cloudformation.index', 'CloudFormation', 'fa-layer-group'),
 ]
 
 

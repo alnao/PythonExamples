@@ -36,12 +36,6 @@ def _load_balancers(s):
     return {'value': len(_paginate(s.client('elbv2'), 'describe_load_balancers', 'LoadBalancers'))}
 
 
-def _nat(s):
-    nats = _paginate(s.client('ec2'), 'describe_nat_gateways', 'NatGateways',
-                     Filters=[{'Name': 'state', 'Values': ['available', 'pending']}])
-    return {'value': len(nats)}
-
-
 def _eip(s):
     addresses = s.client('ec2').describe_addresses().get('Addresses', [])
     # un Elastic IP non associato si paga senza usarlo
@@ -55,11 +49,19 @@ def _alarms(s):
 
 # (chiave, lettura) per region e globali
 REGIONAL = [('ec2', _ec2), ('rds', _rds), ('lambda', _lambda), ('dynamodb', _dynamodb),
-            ('load_balancers', _load_balancers), ('nat', _nat), ('eip', _eip), ('alarms', _alarms)]
+            ('load_balancers', _load_balancers), ('eip', _eip), ('alarms', _alarms)]
 
 
 def _s3(s):
-    return {'value': len(s.client('s3').list_buckets().get('Buckets', []))}
+    """Bucket divisi per region: list_buckets riporta BucketRegion, per i vecchi bucket senza
+    si chiede la location (LocationConstraint vuoto = us-east-1)."""
+    client = s.client('s3')
+    by_region = {}
+    for b in _paginate(client, 'list_buckets', 'Buckets'):
+        region = b.get('BucketRegion') or \
+            client.get_bucket_location(Bucket=b['Name']).get('LocationConstraint') or 'us-east-1'
+        by_region[region] = by_region.get(region, 0) + 1
+    return {'value': sum(by_region.values()), 'by_region': by_region}
 
 
 def _cloudfront(s):
@@ -76,6 +78,8 @@ def resource_counts(profile, regions):
     """
     Contatori per region e globali, letti in parallelo. Un contatore che fallisce
     (permessi, servizio non attivo) riporta l'errore senza fermare gli altri.
+    I bucket S3 vanno sulla riga della loro region; quelli di region fuori dalla lista
+    restano nei globali, insieme a CloudFront.
 
     Ritorna {'regions': [{'region', 'counts': {chiave: {'value', 'total'?} | {'error'}}}],
              'global': {chiave: ...}, 'totals': {chiave: {'value', 'total'}}}
@@ -92,6 +96,20 @@ def resource_counts(profile, regions):
     for (region, key, _), res, err in run_parallel(tasks, run, max_workers=16):
         target = global_counts if key in dict(GLOBAL) else per_region[region]
         target[key] = {'error': err} if err else res
+
+    s3 = global_counts.pop('s3', None)
+    if s3 is not None:
+        if 'error' in s3:
+            for r in regions:
+                per_region[r]['s3'] = s3
+        else:
+            by_region = s3['by_region']
+            for r in regions:
+                per_region[r]['s3'] = {'value': by_region.get(r, 0)}
+            others = sum(n for r, n in by_region.items() if r not in per_region)
+            if others:
+                global_counts['s3'] = {'value': others,
+                                       'regions': sorted(r for r in by_region if r not in per_region)}
 
     totals = {}
     for counts in list(per_region.values()) + [global_counts]:

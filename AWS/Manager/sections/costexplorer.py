@@ -460,6 +460,60 @@ def _cached_series(profile, metric, default_group):
     return series
 
 
+def _cached_month(profile, metric, group_by, series, month):
+    """
+    Un mese di costi senza chiamare AWS: dal Data Export se c'e', altrimenti dalla prima
+    serie in cache che ha quel mese. Ritorna (voce, raggruppamento usato) o (None, None).
+    """
+    try:
+        entry = cur.query(month, profile, 'MONTHLY', metric, group_by)
+        if entry is not None:
+            g = group_by[1]
+            return entry, f"{'TAG' if g['Type'] == 'TAG' else 'DIM'}:{g['Key']}"
+    except Exception as ex:
+        logger.warning(f"Data Export: {month} non utilizzabile: {ex}")
+    for dims in series:
+        e = MonthStore(CACHE_DIR, 'costs', dims).get(month)
+        if e is not None:
+            return {**e, 'source': 'api'}, dims.get('group')
+    return None, None
+
+
+def cached_breakdown(profile, group):
+    """
+    Costi per valore di un tag (group = 'TAG:Project') nel mese piu' recente in cache
+    tra gli ultimi 3, confrontati col mese prima. Solo Data Export e serie gia' in cache
+    con quel raggruppamento: se mancano la Home rimanda al Cost Explorer.
+    """
+    ce = ce_config()
+    metric = ce['default_metric']
+    group_by = [{'Type': 'DIMENSION', 'Key': 'SERVICE'}, parse_group(group)]
+    period = last_months(3)
+    months = requested_months(period['start'], period['end'])
+    series = [d for d in _cached_series(profile, metric, group) if d.get('group') == group]
+
+    def by_value(month):
+        entry, _ = _cached_month(profile, metric, group_by, series, month)
+        if entry is None:
+            return None, None
+        totals = {}
+        for r in entry['rows']:
+            totals[r['keys'][1]] = totals.get(r['keys'][1], 0) + r['amount']
+        return totals, entry.get('source')
+
+    for i in range(len(months) - 1, -1, -1):
+        last, source = by_value(months[i])
+        if last is None:
+            continue
+        prev = by_value(months[i - 1])[0] if i > 0 else None
+        items = [{'key': k, 'amount': round(a, 4),
+                  'previous': None if prev is None else round(prev.get(k, 0), 4)}
+                 for k, a in sorted(last.items(), key=lambda kv: -kv[1]) if a]
+        return {'group': group, 'month': months[i], 'source': source,
+                'previous_cached': prev is not None, 'items': items}
+    return {'group': group, 'month': None, 'items': []}
+
+
 def cached_summary(profile):
     """
     Costi degli ultimi 3 mesi per la Home. Per ogni mese: Data Export se c'e', altrimenti
@@ -475,17 +529,7 @@ def cached_summary(profile):
 
     out_months, rows_by_month = [], {}
     for m in months:
-        entry, used_group = None, group
-        try:
-            entry = cur.query(m, profile, 'MONTHLY', metric, group_by)
-        except Exception as ex:
-            logger.warning(f"Data Export: {m} non utilizzabile: {ex}")
-        if entry is None:
-            for dims in series:
-                e = MonthStore(CACHE_DIR, 'costs', dims).get(m)
-                if e is not None:
-                    entry, used_group = {**e, 'source': 'api'}, dims.get('group')
-                    break
+        entry, used_group = _cached_month(profile, metric, group_by, series, m)
         if entry is None:
             out_months.append({'month': m, 'cached': False})
             continue

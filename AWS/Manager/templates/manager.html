@@ -69,7 +69,7 @@
         </div>
     </div>
     <!-- Dettaglio -->
-    <div class="col-lg-5">
+    <div class="col-lg-5" id="detailCol">
         <div class="card">
             <div class="card-header d-flex justify-content-between align-items-center gap-2">
                 <span class="text-break" id="detailTitle">Dettaglio</span>
@@ -81,7 +81,7 @@
         </div>
     </div>
     <!-- Terzo livello: sotto-risorse, azioni, log -->
-    <div class="col-lg-4">
+    <div class="col-lg-4" id="extraCol">
         <div class="card">
             <div class="card-header d-flex justify-content-between align-items-center gap-2">
                 <span class="text-break" id="extraTitle">&nbsp;</span>
@@ -97,7 +97,7 @@
 {% block scripts %}
 {% if service %}
 <script>
-    Object.assign(window.APP, { service: {{ service|tojson }}, serviceGlobal: {{ current.global|tojson }} });
+    Object.assign(window.APP, { service: {{ service|tojson }}, serviceGlobal: {{ current.global|tojson }}, ddbMaxRead: {{ ddb_max_read }} });
 </script>
 <script src="{{ url_for('static', filename='js/manager.js') }}"></script>
 {% endif %}

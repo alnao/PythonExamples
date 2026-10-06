@@ -34,6 +34,56 @@ function statCard(label, value, note, cls = '', col = 'col-6 col-md-3') {
 
 // ---------------------------------------------------------------- costi
 
+const state = { costs: null, groups: {}, groupSeq: 0 };
+const GROUP_KEY = 'home.costGroup';   // scelta della tendina, solo in questo browser
+
+/* Tabella "Raggruppa per": per servizio dal riepilogo, per tag da /api/home/costs/group
+ * (solo cache e Data Export, come il resto della Home). */
+async function renderBreakdown() {
+    const group = $('costGroup').value;
+    const d = state.costs;
+    if (!d) return;
+    if (group === 'SERVICE') {
+        const cached = (d.months || []).filter(m => m.cached);
+        const last = cached[cached.length - 1];
+        $('servicesTitle').textContent = last ? `Servizi · ${monthLabel(last.month)}` : 'Servizi';
+        $('servicesTable').innerHTML = rowsTable((d.services || []).slice(0, 10), [
+            { title: 'Servizio', get: s => escapeHtml(serviceLabel(s.service)) },
+            { title: 'Mese prima', cls: 'num text-muted', get: s => money(s.previous) },
+            { title: 'Costo', cls: 'num', get: s => money(s.amount) },
+        ], 'Nessun costo in cache per questo profilo');
+        return;
+    }
+    const key = group.slice(4);
+    $('servicesTitle').textContent = `Tag ${key}`;
+    const seq = ++state.groupSeq;
+    let g = state.groups[group];
+    if (!g) {
+        $('servicesTable').innerHTML = loadingHtml();
+        try {
+            g = await apiGet(`/api/home/costs/group?${query({ group })}`);
+            state.groups[group] = g;
+        } catch (e) {
+            if (seq === state.groupSeq) $('servicesTable').innerHTML = `<div class="alert alert-danger py-2 mb-0">Errore: ${escapeHtml(e.message)}</div>`;
+            return;
+        }
+    }
+    if (seq !== state.groupSeq) return;
+    if (!g.month) {
+        $('servicesTable').innerHTML = `<div class="empty-state">Nessuna serie per tag ${escapeHtml(key)} in cache negli ultimi 3 mesi:
+            si carica dal <a href="/costs">Cost Explorer</a> scegliendo ${escapeHtml(key)} in "Secondo grafico per".</div>`;
+        return;
+    }
+    $('servicesTitle').textContent = `Tag ${key} · ${monthLabel(g.month)}`;
+    $('servicesTable').innerHTML = rowsTable(g.items.slice(0, 10), [
+        { title: key, get: x => x.key === '' ? '<span class="text-muted">(senza tag)</span>' : escapeHtml(x.key) },
+        { title: 'Mese prima', cls: 'num text-muted', get: x => money(x.previous) },
+        { title: 'Costo', cls: 'num', get: x => money(x.amount) },
+    ], 'Nessun costo in cache per questo profilo')
+        + (g.items.length > 10 ? `<div class="footer-note">Primi 10 valori su ${g.items.length}</div>` : '')
+        + (g.previous_cached ? '' : '<div class="footer-note">Mese prima non in cache per questo tag</div>');
+}
+
 async function loadCosts() {
     try {
         const d = await apiGet('/api/home/costs');
@@ -81,16 +131,8 @@ function renderCosts(d) {
     }
     $('costKpis').innerHTML = cards.join('');
 
-    // servizi del mese piu' recente in cache
-    const last = cached[cached.length - 1];
-    $('servicesTitle').textContent = last ? `Servizi · ${monthLabel(last.month)}` : 'Servizi';
-    const services = (d.services || []).slice(0, 10);
-    $('servicesTable').innerHTML = rowsTable(services, [
-        { title: 'Servizio', get: s => escapeHtml(serviceLabel(s.service)) },
-        { title: 'Costo', cls: 'num', get: s => money(s.amount) },
-        { title: 'Mese prima', cls: 'num', get: s => money(s.previous) },
-        { title: 'Variazione', cls: 'num', get: s => deltaHtml(s.amount, s.previous) },
-    ], 'Nessun costo in cache per questo profilo');
+    state.costs = d;
+    renderBreakdown();
 
     $('monthsTable').innerHTML = rowsTable(months.slice().reverse(), [
         { title: 'Mese', get: m => escapeHtml(monthLabel(m.month)) },
@@ -110,67 +152,71 @@ function renderCosts(d) {
 
 // ---------------------------------------------------------------- risorse
 
-// (chiave, etichetta, icona, formato del valore, classe in base ai numeri)
-const COUNTERS = [
-    ['ec2', 'EC2 accese', 'fa-server', c => `${c.value} / ${c.total}`, c => c.value ? 'stat-ok' : ''],
-    ['rds', 'RDS disponibili', 'fa-database', c => `${c.value} / ${c.total}`, c => c.value ? 'stat-ok' : ''],
-    ['lambda', 'Funzioni Lambda', 'fa-bolt', c => c.value, () => ''],
-    ['dynamodb', 'Tabelle DynamoDB', 'fa-table', c => c.value, () => ''],
-    ['load_balancers', 'Load balancer', 'fa-scale-balanced', c => c.value, c => c.value ? 'stat-warning' : ''],
-    ['nat', 'NAT Gateway', 'fa-route', c => c.value, c => c.value ? 'stat-warning' : ''],
-    ['eip', 'Elastic IP non associati', 'fa-location-dot', c => `${c.value} / ${c.total}`, c => c.value ? 'stat-warning' : ''],
-    ['alarms', 'Allarmi in ALARM', 'fa-bell', c => `${c.value} / ${c.total}`, c => c.value ? 'stat-danger' : ''],
-    ['s3', 'Bucket S3', 'fa-bucket', c => c.value, () => ''],
-    ['cloudfront', 'CloudFront attive', 'fa-globe', c => `${c.value} / ${c.total}`, () => ''],
+/* Colonne della tabella: (chiave, titolo, icona, formato del valore, classe della cella
+ * in base ai numeri, nota). S3 sta sulla riga della region del bucket, CloudFront e'
+ * globale. */
+const COLUMNS = [
+    ['ec2', 'EC2 accese', 'fa-server', c => `${c.value} / ${c.total}`, c => c.value ? 'cell-ok' : '', 'istanze accese / totali'],
+    ['rds', 'RDS disponibili', 'fa-database', c => `${c.value} / ${c.total}`, c => c.value ? 'cell-ok' : '', 'istanze disponibili / totali'],
+    ['lambda', 'Lambda', 'fa-bolt', c => c.value, () => '', 'funzioni'],
+    ['dynamodb', 'DynamoDB', 'fa-table', c => c.value, () => '', 'tabelle'],
+    ['s3', 'S3', 'fa-bucket', c => c.value, () => '', 'bucket nella region'],
+    ['cloudfront', 'CloudFront', 'fa-globe', c => `${c.value} / ${c.total}`, () => '', 'distribuzioni attive / totali (globale)'],
+    ['load_balancers', 'Load balancer', 'fa-scale-balanced', c => c.value, c => c.value ? 'cell-warning' : '', 'costano anche senza traffico'],
+    ['eip', 'EIP non associati', 'fa-location-dot', c => `${c.value} / ${c.total}`, c => c.value ? 'cell-warning' : '', 'un IP non associato si paga'],
+    ['alarms', 'Allarmi in ALARM', 'fa-bell', c => `${c.value} / ${c.total}`, c => c.value ? 'cell-danger' : '', 'allarmi in stato ALARM / totali'],
 ];
-const NOTES = {
-    load_balancers: 'costano anche senza traffico',
-    nat: 'circa 32 $ al mese ciascuno, piu\' il traffico',
-    eip: 'un IP non associato si paga',
-    alarms: 'allarmi in stato ALARM / totali',
-    s3: 'globale', cloudfront: 'globale',
-};
 
 async function loadResources() {
-    $('resourceKpis').innerHTML = `<div class="col-12">${loadingHtml('Lettura delle risorse da AWS...')}</div>`;
-    $('resourcesTable').innerHTML = '';
+    $('resourcesTable').innerHTML = loadingHtml('Lettura delle risorse da AWS...');
     const started = Date.now();
     try {
         const d = await apiGet('/api/home/resources');
         renderResources(d);
-        $('resourcesHint').textContent = `${d.region === ALL ? `${d.regions.length} region` : d.region} · letto in ${((Date.now() - started) / 1000).toFixed(1)} s`;
+        $('resourcesHint').textContent = `${d.regions.length} region · letto in ${((Date.now() - started) / 1000).toFixed(1)} s`;
     } catch (e) {
-        $('resourceKpis').innerHTML = `<div class="col-12"><div class="alert alert-danger py-2 mb-0">Errore: ${escapeHtml(e.message)}</div></div>`;
+        $('resourcesTable').innerHTML = `<div class="alert alert-danger py-2 mb-0">Errore: ${escapeHtml(e.message)}</div>`;
     }
 }
 
-function renderResources(d) {
-    const totals = d.totals || {};
-    $('resourceKpis').innerHTML = COUNTERS.map(([key, label, icon, fmt, cls]) => {
-        const c = totals[key];
-        const errors = [...d.regions.map(r => r.counts[key]), d.global[key]].filter(x => x && x.error);
-        const note = errors.length ? `<span class="text-danger" title="${escapeHtml(errors.map(e => e.error).join('\n'))}">${errors.length} errori</span>`
-            : (NOTES[key] || '');
-        return statCard(`<i class="fas ${icon} me-1"></i>${label}`, c ? fmt(c) : '–', note, c ? cls(c) : '',
-            'col-6 col-md-4 col-xl-2');
-    }).join('');
+function resourceCell(c, fmt, cls) {
+    if (!c) return '<td class="num"></td>';
+    if (c.error) return `<td class="num"><span class="text-danger" title="${escapeHtml(c.error)}"><i class="fas fa-triangle-exclamation"></i></span></td>`;
+    if (!c.value && !c.total) return '<td class="num"><span class="text-muted">0</span></td>';
+    return `<td class="num ${cls(c)}"><strong>${fmt(c)}</strong></td>`;
+}
 
-    const regional = COUNTERS.filter(([key]) => !['s3', 'cloudfront'].includes(key));
-    $('resourcesTable').innerHTML = rowsTable(d.regions, [
-        { title: 'Region', get: r => regionBadge(r.region) },
-        ...regional.map(([key, label, , fmt]) => ({
-            title: label, cls: 'num',
-            get: r => {
-                const c = r.counts[key];
-                if (!c) return '';
-                if (c.error) return `<span class="text-danger" title="${escapeHtml(c.error)}"><i class="fas fa-triangle-exclamation"></i></span>`;
-                return c.value || c.total ? `<strong>${fmt(c)}</strong>` : '<span class="text-muted">0</span>';
-            },
-        })),
-    ]);
+/* Una riga per region della lista, una per i servizi globali e il totale. */
+function renderResources(d) {
+    const head = '<thead class="table-light"><tr><th>Region</th>'
+        + COLUMNS.map(([, label, icon, , , note]) =>
+            `<th class="num" title="${escapeHtml(note)}"><i class="fas ${icon} me-1 text-secondary"></i>${escapeHtml(label)}</th>`).join('')
+        + '</tr></thead>';
+    const row = (title, counts) => `<tr><td>${title}</td>`
+        + COLUMNS.map(([key, , , fmt, cls]) => resourceCell(counts[key], fmt, cls)).join('') + '</tr>';
+    const g = d.global || {};
+    const globalTitle = '<span class="badge text-bg-light border"><i class="fas fa-earth-europe me-1"></i>globale</span>'
+        + (g.s3 && g.s3.regions ? ` <span class="small text-muted" title="Bucket S3 in region fuori dalla lista">S3: ${escapeHtml(g.s3.regions.join(', '))}</span>` : '');
+    const totals = d.totals || {};
+    const foot = '<tfoot><tr><td>Totale</td>'
+        + COLUMNS.map(([key, , , fmt]) => `<td class="num">${totals[key] ? fmt(totals[key]) : '–'}</td>`).join('')
+        + '</tr></tfoot>';
+    $('resourcesTable').innerHTML = '<div class="table-responsive"><table class="table table-sm table-hover align-middle mb-0 cost-table resources-table">'
+        + head + '<tbody>'
+        + d.regions.map(r => row(regionBadge(r.region), r.counts)).join('')
+        + row(globalTitle, g)
+        + '</tbody>' + foot + '</table></div>';
 }
 
 document.addEventListener('DOMContentLoaded', () => {
+    try {
+        const saved = localStorage.getItem(GROUP_KEY);
+        if (saved && [...$('costGroup').options].some(o => o.value === saved)) $('costGroup').value = saved;
+    } catch (e) { /* storage non disponibile: resta Servizio */ }
+    $('costGroup').addEventListener('change', () => {
+        try { localStorage.setItem(GROUP_KEY, $('costGroup').value); } catch (e) { /* ignorato */ }
+        renderBreakdown();
+    });
     loadCosts();
     loadResources();
     $('btnResources').addEventListener('click', loadResources);

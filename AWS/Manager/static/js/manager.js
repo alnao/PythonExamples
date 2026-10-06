@@ -4,6 +4,7 @@
  * (sotto-risorse, azioni, log). Ogni servizio e' una voce di SERVICES con:
  *   label(item), sub(item)  testo dell'elenco
  *   open(item)              riempie dettaglio e terzo livello
+ *   wideExtra               (facoltativo) terzo livello piu' largo del dettaglio
  * Con la region "Tutte" ogni risorsa porta la sua region (_region): dettagli e azioni
  * vengono chiesti in quella region. Le azioni che modificano AWS chiedono conferma.
  */
@@ -40,16 +41,41 @@ async function mPost(op, body, confirmOpts) {
 
 // ---------------------------------------------------------------- pannelli
 
-function setPanel(which, title, html, actions = '') {
+/* Riempie un pannello. Il dettaglio di una risorsa si apre sempre con i suoi tag
+ * suggeriti (suggestedTagRows); withTags = false per lo spinner di caricamento. */
+function setPanel(which, title, html, actions = '', withTags = true) {
     $(`${which}Title`).innerHTML = title;
-    $(`${which}Body`).innerHTML = html;
+    $(`${which}Body`).innerHTML = which === 'detail' && withTags && item() ? withTagRows(html, item()._tags) : html;
     $(`${which}Actions`).innerHTML = actions;
 }
 
-function panelLoading(which, title) { setPanel(which, title, loadingHtml()); }
+function panelLoading(which, title) { setPanel(which, title, loadingHtml(), '', false); }
 
-function panelError(which, e) {
-    $(`${which}Body`).innerHTML = `<div class="alert alert-danger py-2">${escapeHtml(e.message)}</div>`;
+/* Righe dei tag di suggested_tags (config.json) con il valore sulla risorsa, badge rosso
+ * "mancante" se non c'e'. tags null = tag non determinabili. */
+function suggestedTagRows(tags) {
+    const keys = (APP.tagRules || {}).standard || [];
+    if (!keys.length) return '';
+    const name = (k) => `<span class="badge text-bg-primary"><i class="fas fa-tag me-1"></i>${escapeHtml(k)}</span>`;
+    if (tags === null || tags === undefined) {
+        return `<tr><th>${name('Tag')}</th><td class="text-muted">non determinabili per questa risorsa</td></tr>`;
+    }
+    return keys.map(k => `<tr><th>${name(k)}</th><td>${k in tags
+        ? (tags[k] === '' ? '<span class="text-muted">(vuoto)</span>' : escapeHtml(tags[k]))
+        : '<span class="badge text-bg-danger">mancante</span>'}</td></tr>`).join('');
+}
+
+/* I tag vanno in testa alla tabella delle proprieta' (kvTable) quando e' la prima cosa
+ * del dettaglio; altrimenti (S3, API Gateway, log...) in una tabella con lo stesso
+ * aspetto sopra il contenuto. */
+function withTagRows(html, tags) {
+    const rows = suggestedTagRows(tags);
+    if (!rows) return html;
+    const kv = '<table class="table table-sm table-kv"><tbody>';
+    const i = html.indexOf(kv);
+    const first = i >= 0 && !/<table|<h6/.test(html.slice(0, i));
+    return first ? html.slice(0, i + kv.length) + rows + html.slice(i + kv.length)
+        : kv + rows + '</tbody></table>' + html;
 }
 
 /* Rende sicura l'apertura: gli errori finiscono nel pannello del dettaglio. */
@@ -69,7 +95,10 @@ function stateBadge(s) {
         InProgress: 'warning', FAILED: 'danger', ALARM: 'danger', TIMED_OUT: 'danger', unhealthy: 'danger',
         INSUFFICIENT_DATA: 'warning', ABORTED: 'secondary',
     };
-    return s ? badge(s, map[s] || 'light border') : '';
+    // stati composti (CloudFormation): CREATE_COMPLETE, UPDATE_IN_PROGRESS, ROLLBACK_FAILED...
+    const byPattern = !s ? '' : /FAILED/.test(s) ? 'danger' : /ROLLBACK|IN_PROGRESS|PROVISIONING|PENDING/.test(s) ? 'warning'
+        : /COMPLETE|ACTIVE|RUNNING/.test(s) ? 'success' : '';
+    return s ? badge(s, map[s] || byPattern || 'light border') : '';
 }
 
 function pretty(value) {
@@ -295,22 +324,13 @@ const SERVICES = {
     dynamodb: {
         label: t => t.TableName,
         sub: () => '',
+        wideExtra: true,   // a sinistra le informazioni, a destra (piu' larga) i dati
+        // all'apertura solo la descrizione: le righe si leggono con "Carica dati"
         open: async t => {
             panelLoading('detail', escapeHtml(t.TableName));
-            panelLoading('extra', 'Tabella');
-            const data = await mGet('detail', { table: t.TableName });
-            const keys = (data.table.KeySchema || []).map(k => k.AttributeName);
-            const others = [...new Set(data.items.flatMap(i => Object.keys(i)))].filter(k => !keys.includes(k));
-            const cols = [...keys, ...others].slice(0, 8);
-            setPanel('detail', `${escapeHtml(t.TableName)} &middot; ${data.items.length} righe${data.truncated ? ' (prime)' : ''}`,
-                rowsTable(data.items, cols.map(c => ({
-                    title: c, get: r => {
-                        const v = r[c];
-                        return v !== null && typeof v === 'object' ? `<span class="mono">${escapeHtml(JSON.stringify(v))}</span>` : escapeHtml(v);
-                    },
-                })), 'Tabella vuota')
-                + (others.length + keys.length > 8 ? `<div class="footer-note mt-2">Mostrate 8 colonne su ${others.length + keys.length}</div>` : ''));
-            setPanel('extra', 'Tabella', kvTable(data.table));
+            panelLoading('extra', 'Dati');
+            const desc = await mGet('describe', { table: t.TableName });
+            ddbOpen(desc);
         },
     },
     // ------------------------------------------------ RDS
@@ -527,6 +547,147 @@ const SERVICES = {
                 { title: 'Digest', get: i => `<span class="mono" title="${escapeHtml(i.imageDigest)}">${escapeHtml((i.imageDigest || '').slice(7, 19))}</span>` }], 'Nessuna immagine'));
         },
     },
+    // ------------------------------------------------ CloudFormation
+    cloudformation: {
+        label: st => st.StackName,
+        sub: st => `${st.StackStatus} · ${fmtDate(st.LastUpdatedTime || st.CreationTime)}`,
+        open: async st => {
+            setPanel('detail', `${escapeHtml(st.StackName)} ${stateBadge(st.StackStatus)}`,
+                kvTable(st, ['Parameters', 'Outputs', 'Tags'])
+                + h6(`Parametri (${(st.Parameters || []).length})`) + rowsTable(st.Parameters || [], [
+                    { title: 'Chiave', get: x => `<strong>${escapeHtml(x.ParameterKey)}</strong>` },
+                    { title: 'Valore', get: x => `<span class="mono">${escapeHtml(x.ResolvedValue || x.ParameterValue)}</span>` }], 'Nessun parametro')
+                + h6(`Output (${(st.Outputs || []).length})`) + rowsTable(st.Outputs || [], [
+                    { title: 'Chiave', get: x => `<strong>${escapeHtml(x.OutputKey)}</strong>${x.Description ? `<div class="small text-muted">${escapeHtml(x.Description)}</div>` : ''}` },
+                    { title: 'Valore', get: x => `<span class="mono">${escapeHtml(x.OutputValue)}</span>` },
+                    { title: 'Export', get: x => escapeHtml(x.ExportName || '') }], 'Nessun output'));
+            panelLoading('extra', 'Risorse');
+            const data = await mGet('detail', { stack: st.StackName });
+            const tabs = `<div class="btn-group btn-group-sm" role="group">
+                <button class="btn btn-outline-secondary btn-xs active" data-tab="resources">Risorse (${data.resources.length})</button>
+                <button class="btn btn-outline-secondary btn-xs" data-tab="events">Eventi</button>
+                <button class="btn btn-outline-secondary btn-xs" data-tab="template">Template</button></div>`;
+            const show = async (tab) => {
+                $('extraActions').querySelectorAll('[data-tab]').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+                if (tab === 'resources') {
+                    $('extraBody').innerHTML = rowsTable(data.resources, [
+                        { title: 'Logico', get: r => `<strong>${escapeHtml(r.LogicalResourceId)}</strong><div class="small text-muted">${escapeHtml(r.ResourceType)}</div>` },
+                        { title: 'Fisico', get: r => `<span class="mono">${escapeHtml(r.PhysicalResourceId || '')}</span>` },
+                        { title: 'Stato', get: r => stateBadge(r.ResourceStatus) + ((r.DriftInformation || {}).StackResourceDriftStatus === 'MODIFIED' ? ' ' + badge('drift', 'warning') : '') }], 'Nessuna risorsa');
+                } else if (tab === 'events') {
+                    $('extraBody').innerHTML = rowsTable(data.events, [
+                        { title: 'Quando', get: e => escapeHtml(fmtDate(e.Timestamp)) },
+                        { title: 'Risorsa', get: e => `${escapeHtml(e.LogicalResourceId)}<div class="small text-muted">${escapeHtml(e.ResourceType)}</div>` },
+                        { title: 'Stato', get: e => stateBadge(e.ResourceStatus) + (e.ResourceStatusReason ? `<div class="small text-muted text-wrap">${escapeHtml(e.ResourceStatusReason)}</div>` : '') }], 'Nessun evento');
+                } else {
+                    $('extraBody').innerHTML = loadingHtml();
+                    try {
+                        data.template = data.template !== undefined ? data.template : await mGet('template', { stack: st.StackName });
+                        $('extraBody').innerHTML = typeof data.template === 'string'
+                            ? `<pre class="json">${escapeHtml(data.template)}</pre>` : pretty(data.template);
+                    } catch (e) { panelError('extra', e); }
+                }
+            };
+            setPanel('extra', 'Stack', '', tabs);
+            $('extraActions').querySelectorAll('[data-tab]').forEach(b => b.addEventListener('click', () => show(b.dataset.tab)));
+            show('resources');
+        },
+    },
+    // ------------------------------------------------ Route 53
+    route53: {
+        label: z => z.Name,
+        sub: z => `${z.ResourceRecordSetCount} record · ${(z.Config || {}).PrivateZone ? 'privata' : 'pubblica'}`,
+        open: async z => {
+            setPanel('detail', `${escapeHtml(z.Name)} ${badge((z.Config || {}).PrivateZone ? 'privata' : 'pubblica', 'info')}`, kvTable(z));
+            panelLoading('extra', 'Record');
+            const records = await mGet('records', { id: z.Id });
+            setPanel('extra', `Record (${records.length})`, rowsTable(records, [
+                { title: 'Nome', get: r => `<span class="mono">${escapeHtml(r.Name)}</span>` },
+                { title: 'Tipo', get: r => badge(r.Type, 'secondary') },
+                { title: 'TTL', cls: 'num', get: r => escapeHtml(r.TTL !== undefined ? r.TTL : '') },
+                { title: 'Valore', get: r => r.AliasTarget
+                    ? `<span class="mono">${escapeHtml(r.AliasTarget.DNSName)}</span> ${badge('alias', 'info')}`
+                    : (r.ResourceRecords || []).map(v => `<div class="mono text-break">${escapeHtml(v.Value)}</div>`).join('') }], 'Nessun record'));
+        },
+    },
+    // ------------------------------------------------ Secrets Manager
+    secrets: {
+        label: x => x.Name,
+        sub: x => `modificato ${fmtDate(x.LastChangedDate || x.CreatedDate)}${x.RotationEnabled ? ' · rotazione attiva' : ''}`,
+        open: async x => {
+            panelLoading('detail', escapeHtml(x.Name));
+            const d = await mGet('detail', { id: x.ARN });
+            setPanel('detail', escapeHtml(x.Name), kvTable(d, ['ResponseMetadata', 'Tags', 'VersionIdsToStages'])
+                + h6('Versioni') + rowsTable(Object.entries(d.VersionIdsToStages || {}), [
+                    { title: 'Versione', get: v => `<span class="mono">${escapeHtml(v[0])}</span>` },
+                    { title: 'Stadi', get: v => v[1].map(t => badge(t, t === 'AWSCURRENT' ? 'success' : 'secondary')).join(' ') }], 'Nessuna versione'));
+            // il valore si legge solo col pulsante e si puo' nascondere di nuovo
+            const hide = () => {
+                setPanel('extra', 'Valore', `<div class="empty-state">Il valore non viene letto all'apertura.<br>
+                    <button class="btn btn-sm btn-warning mt-2" id="btnSecret"><i class="fas fa-eye me-1"></i>Mostra valore</button></div>
+                    <div class="footer-note">Legge la versione AWSCURRENT con GetSecretValue (registrato in CloudTrail).</div>`);
+                $('btnSecret').addEventListener('click', () => guarded('extra', async () => {
+                    const v = await mGet('value', { id: x.ARN });
+                    setPanel('extra', `Valore <span class="mono small">${escapeHtml((v.VersionId || '').slice(0, 8))}</span>`,
+                        v.Binary ? '<div class="empty-state">Segreto binario: non mostrato</div>' : pretty(v.SecretString),
+                        '<button class="btn btn-sm btn-outline-secondary btn-xs" id="btnSecretHide"><i class="fas fa-eye-slash me-1"></i>Nascondi</button>');
+                    $('btnSecretHide').addEventListener('click', hide);
+                }));
+            };
+            hide();
+        },
+    },
+    // ------------------------------------------------ ECS
+    ecs: {
+        label: c => c.clusterName,
+        sub: c => `${c.status} · ${c.activeServicesCount} servizi · ${c.runningTasksCount} task attivi`,
+        open: async c => {
+            panelLoading('detail', escapeHtml(c.clusterName));
+            panelLoading('extra', 'Task');
+            const data = await mGet('detail', { cluster: c.clusterArn });
+            setPanel('detail', `${escapeHtml(c.clusterName)} ${stateBadge(c.status)}`, kvTable(c, ['tags', 'statistics'])
+                + h6(`Servizi (${data.services.length})`) + rowsTable(data.services, [
+                    { title: 'Servizio', get: x => `<strong>${escapeHtml(x.serviceName)}</strong><div class="small text-muted">${escapeHtml((x.taskDefinition || '').split('/').pop())}</div>` },
+                    { title: 'Stato', get: x => stateBadge(x.status) },
+                    { title: 'Task', cls: 'num', get: x => `${x.runningCount} / ${x.desiredCount}${x.pendingCount ? ` (+${x.pendingCount})` : ''}` },
+                    { title: 'Tipo', get: x => escapeHtml(x.launchType || ((x.capacityProviderStrategy || [])[0] || {}).capacityProvider || '') }], 'Nessun servizio'));
+            setPanel('extra', `Task (${data.tasks.length})`, rowsTable(data.tasks, [
+                { title: 'Task', get: t => `<span class="mono">${escapeHtml(t.taskArn.split('/').pop().slice(0, 12))}</span><div class="small text-muted">${escapeHtml((t.taskDefinitionArn || '').split('/').pop())}</div>` },
+                { title: 'Stato', get: t => stateBadge(t.lastStatus) },
+                { title: 'Avviato', get: t => escapeHtml(fmtDate(t.startedAt)) },
+                { title: 'CPU/Mem', get: t => escapeHtml(`${t.cpu || ''} / ${t.memory || ''}`) }], 'Nessun task attivo'));
+        },
+    },
+    // ------------------------------------------------ VPC
+    vpc: {
+        label: v => v.Nome || v.VpcId,
+        sub: v => `${v.VpcId} · ${v.CidrBlock}${v.IsDefault ? ' · default' : ''}`,
+        open: async v => {
+            setPanel('detail', `${escapeHtml(v.Nome || v.VpcId)} ${stateBadge(v.State)}${v.IsDefault ? ' ' + badge('default', 'info') : ''}`, kvTable(v, ['Tags', 'Nome']));
+            panelLoading('extra', 'Rete');
+            const n = await mGet('network', { id: v.VpcId });
+            const route = r => `${escapeHtml(r.DestinationCidrBlock || r.DestinationIpv6CidrBlock || r.DestinationPrefixListId || '')} → `
+                + escapeHtml(r.GatewayId || r.NatGatewayId || r.TransitGatewayId || r.VpcPeeringConnectionId || r.NetworkInterfaceId || r.InstanceId || '');
+            setPanel('extra', 'Rete', h6(`Subnet (${n.subnets.length})`) + rowsTable(n.subnets, [
+                    { title: 'Subnet', get: x => `${escapeHtml(x.Nome || x.SubnetId)}${x.Nome ? `<div class="small text-muted mono">${escapeHtml(x.SubnetId)}</div>` : ''}` },
+                    { title: 'CIDR', get: x => `<span class="mono">${escapeHtml(x.CidrBlock)}</span>` },
+                    { title: 'AZ', get: x => escapeHtml(x.AvailabilityZone) },
+                    { title: 'IP liberi', cls: 'num', get: x => escapeHtml(x.AvailableIpAddressCount) },
+                    { title: 'IP pubblico', get: x => x.MapPublicIpOnLaunch ? badge('sì', 'warning') : '' }], 'Nessuna subnet')
+                + h6(`Route table (${n.route_tables.length})`) + rowsTable(n.route_tables, [
+                    { title: 'ID', get: t => `<span class="mono">${escapeHtml(t.RouteTableId)}</span>${(t.Associations || []).some(a => a.Main) ? ' ' + badge('main', 'info') : ''}` },
+                    { title: 'Route', get: t => (t.Routes || []).map(r => `<div class="mono small">${route(r)}</div>`).join('') },
+                    { title: 'Subnet', cls: 'num', get: t => (t.Associations || []).filter(a => a.SubnetId).length }], 'Nessuna route table')
+                + h6('Gateway') + rowsTable([
+                    ...n.internet_gateways.map(g => ({ id: g.InternetGatewayId, type: 'Internet gateway', state: ((g.Attachments || [])[0] || {}).State })),
+                    ...n.nat_gateways.map(g => ({ id: g.NatGatewayId, type: `NAT gateway (${g.ConnectivityType || 'public'})`, state: g.State,
+                        note: ((g.NatGatewayAddresses || [])[0] || {}).PublicIp })),
+                ], [
+                    { title: 'ID', get: g => `<span class="mono">${escapeHtml(g.id)}</span>` },
+                    { title: 'Tipo', get: g => escapeHtml(g.type) + (g.note ? `<div class="small text-muted mono">${escapeHtml(g.note)}</div>` : '') },
+                    { title: 'Stato', get: g => stateBadge(g.state) }], 'Nessun gateway'));
+        },
+    },
 };
 
 // ---------------------------------------------------------------- S3: navigazione e upload
@@ -605,6 +766,224 @@ async function s3Upload(bucket, prefix) {
     }
 }
 
+// ---------------------------------------------------------------- DynamoDB
+
+/* Lettura delle righe pensata per tabelle grandi (vedi aws/services/dynamodb.py):
+ * con il valore della partition key e' una Query (solo quella partizione), senza e' uno
+ * Scan; in entrambi i casi una pagina alla volta, con "Carica altre righe" che riparte
+ * dall'ultima chiave letta. Il filtro sugli attributi riduce le righe mostrate, non
+ * quelle lette (e consumate). */
+const ddb = { desc: null, items: [], next: null, params: null, seq: 0, totals: null };
+
+const SORT_OPS = [['', 'nessuna condizione'], ['=', '='], ['<', '<'], ['<=', '≤'], ['>', '>'], ['>=', '≥'],
+    ['begins_with', 'inizia con'], ['between', 'tra']];
+const FILTER_OPS = [['=', '='], ['<>', '≠'], ['<', '<'], ['<=', '≤'], ['>', '>'], ['>=', '≥'],
+    ['contains', 'contiene'], ['begins_with', 'inizia con'],
+    ['attribute_exists', 'esiste'], ['attribute_not_exists', 'non esiste']];
+const TYPE_NAMES = { S: 'stringa', N: 'numero', B: 'binario' };
+
+function ddbKeys(desc, index) {
+    const types = Object.fromEntries((desc.AttributeDefinitions || []).map(a => [a.AttributeName, a.AttributeType]));
+    let schema = desc.KeySchema;
+    if (index) {
+        const all = [...(desc.GlobalSecondaryIndexes || []), ...(desc.LocalSecondaryIndexes || [])];
+        schema = (all.find(i => i.IndexName === index) || {}).KeySchema || [];
+    }
+    const of = (kind) => {
+        const k = schema.find(x => x.KeyType === kind);
+        return k ? { name: k.AttributeName, type: types[k.AttributeName] || 'S' } : null;
+    };
+    return { partition: of('HASH'), sort: of('RANGE') };
+}
+
+function ddbOpen(desc) {
+    ddb.desc = desc;
+    ddb.items = [];
+    ddb.next = null;
+    ddb.totals = null;
+    const opts = (list) => list.map(([v, t]) => `<option value="${escapeHtml(v)}">${escapeHtml(t)}</option>`).join('');
+    const indexes = [
+        ...(desc.GlobalSecondaryIndexes || []).map(i => [i.IndexName, `GSI ${i.IndexName}`]),
+        ...(desc.LocalSecondaryIndexes || []).map(i => [i.IndexName, `LSI ${i.IndexName}`]),
+    ];
+    const size = desc.ItemCount !== undefined
+        ? `<span class="badge text-bg-light border ms-1" title="Valori aggiornati da AWS circa ogni 6 ore">~${Number(desc.ItemCount).toLocaleString('it-IT')} righe · ${escapeHtml(fmtBytes(desc.TableSizeBytes))}</span>` : '';
+    const attrs = [...new Set((desc.AttributeDefinitions || []).map(a => a.AttributeName))];
+    ddb.title = `${escapeHtml(desc.TableName)}${size}`;
+    ddbShowTable();
+    setPanel('extra', 'Dati', `
+        <div class="toolbar ddb-form mb-2" id="ddbForm">
+            <div class="ddb-group">
+                <div class="ddb-field" style="--w: 9rem"><label class="form-label" for="ddbIndex">Indice</label>
+                    <select class="form-select form-select-sm" id="ddbIndex"><option value="">Tabella</option>${opts(indexes)}</select></div>
+                <div class="ddb-field" style="--w: 14rem; --grow: 3"><label class="form-label text-truncate" for="ddbPk" id="ddbPkLabel">Partition key</label>
+                    <input type="text" class="form-control form-control-sm" id="ddbPk" placeholder="vuoto = Scan di tutta la tabella"></div>
+            </div>
+            <div class="ddb-group" id="ddbSortGroup">
+                <div class="ddb-field" id="ddbSortBox" style="--w: 11rem; --grow: 0"><label class="form-label text-truncate" for="ddbSortOp" id="ddbSortLabel">Sort key</label>
+                    <select class="form-select form-select-sm" id="ddbSortOp">${opts(SORT_OPS)}</select></div>
+                <div class="ddb-field" id="ddbSortValBox" style="--w: 8rem"><label class="form-label" for="ddbSortVal">Valore</label>
+                    <input type="text" class="form-control form-control-sm" id="ddbSortVal"></div>
+                <div class="ddb-field d-none" id="ddbSortVal2Box" style="--w: 8rem"><label class="form-label" for="ddbSortVal2">e</label>
+                    <input type="text" class="form-control form-control-sm" id="ddbSortVal2"></div>
+                <div class="ddb-field ddb-fixed" id="ddbDescBox"><div class="form-check mb-1" title="Ordine della sort key (solo Query)">
+                    <input class="form-check-input" type="checkbox" id="ddbDesc"><label class="form-check-label" for="ddbDesc">Decrescente</label></div></div>
+            </div>
+            <div class="ddb-group">
+                <div class="ddb-field" style="--w: 9rem"><label class="form-label text-truncate" for="ddbFAttr" title="Si applica dopo la lettura: riduce le righe mostrate, non quelle lette">Filtro su attributo <i class="fas fa-circle-info text-muted"></i></label>
+                    <input type="text" class="form-control form-control-sm" id="ddbFAttr" list="ddbAttrs" placeholder="nessun filtro">
+                    <datalist id="ddbAttrs">${attrs.map(a => `<option value="${escapeHtml(a)}">`).join('')}</datalist></div>
+                <div class="ddb-field" style="--w: 7rem; --grow: 0"><label class="form-label" for="ddbFOp">Operatore</label>
+                    <select class="form-select form-select-sm" id="ddbFOp">${opts(FILTER_OPS)}</select></div>
+                <div class="ddb-field" style="--w: 8rem"><label class="form-label" for="ddbFVal">Valore</label>
+                    <input type="text" class="form-control form-control-sm" id="ddbFVal"></div>
+                <div class="ddb-field" style="--w: 6.5rem; --grow: 0"><label class="form-label" for="ddbFType">Tipo</label>
+                    <select class="form-select form-select-sm" id="ddbFType"><option value="S">stringa</option><option value="N">numero</option><option value="BOOL">booleano</option></select></div>
+            </div>
+            <div class="ddb-group ddb-actions">
+                <div class="ddb-field" style="--w: 5rem; --grow: 0"><label class="form-label" for="ddbPage">Righe</label>
+                    <select class="form-select form-select-sm" id="ddbPage"><option>25</option><option selected>100</option><option>250</option><option>500</option></select></div>
+                <div class="ddb-field ddb-fixed d-flex gap-1">
+                    <button class="btn btn-sm btn-outline-secondary" id="ddbClear" title="Azzera chiavi e filtro"><i class="fas fa-eraser"></i></button>
+                    <button class="btn btn-sm btn-primary text-nowrap" id="ddbLoad"><i class="fas fa-download me-1"></i>Carica dati</button>
+                </div>
+            </div>
+        </div>
+        <div class="footer-note mb-2" id="ddbMode"></div>
+        <div id="ddbResults"><div class="empty-state">Le righe non vengono lette all'apertura: scegli chiavi e filtri e premi <strong>Carica dati</strong></div></div>`);
+
+    const sync = () => {
+        const keys = ddbKeys(desc, $('ddbIndex').value);
+        $('ddbPkLabel').textContent = $('ddbPkLabel').title = `Partition key ${keys.partition.name} (${TYPE_NAMES[keys.partition.type] || keys.partition.type})`;
+        const hasSort = !!keys.sort;
+        $('ddbSortLabel').textContent = $('ddbSortLabel').title = hasSort ? `Sort key ${keys.sort.name} (${TYPE_NAMES[keys.sort.type] || keys.sort.type})` : 'Sort key';
+        $('ddbSortGroup').classList.toggle('d-none', !hasSort);
+        if (!hasSort) $('ddbSortOp').value = '';
+        const op = $('ddbSortOp').value;
+        const query = $('ddbPk').value !== '';
+        $('ddbSortOp').disabled = $('ddbSortVal').disabled = $('ddbDesc').disabled = !query;
+        $('ddbSortVal2Box').classList.toggle('d-none', op !== 'between');
+        $('ddbSortValBox').classList.toggle('d-none', !hasSort || !op);
+        const noValue = ['attribute_exists', 'attribute_not_exists'].includes($('ddbFOp').value);
+        $('ddbFVal').disabled = $('ddbFType').disabled = noValue;
+        const where = $('ddbIndex').value ? `l'indice ${$('ddbIndex').value}` : 'la tabella';
+        $('ddbMode').innerHTML = query
+            ? `<i class="fas fa-bolt me-1 text-success"></i><strong>Query</strong>: legge solo le righe con ${escapeHtml(keys.partition.name)} = valore indicato`
+                + (op ? ' e la condizione sulla sort key' : '') + '.'
+            : `<i class="fas fa-triangle-exclamation me-1 text-warning"></i><strong>Scan</strong> di ${escapeHtml(where)}, una pagina alla volta: `
+                + ($('ddbFAttr').value.trim() ? `con il filtro si leggono al massimo ${Number(APP.ddbMaxRead).toLocaleString('it-IT')} righe per clic, anche se ne passano poche. ` : '')
+                + 'Per tabelle grandi conviene la Query sulla partition key (o su un indice).';
+    };
+    ['ddbIndex', 'ddbSortOp', 'ddbFOp'].forEach(id => $(id).addEventListener('change', sync));
+    ['ddbPk', 'ddbFAttr'].forEach(id => $(id).addEventListener('input', sync));
+    $('ddbForm').addEventListener('keydown', (ev) => { if (ev.key === 'Enter' && ev.target.tagName === 'INPUT') ddbLoad(false); });
+    $('ddbLoad').addEventListener('click', () => ddbLoad(false));
+    $('ddbClear').addEventListener('click', () => {
+        ['ddbPk', 'ddbSortVal', 'ddbSortVal2', 'ddbFAttr', 'ddbFVal'].forEach(id => { $(id).value = ''; });
+        $('ddbSortOp').value = '';
+        $('ddbDesc').checked = false;
+        sync();
+    });
+    sync();
+}
+
+function ddbFormParams() {
+    const pk = $('ddbPk').value;
+    const sortOp = pk !== '' ? $('ddbSortOp').value : '';
+    const fAttr = $('ddbFAttr').value.trim();
+    return {
+        table: ddb.desc.TableName, index: $('ddbIndex').value, pk,
+        sort_op: sortOp, sort_value: sortOp ? $('ddbSortVal').value : '',
+        sort_value2: sortOp === 'between' ? $('ddbSortVal2').value : '',
+        descending: pk !== '' && $('ddbDesc').checked ? '1' : '',
+        filter_attr: fAttr, filter_op: fAttr ? $('ddbFOp').value : '',
+        filter_value: fAttr ? $('ddbFVal').value : '', filter_type: $('ddbFType').value,
+        page_size: $('ddbPage').value,
+    };
+}
+
+/* more = false: nuova ricerca dai campi; true: pagina successiva della ricerca precedente. */
+async function ddbLoad(more) {
+    if (!more) {
+        ddb.params = ddbFormParams();
+        ddb.items = [];
+        ddb.next = null;
+        ddb.totals = { scanned: 0, capacity: 0, requests: 0 };
+    }
+    const seq = ++ddb.seq;
+    const table = ddb.desc.TableName;
+    const btn = more ? $('ddbMore') : $('ddbLoad');
+    if (btn) { btn.disabled = true; btn.insertAdjacentHTML('afterbegin', '<span class="spinner-border spinner-border-sm me-1"></span>'); }
+    try {
+        const d = await mGet('items', { ...ddb.params, ...(more && ddb.next ? { start: ddb.next } : {}) });
+        if (seq !== ddb.seq || !ddb.desc || ddb.desc.TableName !== table) return;
+        ddb.items = ddb.items.concat(d.items);
+        ddb.next = d.next;
+        ddb.totals.scanned += d.scanned;
+        ddb.totals.capacity += d.capacity;
+        ddb.totals.requests += 1;
+        ddb.mode = d.mode;
+        ddb.stopped = d.stopped;
+        ddbRenderResults();
+    } catch (e) {
+        if (seq === ddb.seq) $('ddbResults').innerHTML = `<div class="alert alert-danger py-2">${escapeHtml(e.message)}</div>`;
+    } finally {
+        const b = more ? $('ddbMore') : $('ddbLoad');
+        if (b) { b.disabled = false; const sp = b.querySelector('.spinner-border'); if (sp) sp.remove(); }
+    }
+}
+
+function ddbCell(v) {
+    if (v === null || v === undefined) return '';
+    if (typeof v === 'object') return `<span class="mono">${escapeHtml(JSON.stringify(v))}</span>`;
+    return escapeHtml(String(v));
+}
+
+function ddbRenderResults() {
+    const index = ddb.params.index;
+    const keys = ddbKeys(ddb.desc, index);
+    const keyCols = [...new Set([keys.partition.name, ...(keys.sort ? [keys.sort.name] : []),
+        ...ddb.desc.KeySchema.map(k => k.AttributeName)])];
+    const others = [...new Set(ddb.items.flatMap(i => Object.keys(i)))].filter(k => !keyCols.includes(k)).sort();
+    const cols = [...keyCols, ...others].slice(0, 12);
+    const t = ddb.totals;
+    const info = `${ddb.mode === 'query' ? 'Query' : 'Scan'}${index ? ` su ${escapeHtml(index)}` : ''}: `
+        + `<strong>${ddb.items.length.toLocaleString('it-IT')}</strong> righe mostrate, ${t.scanned.toLocaleString('it-IT')} lette`
+        + ` &middot; ${t.capacity.toLocaleString('it-IT', { maximumFractionDigits: 2 })} RCU consumate`
+        + (ddb.next ? ' &middot; ci sono altre righe' : ' &middot; fine dei dati');
+    const table = ddb.items.length
+        ? '<div class="table-responsive ddb-table"><table class="table table-sm table-hover align-middle mb-0"><thead><tr>'
+            + cols.map(c => `<th${keyCols.includes(c) ? ' class="text-primary"' : ''}>${escapeHtml(c)}</th>`).join('') + '</tr></thead><tbody>'
+            + ddb.items.map((r, i) => `<tr class="clickable" data-row="${i}">` + cols.map(c => `<td>${ddbCell(r[c])}</td>`).join('') + '</tr>').join('')
+            + '</tbody></table></div>'
+        : '<div class="empty-state">Nessuna riga con queste condizioni</div>';
+    $('ddbResults').innerHTML = `<div class="small mb-1">${info}</div>`
+        + (ddb.stopped ? `<div class="alert alert-warning py-1 mb-1 small">Fermato dopo ${t.scanned.toLocaleString('it-IT')} righe lette
+            (manager.dynamodb_max_read in config.json): il filtro ne scarta molte. Continua con <strong>Carica altre righe</strong> o usa una Query.</div>` : '')
+        + table
+        + `<div class="footer-note mt-1">${cols.length < keyCols.length + others.length ? `Mostrate ${cols.length} colonne su ${keyCols.length + others.length}: ` : ''}clic su una riga per vederla intera a sinistra</div>`
+        + (ddb.next ? `<div class="text-center mt-2"><button class="btn btn-sm btn-outline-primary" id="ddbMore"><i class="fas fa-angles-down me-1"></i>Carica altre righe</button></div>` : '');
+    $('ddbResults').querySelectorAll('tr[data-row]').forEach(tr => tr.addEventListener('click', () => {
+        $('ddbResults').querySelectorAll('tr.table-active').forEach(x => x.classList.remove('table-active'));
+        tr.classList.add('table-active');
+        ddbShowItem(ddb.items[Number(tr.dataset.row)]);
+    }));
+    if ($('ddbMore')) $('ddbMore').addEventListener('click', () => ddbLoad(true));
+}
+
+// Informazioni della tabella (con i tag) nel dettaglio, a sinistra dei dati
+function ddbShowTable() {
+    setPanel('detail', ddb.title, kvTable(ddb.desc));
+    $('ddbResults') && $('ddbResults').querySelectorAll('tr.table-active').forEach(x => x.classList.remove('table-active'));
+}
+
+// Riga scelta nei dati: intera al posto delle informazioni, finche' non si torna indietro
+function ddbShowItem(row) {
+    setPanel('detail', `${ddb.title} &middot; riga`, pretty(row),
+        '<button class="btn btn-sm btn-outline-secondary btn-xs" id="ddbBack"><i class="fas fa-table me-1"></i>Descrizione tabella</button>', false);
+    $('ddbBack').addEventListener('click', ddbShowTable);
+}
+
 // ---------------------------------------------------------------- elenco
 
 async function loadList() {
@@ -658,6 +1037,10 @@ function replaceItem(updated) {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
+    if (SERVICES[SVC].wideExtra) {
+        $('detailCol').className = 'col-lg-3';
+        $('extraCol').className = 'col-lg-6';
+    }
     loadList();
     $('btnReload').addEventListener('click', loadList);
     $('itemSearch').addEventListener('input', debounce(renderList, 150));

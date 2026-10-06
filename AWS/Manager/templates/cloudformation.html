@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+{% from "_macros.html" import region_select, page_header with context %}
+{% block title %}CloudFormation - AlNao AWS Manager{% endblock %}
+{% block content %}
+
+{% call page_header('CloudFormation', 'Risorse gestite da CloudFormation, stack per stack, con i tag', 'fa-layer-group') %}{% endcall %}
+
+<div class="card mb-3 toolbar">
+    <div class="card-body py-2">
+        <div class="d-flex flex-wrap align-items-end gap-2">
+            {{ region_select('cfnRegion') }}
+            <button class="btn btn-sm btn-primary" id="btnLoad"><i class="fas fa-download me-1"></i>Carica</button>
+            <div class="form-check form-switch mb-1 ms-1"
+                 title="I tag delle risorse vengono dalla cache del Tag Manager (fino a un'ora): con questa opzione si rileggono da AWS">
+                <input class="form-check-input" type="checkbox" id="cfnRefresh">
+                <label class="form-check-label" for="cfnRefresh">Rileggi i tag</label>
+            </div>
+            <span class="footer-note mb-1">Stack con describe_stacks e list_stack_resources, tag dalla Tagging API: letture gratuite</span>
+        </div>
+
+        <div class="d-none" id="cfnFilters">
+            <hr class="my-2">
+            <div class="d-flex flex-wrap align-items-end gap-2">
+                <div class="tf-filter-search">
+                    <label for="cfnSearch" class="form-label">Cerca</label>
+                    <input type="text" class="form-control form-control-sm" id="cfnSearch" placeholder="risorsa, id, ARN, tag...">
+                </div>
+                <div>
+                    <label for="cfnType" class="form-label">Tipo</label>
+                    <select class="form-select form-select-sm" id="cfnType"></select>
+                </div>
+                <div>
+                    <label for="cfnResRegion" class="form-label">Region</label>
+                    <select class="form-select form-select-sm" id="cfnResRegion"></select>
+                </div>
+                <div>
+                    <label for="cfnTagKey" class="form-label"><i class="fas fa-tag me-1"></i>Tag</label>
+                    <select class="form-select form-select-sm" id="cfnTagKey"></select>
+                </div>
+                <div>
+                    <label for="cfnTagValue" class="form-label" id="cfnTagValueLabel">Valore</label>
+                    <select class="form-select form-select-sm" id="cfnTagValue"></select>
+                </div>
+                <div class="tf-filter-state">
+                    <label for="cfnStack" class="form-label">Stack</label>
+                    <select class="form-select form-select-sm" id="cfnStack"></select>
+                </div>
+                <div>
+                    <label for="cfnStatus" class="form-label">Stato</label>
+                    <select class="form-select form-select-sm" id="cfnStatus"></select>
+                </div>
+                <div class="form-check form-switch mb-1" title="Risorse che supportano i tag ma non hanno tutti i tag obbligatori (tag_manager.required_tags)">
+                    <input class="form-check-input" type="checkbox" id="cfnMissing">
+                    <label class="form-check-label" for="cfnMissing">Solo tag mancanti</label>
+                </div>
+                <div class="ms-auto d-flex gap-1">
+                    <button class="btn btn-sm btn-outline-secondary" id="btnExpand" title="Apre i tag di tutte le righe mostrate"><i class="fas fa-angles-down"></i></button>
+                    <button class="btn btn-sm btn-outline-secondary" id="btnCollapse" title="Chiude i tag di tutte le righe"><i class="fas fa-angles-up"></i></button>
+                    <button class="btn btn-sm btn-outline-secondary" id="btnReset"><i class="fas fa-filter-circle-xmark me-1"></i>Azzera filtri</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="alertBox"></div>
+
+<!-- Stack letti -->
+<div class="card mb-3 d-none" id="stacksCard">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <span><i class="fas fa-layer-group me-2 text-secondary"></i>Stack <span class="badge text-bg-light border ms-1" id="stacksCount">0</span>
+            <span class="card-hint ms-2">clic su uno stack per filtrare le sue risorse</span></span>
+        <button class="btn btn-sm btn-outline-secondary btn-xs" data-bs-toggle="collapse" data-bs-target="#stacksBody">
+            <i class="fas fa-chevron-down"></i></button>
+    </div>
+    <div class="collapse" id="stacksBody"><div id="stacksTable"></div></div>
+</div>
+
+<!-- Risorse -->
+<div id="resources">
+    <div class="empty-state py-5">
+        <i class="fas fa-layer-group fa-2x mb-3 d-block"></i>
+        Scegli la region (o Tutte) e premi <strong>Carica</strong>.
+    </div>
+</div>
+
+<button class="back-to-top" id="backToTop" title="Torna all'inizio"><i class="fas fa-chevron-up"></i></button>
+
+{% endblock %}
+{% block scripts %}
+<script>
+    // suggestedKeys: le chiavi di suggested_tags nell'ordine di config.json (tojson le riordina)
+    Object.assign(window.APP, { requiredTags: {{ required_tags|tojson }}, prefixMatchKeys: {{ prefix_match_keys|tojson }},
+        suggestedKeys: {{ suggested_tags.keys()|list|tojson }} });
+    // tag suggeriti con i valori, per le tendine (tag_match.js)
+    window.suggestedTags = {{ suggested_tags|tojson }};
+</script>
+<script src="{{ url_for('static', filename='js/tag_match.js') }}"></script>
+<script src="{{ url_for('static', filename='js/iac_common.js') }}"></script>
+<script src="{{ url_for('static', filename='js/cloudformation.js') }}"></script>
+{% endblock %}

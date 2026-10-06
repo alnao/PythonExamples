@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+{% from "_macros.html" import page_header with context %}
+{% block title %}Terraform - AlNao AWS Manager{% endblock %}
+{% block content %}
+
+{% call page_header('Terraform', 'Risorse gestite da Terraform, dagli state salvati sui bucket S3', 'fa-cubes-stacked') %}{% endcall %}
+
+<div class="card mb-3 toolbar">
+    <div class="card-body py-2">
+        <div class="d-flex flex-wrap align-items-end gap-2">
+            <div>
+                <label for="tfBucket" class="form-label"><i class="fas fa-bucket me-1"></i>Bucket degli state</label>
+                <select class="form-select form-select-sm" id="tfBucket">
+                    <option value="">Tutti ({{ buckets|length }})</option>
+                    {% for b in buckets %}
+                    <option value="{{ b }}">{{ b }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <button class="btn btn-sm btn-primary" id="btnLoad" {% if not buckets %}disabled{% endif %}>
+                <i class="fas fa-download me-1"></i>Carica
+            </button>
+            <span class="footer-note mb-1">Bucket da <code>terraform.buckets</code> in config.json;
+                si leggono i file <code>*.tfstate</code> (versione 4, Terraform 0.12+)</span>
+        </div>
+
+        <div class="d-none" id="tfFilters">
+            <hr class="my-2">
+            <div class="d-flex flex-wrap align-items-end gap-2">
+                <div class="tf-filter-search">
+                    <label for="tfSearch" class="form-label">Cerca</label>
+                    <input type="text" class="form-control form-control-sm" id="tfSearch" placeholder="indirizzo, nome, id, tag...">
+                </div>
+                <div>
+                    <label for="tfType" class="form-label">Tipo</label>
+                    <select class="form-select form-select-sm" id="tfType"></select>
+                </div>
+                <div>
+                    <label for="tfRegion" class="form-label">Region</label>
+                    <select class="form-select form-select-sm" id="tfRegion"></select>
+                </div>
+                <div>
+                    <label for="tfTagKey" class="form-label"><i class="fas fa-tag me-1"></i>Tag</label>
+                    <select class="form-select form-select-sm" id="tfTagKey"></select>
+                </div>
+                <div>
+                    <label for="tfTagValue" class="form-label" id="tfTagValueLabel">Valore</label>
+                    <select class="form-select form-select-sm" id="tfTagValue"></select>
+                </div>
+                <div class="tf-filter-state">
+                    <label for="tfState" class="form-label">State</label>
+                    <select class="form-select form-select-sm" id="tfState"></select>
+                </div>
+                <div class="form-check form-switch mb-1" title="Le data source sono letture, non risorse gestite">
+                    <input class="form-check-input" type="checkbox" id="tfData">
+                    <label class="form-check-label" for="tfData">Data source</label>
+                </div>
+                <div class="form-check form-switch mb-1" title="Risorse che supportano i tag ma non hanno tutti i tag obbligatori (tag_manager.required_tags)">
+                    <input class="form-check-input" type="checkbox" id="tfMissing">
+                    <label class="form-check-label" for="tfMissing">Solo tag mancanti</label>
+                </div>
+                <div class="ms-auto d-flex gap-1">
+                    <button class="btn btn-sm btn-outline-secondary" id="btnExpand" title="Apre i tag di tutte le righe mostrate"><i class="fas fa-angles-down"></i></button>
+                    <button class="btn btn-sm btn-outline-secondary" id="btnCollapse" title="Chiude i tag di tutte le righe"><i class="fas fa-angles-up"></i></button>
+                    <button class="btn btn-sm btn-outline-secondary" id="btnReset"><i class="fas fa-filter-circle-xmark me-1"></i>Azzera filtri</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="alertBox"></div>
+
+<!-- State letti -->
+<div class="card mb-3 d-none" id="statesCard">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <span><i class="fas fa-file-code me-2 text-secondary"></i>State <span class="badge text-bg-light border ms-1" id="statesCount">0</span></span>
+        <button class="btn btn-sm btn-outline-secondary btn-xs" id="btnStates" data-bs-toggle="collapse" data-bs-target="#statesBody">
+            <i class="fas fa-chevron-down"></i></button>
+    </div>
+    <div class="collapse" id="statesBody"><div id="statesTable"></div></div>
+</div>
+
+<!-- Risorse -->
+<div id="resources">
+    <div class="empty-state py-5">
+        <i class="fas fa-cubes-stacked fa-2x mb-3 d-block"></i>
+        Scegli un bucket (o Tutti) e premi <strong>Carica</strong>.
+        <div class="mt-1">Dagli state arrivano alla pagina solo indirizzo, tipo, nome, id, region e tag delle risorse.</div>
+    </div>
+</div>
+
+<button class="back-to-top" id="backToTop" title="Torna all'inizio"><i class="fas fa-chevron-up"></i></button>
+
+{% endblock %}
+{% block scripts %}
+<script>
+    // suggestedKeys: le chiavi di suggested_tags nell'ordine di config.json (tojson le riordina)
+    Object.assign(window.APP, { requiredTags: {{ required_tags|tojson }}, prefixMatchKeys: {{ prefix_match_keys|tojson }},
+        suggestedKeys: {{ suggested_tags.keys()|list|tojson }} });
+    // tag suggeriti con i valori, per le tendine (tag_match.js)
+    window.suggestedTags = {{ suggested_tags|tojson }};
+</script>
+<script src="{{ url_for('static', filename='js/tag_match.js') }}"></script>
+<script src="{{ url_for('static', filename='js/iac_common.js') }}"></script>
+<script src="{{ url_for('static', filename='js/terraform.js') }}"></script>
+{% endblock %}

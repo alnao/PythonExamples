@@ -36,6 +36,7 @@ const state = {
     view: null,          // ultima vista disegnata (intervallo, colonne)
     charts: {},
     tables: {},          // righe per l'esportazione CSV
+    expanded: new Set(),  // padri con i sottovalori aperti nella tabella per tag (chiusi di default)
     drill: { service: null, data: null, chart: null, seq: 0 },
     missing: [],         // richieste che mancano alla vista corrente
     modalItems: [],      // richieste proposte nella modale
@@ -917,7 +918,9 @@ function renderKpis(rows, spec, buckets) {
 
 /* Tabella voce x colonna (mesi, settimane o giorni dello zoom) con totale, quota e
  * variazione tra le ultime due colonne concluse. Per il gruppo, raggruppando i
- * sottovalori, sotto ogni padre sono elencati i figli. */
+ * sottovalori, sotto ogni padre sono elencati i figli: chiusi, si aprono e chiudono con
+ * la freccia. La lente in fondo alla riga filtra la voce (un secondo clic toglie il
+ * filtro); per i servizi c'e' anche il dettaglio per usage type. */
 function renderTable(kind, table, agg, buckets, colors, labelFn, rows, bfn) {
     const entries = visibleEntries(agg);
     const grand = entries.reduce((a, [, e]) => a + e.total, 0);
@@ -928,38 +931,50 @@ function renderTable(kind, table, agg, buckets, colors, labelFn, rows, bfn) {
     const children = (kind === 'group' && rollupOn())
         ? aggregate(rows.filter(r => r.group !== normGroup(r.group)), r => r.group, bfn) : {};
 
+    const childrenOf = (k) => Object.entries(children).filter(([c]) => suggestedParent(c) === k)
+        .sort((a, b) => b[1].total - a[1].total);
+    const anyChildren = entries.some(([k]) => childrenOf(k).length);
+
     const head = ['Voce', ...buckets.map(b => b.label), 'Totale', 'Quota',
         ...(withDelta ? [`${last.label} vs ${prev.label}`] : [])];
     let html = '<thead class="table-light"><tr>'
         + head.map((h, i) => `<th class="${i ? 'num' : ''}">${escapeHtml(h)}</th>`).join('')
-        + (kind === 'service' ? '<th></th>' : '') + '</tr></thead><tbody>';
+        + '<th></th></tr></thead><tbody>';
     const csv = [['Voce', ...keys, 'Totale', 'Quota %']];
 
     entries.forEach(([k, e]) => {
         const color = colors[k] || COLOR_OTHER;
         const share = grand ? e.total / grand * 100 : 0;
         const isActive = active !== '' && active === k;
-        html += `<tr class="clickable${isActive ? ' active-filter' : ''}" data-key="${escapeHtml(k)}">`
-            + `<td class="entity" title="${escapeHtml(k)}"><span class="swatch" style="background:${color}"></span>${escapeHtml(labelFn(k))}</td>`
+        const kids = childrenOf(k);
+        const open = state.expanded.has(k);
+        const toggle = kids.length
+            ? `<button class="btn btn-link btn-sm p-0 me-1 btn-toggle" data-key="${escapeHtml(k)}" title="${open ? 'Chiudi' : 'Apri'} i ${kids.length} sottovalori">`
+                + `<i class="fas fa-fw ${open ? 'fa-chevron-down' : 'fa-chevron-right'}"></i></button>`
+            : (anyChildren ? '<span class="toggle-spacer"></span>' : '');
+        html += `<tr${isActive ? ' class="active-filter"' : ''} data-key="${escapeHtml(k)}">`
+            + `<td class="entity" title="${escapeHtml(k)}">${toggle}<span class="swatch" style="background:${color}"></span>${escapeHtml(labelFn(k))}</td>`
             + keys.map(b => `<td class="num">${e.byBucket[b] !== undefined ? moneyCell(e.byBucket[b]) : ''}</td>`).join('')
             + `<td class="num fw-semibold">${moneyCell(e.total)}</td>`
             + `<td class="num"><span class="share-bar" style="width:${Math.max(0, Math.min(60, share * 0.6))}px"></span>${share.toFixed(1)}%</td>`
             + (withDelta ? `<td class="num">${deltaHtml(e.byBucket[last.key] || 0, e.byBucket[prev.key] || 0)}</td>` : '')
+            + '<td class="row-actions">'
+            + `<button class="btn btn-sm btn-link py-0 btn-filter" data-key="${escapeHtml(k)}" `
+            + `title="${isActive ? 'Togli il filtro' : 'Filtra grafici e tabelle su questa voce'}">`
+            + `<i class="fas ${isActive ? 'fa-magnifying-glass-minus' : 'fa-magnifying-glass'}"></i></button>`
             + (kind === 'service'
-                ? `<td><button class="btn btn-sm btn-link py-0 btn-drill" data-service="${escapeHtml(k)}" title="Dettaglio per usage type"><i class="fas fa-magnifying-glass-chart"></i></button></td>`
+                ? `<button class="btn btn-sm btn-link py-0 btn-drill" data-service="${escapeHtml(k)}" title="Dettaglio per usage type"><i class="fas fa-magnifying-glass-chart"></i></button>`
                 : '')
-            + '</tr>';
+            + '</td></tr>';
         csv.push([labelFn(k), ...keys.map(b => (e.byBucket[b] || 0).toFixed(4)), e.total.toFixed(4), share.toFixed(2)]);
 
-        Object.entries(children).filter(([c]) => suggestedParent(c) === k)
-            .sort((a, b) => b[1].total - a[1].total)
-            .forEach(([c, ce]) => {
-                html += '<tr class="child-row">'
-                    + `<td class="entity" title="${escapeHtml(c)}">&#8627; ${escapeHtml(c)}</td>`
-                    + keys.map(b => `<td class="num">${ce.byBucket[b] !== undefined ? moneyCell(ce.byBucket[b]) : ''}</td>`).join('')
-                    + `<td class="num">${moneyCell(ce.total)}</td><td></td>${withDelta ? '<td></td>' : ''}</tr>`;
-                csv.push([`  ${c}`, ...keys.map(b => (ce.byBucket[b] || 0).toFixed(4)), ce.total.toFixed(4), '']);
-            });
+        kids.forEach(([c, ce]) => {
+            html += `<tr class="child-row${open ? '' : ' d-none'}" data-parent="${escapeHtml(k)}">`
+                + `<td class="entity" title="${escapeHtml(c)}">&#8627; ${escapeHtml(c)}</td>`
+                + keys.map(b => `<td class="num">${ce.byBucket[b] !== undefined ? moneyCell(ce.byBucket[b]) : ''}</td>`).join('')
+                + `<td class="num">${moneyCell(ce.total)}</td><td></td>${withDelta ? '<td></td>' : ''}<td></td></tr>`;
+            csv.push([`  ${c}`, ...keys.map(b => (ce.byBucket[b] || 0).toFixed(4)), ce.total.toFixed(4), '']);
+        });
     });
 
     if (!entries.length) {
@@ -970,19 +985,28 @@ function renderTable(kind, table, agg, buckets, colors, labelFn, rows, bfn) {
         + colTot.map(v => `<td class="num">${moneyCell(v)}</td>`).join('')
         + `<td class="num">${moneyCell(grand)}</td><td></td>`
         + (withDelta ? `<td class="num">${deltaHtml(colTot[keys.indexOf(last.key)], colTot[keys.indexOf(prev.key)])}</td>` : '')
-        + (kind === 'service' ? '<td></td>' : '') + '</tr></tfoot>';
+        + '<td></td></tr></tfoot>';
     csv.push(['Totale', ...colTot.map(v => v.toFixed(4)), grand.toFixed(4), '100']);
 
     table.innerHTML = html;
     state.tables[kind] = csv;
 
-    table.querySelectorAll('tr.clickable').forEach(tr => tr.addEventListener('click', (ev) => {
-        if (ev.target.closest('.btn-drill')) return;
-        const k = tr.dataset.key;
-        if (kind === 'service') setFilter('serviceFilter', k);
-        else setFilter('groupFilter', enc(k));
+    table.querySelectorAll('.btn-filter').forEach(b => b.addEventListener('click', () => {
+        if (kind === 'service') setFilter('serviceFilter', b.dataset.key);
+        else setFilter('groupFilter', enc(b.dataset.key));
     }));
     table.querySelectorAll('.btn-drill').forEach(b => b.addEventListener('click', () => openDrill(b.dataset.service)));
+    // apre e chiude i sottovalori senza ridisegnare (la scelta resta nei render successivi)
+    table.querySelectorAll('.btn-toggle').forEach(b => b.addEventListener('click', () => {
+        const k = b.dataset.key;
+        const open = !state.expanded.has(k);
+        if (open) state.expanded.add(k); else state.expanded.delete(k);
+        table.querySelectorAll('tr.child-row').forEach(tr => {
+            if (tr.dataset.parent === k) tr.classList.toggle('d-none', !open);
+        });
+        b.querySelector('i').className = `fas fa-fw ${open ? 'fa-chevron-down' : 'fa-chevron-right'}`;
+        b.title = `${open ? 'Chiudi' : 'Apri'} i sottovalori`;
+    }));
 }
 
 function renderNotes() {

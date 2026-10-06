@@ -54,7 +54,7 @@ DEFAULTS = {
         'page_size': 50,
     },
     'cost_explorer': {
-        'default_months': 1,
+        'default_months': 3,
         'default_metric': 'UnblendedCost',
         'default_group': 'TAG:Project',
         'prefix_match_keys': ['Project'],
@@ -65,13 +65,19 @@ DEFAULTS = {
         'main_services': ['vpc', 'ec2', 'rds', 's3', 'cloudfront', 'lambda', 'dynamodb',
                           'apigateway', 'sqs', 'sns'],
     },
+    'terraform': {
+        'buckets': [],
+        'state_suffixes': ['.tfstate'],
+        'max_states': 200,
+    },
     'manager': {
         'max_upload_mb': 10,
         'list_limit': 500,
         'logs_limit': 100,
+        'dynamodb_max_read': 5000,
     },
 }
-SECTIONS = ('tag_manager', 'cost_explorer', 'panoramic', 'manager')
+SECTIONS = ('tag_manager', 'cost_explorer', 'panoramic', 'terraform', 'manager')
 
 
 # ----------------------------------------------------------------------

@@ -471,8 +471,25 @@ pre.log {
 }
 
 .child-row .entity {
-    padding-left: 1.6rem;
+    padding-left: 2.6rem;
     color: var(--text-secondary);
+}
+
+/* freccia per aprire e chiudere i sottovalori; lo spazio allinea le voci senza figli */
+.cost-table .btn-toggle {
+    line-height: 1;
+    vertical-align: baseline;
+    color: var(--text-secondary);
+}
+
+.cost-table .toggle-spacer {
+    display: inline-block;
+    width: calc(1.25em + 0.25rem);
+}
+
+.cost-table td.row-actions {
+    text-align: right;
+    width: 1%;
 }
 
 .share-bar {
@@ -586,4 +603,107 @@ pre.log {
 .footer-note {
     color: var(--text-muted);
     font-size: 0.85rem;
+}
+
+/* ------------------------------------------------------------------ home: risorse attive */
+
+.resources-table td.cell-ok { box-shadow: inset 3px 0 0 var(--series-3); }
+.resources-table td.cell-warning { background-color: #fff6e0; }
+.resources-table td.cell-danger { background-color: #fde8e8; color: var(--delta-bad); }
+
+
+/* ------------------------------------------------------------------ manager: DynamoDB */
+
+/* Form di ricerca: una riga per le chiavi, una per il filtro e una per i pulsanti; ogni
+ * riga va a capo secondo la larghezza del pannello (non della finestra). Ogni campo parte
+ * da --w e cresce secondo --grow; min-width: 0 permette agli input di restringersi (le
+ * colonne di Bootstrap non lo fanno e allargano il pannello). */
+.ddb-form {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+}
+
+.ddb-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    align-items: flex-end;
+}
+
+.ddb-field {
+    flex: var(--grow, 1) 1 var(--w, 8rem);
+    min-width: 0;
+}
+
+.ddb-field.ddb-fixed {
+    flex: 0 0 auto;
+}
+
+.ddb-field .form-label {
+    display: block;
+    white-space: nowrap;
+}
+
+.ddb-actions {
+    justify-content: flex-end;
+}
+
+.ddb-table {
+    max-height: 60vh;
+    overflow: auto;
+}
+
+.ddb-table thead th {
+    position: sticky;
+    top: 0;
+    background-color: var(--surface-2);
+}
+
+.ddb-table tr.clickable {
+    cursor: pointer;
+}
+
+.ddb-table td {
+    max-width: 240px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* ------------------------------------------------------------------ terraform */
+
+.tf-filter-search {
+    flex: 1 1 14rem;
+    max-width: 22rem;
+}
+
+.tf-filter-state {
+    min-width: 0;
+    max-width: 20rem;
+}
+
+.tf-table th.sortable {
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.tf-table tr.tf-row {
+    cursor: pointer;
+}
+
+/* riga aperta (senza la colonna della freccia): bordo a sinistra per legarla ai suoi tag */
+.tf-table tr.tf-open > td:first-child,
+.tf-table tr.tf-sub > td:first-child {
+    box-shadow: inset 3px 0 0 var(--series-1);
+}
+
+.tf-table tr.tf-sub > td {
+    background-color: var(--surface-1);
+    padding: 0.4rem 0.5rem 0.6rem 1.5rem;
+}
+
+.tf-tags {
+    width: auto;
+    min-width: 20rem;
 }
