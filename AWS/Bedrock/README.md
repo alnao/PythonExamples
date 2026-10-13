@@ -1,358 +1,202 @@
-# AWS Bedrock RAG Example - Sistema di Ricerca e Generazione Aumentata
+# AWS Bedrock RAG Example - Pocket RAG su EC2
 
 ## 🚀 Panoramica
 
-Questo esempio implementa un sistema **RAG (Retrieval-Augmented Generation)** completo utilizzando i servizi AWS, con particolare focus su **Amazon Bedrock** per l'intelligenza artificiale. Il sistema permette di caricare documenti, indicizzarli semanticamente e interrogarli in linguaggio naturale, combinando la potenza dei modelli di embedding e chat di AWS Bedrock.
-- **📄 Ingestione Documenti**: Caricamento e indicizzazione automatica di file di testo
-  - **📄 Testi**: `.txt`, `.md`, `.csv`, `.json`, `.xml`, `.html`, `.css`, `.js`, `.py`, `.java`, `.cpp`, `.c`, `.h`
-  - **📋 Documenti**: `.pdf` (con OCR per PDF scannerizzati), `.docx`, `.xlsx`, `.xls`, `.pptx`, `.ppt`
-  - **🖼️ Immagini**: `.jpg`, `.jpeg`, `.png`, `.gif`, `.bmp`, `.webp`, `.tiff` (descrizione AI tramite Claude 3)
-  - **🤖 Elaborazione Intelligente**: 
-    - Estrazione testo con PyPDF2 + OCR (Tesseract) per PDF
-    - Descrizione AI delle immagini tramite Claude 3 Sonnet su Bedrock
-    - Parsing nativo per documenti Office
-- **🔍 Ricerca Semantica**: Query in linguaggio naturale sui documenti indicizzati
-- **🤖 Generazione AI**: Risposte generate usando modelli Bedrock (Llama 3.2)
-- **💾 Persistenza**: Salvataggio documenti su S3 e embeddings su ChromaDB
-- **🌐 Interfaccia Web**: Frontend interattivo per testing delle API
+Questo esempio implementa un sistema **RAG (Retrieval-Augmented Generation)** su una istanza EC2 a Francoforte (`eu-central-1`) con **Amazon Bedrock**: si caricano documenti, il sistema li divide in parti, ne calcola gli embedding e risponde alle domande in italiano citando le fonti.
+- **📄 Formati supportati**
+  - **Testi**: `.txt`, `.md`, `.csv`, `.json`, `.xml`, `.html`, `.css`, `.js`, `.py`, `.java`, `.cpp`, `.c`, `.h`
+  - **Documenti**: `.pdf` (testo con pypdf, OCR con Tesseract solo per le pagine senza testo), `.docx` (anche le tabelle), `.xlsx`, `.pptx`
+  - **Immagini**: `.jpg`, `.jpeg`, `.png`, `.gif`, `.webp`, `.bmp`, `.tiff`: la descrizione (con il testo trascritto) viene generata da Amazon Nova Lite e indicizzata come un testo; in alternativa, gratis, solo il testo letto con l'OCR di Tesseract
+- **🔍 Ricerca semantica** su ChromaDB con distanza coseno, parti di circa 1000 caratteri con 200 caratteri di sovrapposizione
+- **🤖 Risposte** generate da Amazon Nova Lite con la **Converse API** di Bedrock (stesso formato per tutti i modelli), con le fonti citate come `[1]`, `[2]`
+- **💾 Persistenza**: originali su S3, indice ChromaDB su disco con backup automatico su S3 e ricostruzione completa dai file (`/api/reindex`)
+- **🔐 Sicurezza**: chiave API (header `X-API-Key`) su tutte le API, porta 80 aperta solo al proprio IP, nessuna porta SSH (si entra con Session Manager), policy IAM con i permessi minimi
+- **🌐 Interfaccia web** in italiano: pagina per caricare e chiedere, pagina admin per vedere i documenti e farli *dimenticare*
 
-Per attivare **Bedrock** bisogna accedere alla console web e attivare i modelli nella funzionalità `Model access`, i modelli usati da questo esempio sono:
-- Titan Text Embeddings V2
-- Llama 3.2 3B Instruct
-- Pixtral Large (25.02)
-- Anthropic Claude 3 sonnet
-- nota di AWS: Starting Oct 8 2025, Amazon Bedrock will simplify access to all serverless foundation models, and any new models, by automatically enabling them for every AWS account, eliminating the need to manually activate access through the Bedrock console. Account administrators retain full control over model access through IAM policies  and Service Control Policies (SCPs)  to restrict model access as needed.
+Esiste anche la versione **senza server** (Lambda, API Gateway, CloudFront, S3 Vectors) nella cartella [`AWS/CDK/cdk33bedrockServerless`](../CDK/cdk33bedrockServerless/): costa molto meno se usata poco, ma non ha l'OCR.
 
+Modelli usati (configurabili nel file `.env`):
+
+| Uso | Modello | ID Bedrock |
+|-----|---------|------------|
+| Embedding | Titan Text Embeddings V2 (1024 dimensioni) | `amazon.titan-embed-text-v2:0` |
+| Risposte | Amazon Nova Lite | `eu.amazon.nova-lite-v1:0` (profilo cross-region EU) |
+| Immagini | Amazon Nova Lite (circa 0,0003 $ a immagine) | `eu.amazon.nova-lite-v1:0` (profilo cross-region EU) |
+
+Per non spendere nulla sulle immagini si lascia vuoto `IMAGE_MODEL` nel file `.env`: il backend legge il testo dell'immagine con Tesseract sull'istanza (gratis, ma senza descrizione del contenuto visivo; un'immagine senza testo viene rifiutata).
+
+Note sull'accesso ai modelli:
+- da ottobre 2025 i modelli serverless di Bedrock sono abilitati automaticamente su ogni account; l'accesso si controlla con le policy IAM e le SCP
+- a Francoforte Nova Lite si usa con il profilo `eu.`, che instradano le richieste nelle region europee; la policy IAM autorizza sia il profilo sia il modello
+- prima del deploy si può verificare che i modelli rispondano con `python check_model.py` (costa frazioni di centesimo)
+- i modelli vengono ritirati periodicamente (Llama 3.2 3B, usato nelle prime versioni, oggi risponde "end of its life"): lo stato è nella [pagina del ciclo di vita dei modelli](https://docs.aws.amazon.com/bedrock/latest/userguide/model-lifecycle-legacy.html); in quel caso la pagina mostra l'errore di AWS e basta cambiare il modello in `.env` e `policy.json`
 
 
 ## 🔧 Architettura del Sistema
 
-Il sistema è progettato con un'architettura **multi-layer**:
+```
+browser ── :80 Apache (solo dal tuo IP) ── 127.0.0.1:8000 uvicorn/FastAPI ──┬── Bedrock (Converse + Titan)
+                                                                             ├── ChromaDB (disco EBS)
+                                                                             └── S3 (originali + backup indice)
+```
 
 ```
-├── backend.py             # 🐍 Main FastAPI application (il file backend)
-├── check_model.py         # 🔍 Bedrock model checker (script per verificare quali modelli sono abilitati)
-├── bedrock_rag_stack.sh   # 🚀 Infrastructure deployment (script di rilascio/deprovisioning delle risorse)
-├── user_data.sh           # ⚙️ EC2 initialization (script user data che viene eseguito dall'avvio dell'EC2)
-├── policy.json            # 🔐 IAM permissions (il nome del bucket da aggiornare manualmente)
-├── README.md              # 📖 Project documentation
+├── backend.py             # 🐍 FastAPI: API sotto /api e sito statico su /
+├── requirements.txt       # 📦 dipendenze Python (usate anche dallo user data)
+├── .env.example           # ⚙️ configurazione del backend (copiare in .env)
+├── check_model.py         # 🔍 verifica che i modelli Bedrock rispondano
+├── bedrock_rag_stack.sh   # 🚀 creazione, aggiornamento del codice e distruzione delle risorse con la AWS CLI
+├── user_data.sh           # ⚙️ template dello user data dell'EC2 (pacchetto dal bucket, servizio systemd, Apache)
+├── policy.json            # 🔐 template della policy IAM (segnaposto sostituiti dallo script)
 ├── web/
-│   ├── admin.html         # 🌐 Web interface amministrativa che permette di far *dimenticare* le cose all'IA
-│   ├── index.html         # 🌐 Web interface
-│   └── index.js           # ⚡ Frontend logic per la web interface
-├── chroma/                # 🗄️ Vector database (auto-created in fase di esecuzione)
-└── venv/                  # 🐍 Python environment (auto-created in fase di esecuzione)
+│   ├── index.html/js      # 🌐 carica documenti e fai domande
+│   ├── admin.html/js      # 🛠️ documenti, parti, "dimentica", ricostruzione dell'indice
+│   ├── common.js          # ⚡ chiave API, chiamate alle API, escape dell'HTML
+│   └── style.css
+├── chroma/                # 🗄️ indice vettoriale (creato all'avvio, non versionato)
+└── venv/                  # 🐍 ambiente Python (non versionato)
 ```
 
-- ⚡ Application Layer** 
-  - **FastAPI Backend**: Server Python ad alte prestazioni con API REST
-  - **CORS Enabled**: Supporto completo per chiamate cross-origin
-  - **Async Processing**: Gestione asincrona delle richieste per migliori performance
-- 🤖 AI Layer**
-  - **Amazon Bedrock**: Servizio AI completamente gestito di AWS
-  - **Titan Embed v2**: Modello di embedding con 1024 dimensioni per ricerca semantica
-  - **Llama 3.2 3B**: Modello di generazione testo ottimizzato per l'EU
-  - **Anthropic Claude 3 sonnet**: Modello per l'analisi delle immagini
-- 💾 Storage Layer**
-  - **ChromaDB**: Database vettoriale locale per ricerche semantiche ultra-veloci
-  - **Amazon S3**: Storage sicuro e scalabile per documenti originali
-  - **Persistenza Locale**: Embeddings memorizzati localmente per accesso immediato
-- 🔄 Flusso di Lavoro:**
-  - **📄 Ingestione**: Upload documento → Chunking intelligente → Embedding (Bedrock) → Storage (ChromaDB + S3)
-  - **🔍 Query**: Domanda utente → Embedding della query → Ricerca vettoriale → Generazione risposta (Bedrock)
-  - **💾 Persistenza**: Documenti originali sicuri su S3, embeddings ottimizzati su ChromaDB locale
-- 🌐 Frontend Layer**
-  - **Interfaccia Web Interattiva**: Sviluppata in HTML5 e JavaScript vanilla per massima compatibilità
-  - **Testing API**: Interfaccia grafica per testare tutte le funzionalità senza tool esterni
-  - **Sotto controllo**: Pagina di amministra per visualizzare i documenti caricati e far *dimenticare* quanto imparato
+Dove sono i dati:
+| Dato | Dove | Note |
+|------|------|------|
+| File originali | S3 `uploads/<doc_id>/<nome file>` | caricare un file con un `doc_id` esistente sostituisce il documento |
+| Parti, embedding e metadati | ChromaDB nella cartella `chroma/` dell'EC2 | dopo ogni modifica viene salvato su S3 in `index/chroma.tar.gz` e, se la cartella è vuota (istanza nuova), viene ripristinato all'avvio |
+| Chiave API | SSM Parameter Store `/<progetto>/api-key` (SecureString) | generata dallo script, letta dal backend all'avvio |
+| Codice dell'applicazione | S3 `app/pocket-rag.tar.gz` e cartella `/opt/pocket-rag` dell'EC2 | il pacchetto viene ricreato dallo script a ogni `create` e `update` |
+
+Se si perde anche il backup, `POST /api/reindex` (pulsante "Ricostruisci indice" nella pagina admin) rilegge tutti i file da S3 e ricalcola gli embedding.
 
 
 ## 🛠️ Installazione e Deploy
 
-- Opzione 1: **Deploy Automatico con Script**
-
+- Opzione 1: **Deploy automatico con lo script** (AWS CLI, region di default Francoforte)
   ```bash
-  # Clona il repository
   git clone https://github.com/alnao/PythonExamples.git
   cd PythonExamples/AWS/Bedrock/
-
-  # Rendi eseguibile lo script
   chmod +x bedrock_rag_stack.sh
 
-  # Crea l'intera infrastruttura
-  ./bedrock_rag_stack.sh create ragdemo eu-central-1
+  # senza parametri chiede azione, nome del progetto, region e CIDR mostrando i default
+  # (create, Bedrock, eu-central-1, il tuo IP pubblico), poi riepiloga e chiede conferma
+  ./bedrock_rag_stack.sh
+  # oppure tutto da riga di comando (la porta 80 viene aperta solo al tuo IP attuale)
+  ./bedrock_rag_stack.sh create Bedrock eu-central-1
+  ./bedrock_rag_stack.sh create Bedrock eu-central-1 203.0.113.0/24
   ```
+  Il nome del progetto (default `Bedrock`) è il prefisso dei nomi delle risorse (bucket `bedrock-alnao-bucket`, ruolo `Bedrock-role`, ...) e il suffisso del tag `Name` (`aws-py-Bedrock`): con nomi diversi si possono avere più installazioni nello stesso account.
 
-  Attenzione: lo script *user data* può impiegare diversi minuti per installare tutti i pacchetti e le librerie necessarie al funzionamento.
+  Lo script crea, tutte con i tag standard del repository (`Name=aws-py-<progetto>`, `Project=Development.aws.py-Bedrock`, `ManagedBy=Sh`):
+  - ✅ bucket S3 per i documenti, il backup dell'indice e il pacchetto del codice
+  - ✅ parametro SSM SecureString con una chiave API casuale
+  - ✅ policy IAM con i permessi minimi (dal template `policy.json`) e ruolo EC2, con in più `AmazonSSMManagedInstanceCore` per Session Manager
+  - ✅ security group con la sola porta 80 (le regole aperte a tutti delle versioni precedenti vengono rimosse)
+  - ✅ istanza EC2 `t3.small` Ubuntu 24.04 con IMDSv2 e disco gp3 da 20 GB, compresi disco e scheda di rete nei tag
 
-  Per verificare che è tutto ok, da dentro l'istanza, si possono analizzare i log con il comando
+  **Come arriva il codice sull'istanza**: niente `git clone`. Lo script impacchetta i file locali (`backend.py`, `requirements.txt`, `web/`) in `app/pocket-rag.tar.gz` sul bucket e mette nello user data un URL prefirmato valido un'ora, che l'istanza scarica con `curl`. Così si installa esattamente il codice che si ha in locale, anche senza averlo pubblicato su GitHub, e l'istanza non ha bisogno né di git né di permessi in più.
+
+  Alla fine stampa l'indirizzo del sito, il comando per leggere la chiave API e quello per aprire una shell sull'istanza:
   ```bash
-  sudo tail -n 50 /var/log/cloud-init-output.log
-  sudo tail -f -n 50 /var/log/cloud-init-output.log
+  aws ssm get-parameter --name /Bedrock/api-key --with-decryption --region eu-central-1 --query Parameter.Value --output text
+  aws ssm start-session --target i-0123456789abcdef0 --region eu-central-1
   ```
-
-  Lo script automatizza:
-  - ✅ Creazione bucket S3
-  - ✅ Setup IAM role e policy
-  - ✅ Configurazione Security Group
-  - ✅ Launch istanza EC2 con user data
-  - ✅ Installazione automatica del servizio
-
-- Opzione 2: **Installazione Manuale** tramite CLI o console web
-  1. Prerequisiti AWS: Verifica modelli Bedrock disponibili da console web oppure con il comando
-      ```bash
-      aws bedrock list-foundation-models --region eu-central-1 \
-        --query "modelSummaries[?contains(modelId, 'embed')].{ModelId:modelId,Status:modelLifecycle.status}" \
-        --output table
-      ```
-  2. Setup Infrastruttura
-      ```bash
-      # Crea bucket S3
-      aws s3 mb s3://ragdemo-alnao-bucket --region eu-central-1
-
-      # Crea IAM policy
-      aws iam create-policy --policy-name ragdemo-policy \
-        --policy-document file://policy.json
-
-      # Crea IAM role
-      aws iam create-role --role-name ragdemo-role \
-        --assume-role-policy-document file://trust-policy.json
-
-      # Associa policy al role
-      aws iam attach-role-policy --role-name ragdemo-role \
-        --policy-arn arn:aws:iam::ACCOUNT:policy/ragdemo-policy
-      ```
-  3. Setup EC2
-      ```bash
-      # Launch istanza Ubuntu 22.04
-      aws ec2 run-instances --image-id ami-xxxxxxxxx \
-        --instance-type t3.micro --key-name your-key \
-        --iam-instance-profile Name=ragdemo-role \
-        --block-device-mappings '[{"DeviceName":"/dev/sda1","Ebs":{"VolumeSize":20,"VolumeType":"gp3"}}]' \
-        --user-data file://user_data.sh
-      ```
-      nota: viene creato un EBS bello grande perchè la dimensione di default (8Gb) potrebbe non essere sufficiente.
-  4. Installazione Applicazione: non serve perchè l'istruzione del passo prima esegue l'user data che installa tutto, per verificare è possibile collegarsi all'istanza con il comando
-      ```bash
-      ssh -i your-key.pem ubuntu@IP_PUBBLICO
-      ```
-- **Cleanup**: Rimozione dello Stack
-  Per rimuovere completamente l'infrastruttura creata, utilizzare il comando destroy dello script:
-
+  Lo user data impiega alcuni minuti a installare i pacchetti. Per seguirlo dalla shell dell'istanza:
   ```bash
-  # Rimuove tutte le risorse create
-  ./bedrock_rag_stack.sh destroy ragdemo eu-central-1
+  sudo tail -f /var/log/user-data.log
+  sudo systemctl status pocket-rag
+  sudo journalctl -u pocket-rag -f
   ```
 
-  -  **Verifica risorse rimanenti:**
-    ```bash
-    # Lista instance profiles
-    aws iam list-instance-profiles
-
-    # Verifica istanze EC2
-    aws ec2 describe-instances --filters "Name=tag:PROJECT_NAME,Values=ragdemo" \
-      --query "Reservations[].Instances[].{ID:InstanceId,State:State.Name,Name:Tags[?Key=='Name'].Value|[0]}"
-
-    # Verifica bucket S3
-    aws s3 ls | grep ragdemo
-
-    # Verifica IAM roles
-    aws iam list-roles --query "Roles[?contains(RoleName,'ragdemo')].RoleName"
-    aws iam list-roles --query "Roles[*].RoleName"
-    ```
-
-## 🧪 Testing del Sistema
-- API Testing con curl
-
+  **Aggiornare il codice** dopo una modifica locale, senza ricreare l'istanza e senza SSH:
   ```bash
-  # Health check
-  curl http://IP_PUBBLICO:8000/health
-
-  # Carica un documento
-  curl -X POST http://IP_PUBBLICO:8000/ingest \
-    -F "file=@document.txt" \
-    -F "doc_id=mydoc1"
-
-  # Interroga i documenti
-  curl -X POST "http://IP_PUBBLICO:8000/query?q=What%20is%20AWS%20Bedrock?&k=4" | jq
-
-  # Generazione diretta
-  curl -X POST "http://IP_PUBBLICO:8000/generate" \
-    -H "Content-Type: application/json" \
-    -d '{"prompt": "Explain machine learning in simple terms"}'
+  ./bedrock_rag_stack.sh update Bedrock eu-central-1
   ```
-- Interfaccia Web
-  - Accesso al sito `http://IP_PUBBLICO` per utilizzare l'interfaccia grafica interattiva con la possilità di caricare documento o porre domande all'IA.
-  - Disponbibile anche una pagina amministrativa `http://IP_PUBBLICO/admin.html` per visulizzare tutti i file caricati tutto ciò che l'IA ha imparato (chunk/documenti), con la possiblità di far *dimenticare* all'IA quanto imparato da un documento.
+  Lo script ricarica il pacchetto sul bucket e, con SSM Run Command, fa scaricare il nuovo codice all'istanza, aggiorna le dipendenze e riavvia il servizio; `.env`, indice e ambiente Python restano dove sono.
+
+- Opzione 2: **Esecuzione in locale** (con le credenziali AWS del proprio profilo, i dati vanno comunque su S3 e Bedrock)
+  ```bash
+  python3 -m venv venv && source venv/bin/activate
+  pip install -r requirements.txt
+  cp .env.example .env        # impostare S3_BUCKET e API_KEY
+  uvicorn backend:app --port 8000
+  ```
+  Il sito è su `http://localhost:8000`. Per l'OCR servono i pacchetti di sistema `tesseract-ocr`, `tesseract-ocr-ita` e `poppler-utils`; senza, le pagine PDF senza testo vengono saltate.
+
+- **Cleanup**: rimozione di tutte le risorse
+  ```bash
+  ./bedrock_rag_stack.sh destroy Bedrock eu-central-1
+  ```
+  Il destroy cancella istanza, security group, bucket (documenti, backup e pacchetto del codice), parametro della chiave, ruolo, instance profile e policy. Per verificare che non sia rimasto nulla:
+  ```bash
+  aws ec2 describe-instances --filters "Name=tag:Project,Values=Development.aws.py-Bedrock" \
+    --query "Reservations[].Instances[].{ID:InstanceId,State:State.Name}"
+  aws s3 ls | grep bedrock-alnao-bucket
+  aws iam list-roles --query "Roles[?contains(RoleName,'Bedrock')].RoleName"
+  ```
+
+
+## 🧪 API
+
+Tutte le API sono sotto `/api`; tranne `health` e `supported-formats` richiedono l'header `X-API-Key`.
+
+| Metodo | Percorso | Descrizione |
+|--------|----------|-------------|
+| GET | `/api/health` | stato del servizio |
+| GET | `/api/supported-formats` | formati accettati |
+| POST | `/api/ingest` | carica e indicizza un file (form: `file`, `doc_id` facoltativo) |
+| POST | `/api/query` | domanda sui documenti: `{"question": "...", "k": 4}` |
+| POST | `/api/generate` | domanda diretta al modello, senza documenti: `{"prompt": "..."}` |
+| GET | `/api/documents` | documenti indicizzati |
+| GET | `/api/documents/{doc_id}` | parti di un documento |
+| DELETE | `/api/documents/{doc_id}` | fa dimenticare il documento (parti, embedding e file su S3) |
+| POST | `/api/reindex` | ricostruisce l'indice da tutti i file su S3 |
+
+```bash
+KEY=$(aws ssm get-parameter --name /Bedrock/api-key --with-decryption --region eu-central-1 --query Parameter.Value --output text)
+curl http://IP_PUBBLICO/api/health
+curl -H "X-API-Key: $KEY" -F "file=@contratto.pdf" -F "doc_id=contratto-2026" http://IP_PUBBLICO/api/ingest
+curl -H "X-API-Key: $KEY" -H "Content-Type: application/json" \
+  -d '{"question": "Qual è la durata del contratto?", "k": 4}' http://IP_PUBBLICO/api/query
+curl -H "X-API-Key: $KEY" -H "Content-Type: application/json" \
+  -d '{"prompt": "Spiega il machine learning in parole semplici"}' http://IP_PUBBLICO/api/generate
+curl -H "X-API-Key: $KEY" -X DELETE http://IP_PUBBLICO/api/documents/contratto-2026
+```
+
+Interfaccia web: `http://IP_PUBBLICO` per caricare documenti e fare domande, `http://IP_PUBBLICO/admin.html` per l'elenco dei documenti, le loro parti, il pulsante *dimentica* e la ricostruzione dell'indice. La chiave API si inserisce nel campo in alto a destra e resta salvata nel browser.
+
 
 ## 💰 Analisi dei Costi
-- Costi AWS per 10 Utenti/Giorno
 
-  **Scenario**: 10 utenti, 5 query al giorno, 2 documenti caricati/settimana
+Prezzi indicativi di Francoforte (`eu-central-1`) a ottobre 2026, IVA esclusa: verificare sempre sulle pagine dei prezzi AWS e di [Amazon Bedrock](https://aws.amazon.com/bedrock/pricing/). Per Amazon Nova Lite con il profilo EU la stima usa 0,08 $ per milione di token in input e 0,31 $ in output.
 
-  | Servizio | Utilizzo | Costo Mensile |
-  |----------|----------|---------------|
-  | **EC2 t3.micro** | 24/7 | €8.50 |
-  | **S3 Standard** | 1GB storage, 1000 PUT | €0.25 |
-  | **Bedrock Titan Embed** | 15,000 token/mese | €0.15 |
-  | **Bedrock Llama 3.2** | 75,000 token/mese | €0.60 |
-  | **Data Transfer** | 1GB out | €0.90 |
-  | **TOTALE** | | **€10.40/mese** |
+Scenario: istanza accesa 24 ore su 24; ogni giorno 5 documenti caricati (circa 100 parti), 2 immagini e 50 domande.
 
-- Costi AWS per 1000 Utenti/Giorno
-  
-  **Scenario**: 1000 utenti, 5 query al giorno, 50 documenti caricati/settimana
+| Voce | Calcolo | Al giorno | Al mese (30 gg) |
+|------|---------|-----------|-----------------|
+| EC2 `t3.small` | 0,024 $/ora × 24 | 0,58 $ | 17,52 $ |
+| Disco EBS gp3 20 GB | 0,0952 $/GB-mese | 0,06 $ | 1,90 $ |
+| IPv4 pubblico | 0,005 $/ora × 24 | 0,12 $ | 3,65 $ |
+| S3 (documenti e backup dell'indice, ~1 GB) | 0,0245 $/GB-mese + richieste | < 0,01 $ | 0,03 $ |
+| SSM Parameter Store e Session Manager | parametro standard | 0 $ | 0 $ |
+| Bedrock Titan Embeddings V2 | ~31.000 token/giorno × 0,02 $/milione | < 0,01 $ | 0,02 $ |
+| Bedrock Nova Lite (risposte) | 50 domande × (~1.500 token in + ~300 out) | 0,01 $ | 0,32 $ |
+| Bedrock Nova Lite (immagini) | 2 immagini × (~1.700 token in + ~500 out) | < 0,01 $ | 0,02 $ |
+| Traffico in uscita | entro i 100 GB/mese gratuiti | 0 $ | 0 $ |
+| **Totale** | | **~0,77 $** | **~23,45 $** |
 
-  | Servizio | Utilizzo | Costo Mensile |
-  |----------|----------|---------------|
-  | **EC2 t3.large** | 24/7 (scaling) | €68.00 |
-  | **S3 Standard** | 50GB storage, 50K PUT | €12.50 |
-  | **Bedrock Titan Embed** | 1.5M token/mese | €15.00 |
-  | **Bedrock Llama 3.2** | 7.5M token/mese | €60.00 |
-  | **Data Transfer** | 100GB out | €90.00 |
-  | **Application Load Balancer** | Per alta disponibilità | €22.50 |
-  | **TOTALE** | | **€268.00/mese** |
+Note sui costi:
+- quasi tutto il costo è l'istanza accesa: fermandola quando non serve (`aws ec2 stop-instances`) si pagano solo il disco (~1,90 $/mese) e S3; l'IPv4 pubblico si paga solo mentre l'istanza è accesa
+- con 1000 domande al giorno la parte Bedrock sale a circa 0,21 $/giorno (~6,40 $/mese), mentre l'istanza resta la stessa fino a quando regge il carico
+- le immagini con Nova Lite costano circa 0,0003 $ l'una; con `IMAGE_MODEL` vuoto (solo OCR con Tesseract) la voce va a zero
+- per cambiare modello si aggiornano sia `.env` sia `policy.json`, che autorizza solo i modelli usati
+- la [versione serverless](../CDK/cdk33bedrockServerless/) con lo stesso scenario costa circa 0,07 $ al giorno (~2,20 $ al mese, con 42 brani per domanda invece di 4), perché non ha nulla acceso quando non si usa
 
 
-## 🚀 Miglioramenti e Sviluppi Futuri
-
-- 🔒 Sicurezza e Autenticazione
-  ```python
-  # Implementazione JWT Authentication
-  from fastapi.security import HTTPBearer
-  from jose import JWTError, jwt
-
-  security = HTTPBearer()
-
-  @app.post("/query")
-  async def query(q: str, token: str = Depends(security)):
-      # Validazione token JWT
-      payload = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
-      user_id = payload.get("sub")
-      # Procedi con la query...
-  ```
-- 📊 Monitoring e Observability
-  ```python
-  # CloudWatch Metrics Integration
-  import boto3
-  cloudwatch = boto3.client('cloudwatch')
-
-  def log_metrics(query_time, tokens_used, user_id):
-      cloudwatch.put_metric_data(
-          Namespace='RAG/Performance',
-          MetricData=[
-              {
-                  'MetricName': 'QueryLatency',
-                  'Value': query_time,
-                  'Unit': 'Seconds'
-              },
-              {
-                  'MetricName': 'TokensConsumed',
-                  'Value': tokens_used,
-                  'Unit': 'Count'
-              }
-          ]
-      )
-  ```
-- 🎯 Chunking Intelligente
-  ```python
-  # Implementazione RecursiveCharacterTextSplitter
-  from langchain.text_splitter import RecursiveCharacterTextSplitter
-
-  splitter = RecursiveCharacterTextSplitter(
-      chunk_size=1000,
-      chunk_overlap=200,
-      separators=["\n\n", "\n", ".", "!", "?", ",", " ", ""]
-  )
-
-  chunks = splitter.split_text(document_text)
-  ```
-- 🔄 Caching e Performance
-  ```python
-  # Redis Cache per Embeddings
-  import redis
-  import pickle
-
-  redis_client = redis.Redis(host='localhost', port=6379, db=0)
-
-  def cached_embed(text: str) -> List[float]:
-      cache_key = f"embed:{hash(text)}"
-      cached = redis_client.get(cache_key)
-      
-      if cached:
-          return pickle.loads(cached)
-      
-      embedding = bedrock_embed([text])[0]
-      redis_client.setex(cache_key, 3600, pickle.dumps(embedding))
-      return embedding
-  ```
-- 🌐 Multi-Modal Support
-  ```python
-  # Support per immagini con Bedrock Multimodal
-  @app.post("/ingest-image")
-  async def ingest_image(file: UploadFile = File(...)):
-      # Utilizza Claude 3 per estrarre testo da immagini
-      image_bytes = await file.read()
-      
-      response = bedrock.invoke_model(
-          modelId="anthropic.claude-3-sonnet-20240229-v1:0",
-          body=json.dumps({
-              "anthropic_version": "bedrock-2023-05-31",
-              "max_tokens": 1000,
-              "messages": [{
-                  "role": "user",
-                  "content": [{
-                      "type": "image",
-                      "source": {
-                          "type": "base64",
-                          "media_type": "image/jpeg",
-                          "data": base64.b64encode(image_bytes).decode()
-                      }
-                  }]
-              }]
-          })
-      )
-  ```
-- 📈 Scalabilità Avanzata
-
-  - Auto Scaling Group
-    ```yaml
-    # CloudFormation template per ASG
-    AutoScalingGroup:
-      Type: AWS::AutoScaling::AutoScalingGroup
-      Properties:
-        MinSize: 1
-        MaxSize: 10
-        DesiredCapacity: 2
-        TargetGroupARNs:
-          - !Ref ApplicationLoadBalancerTargetGroup
-        HealthCheckType: ELB
-        HealthCheckGracePeriod: 300
-    ```
-  - Database Distribuito
-    ```python
-    # Migrazione a Pinecone per vector database scalabile
-    import pinecone
-
-    pinecone.init(api_key="your-api-key", environment="us-west1-gcp")
-    index = pinecone.Index("rag-embeddings")
-
-    def store_embeddings(embeddings, metadata):
-        vectors = [(str(i), emb, meta) for i, (emb, meta) in enumerate(zip(embeddings, metadata))]
-        index.upsert(vectors=vectors)
-    ```
-
-- 🔍 Analytics e BI
-  ```python
-  # Integration con Amazon QuickSight
-  def generate_usage_report():
-      return {
-          "daily_queries": get_query_count_today(),
-          "top_topics": get_most_queried_topics(),
-          "user_engagement": calculate_engagement_metrics(),
-          "cost_analysis": get_daily_aws_costs()
-      }
-  ```
+## 🚀 Sviluppi Futuri
+- 🔒 **HTTPS**: un certificato (Let's Encrypt con un dominio, oppure CloudFront davanti all'istanza) per non mandare la chiave API in chiaro
+- 👥 **Utenti**: login con Amazon Cognito al posto della chiave unica, con documenti separati per utente
+- 📊 **Monitoraggio**: metriche su CloudWatch (tempi di risposta, token consumati) e un allarme sul costo giornaliero di Bedrock
+- 💬 **Conversazione**: memoria delle domande precedenti e risposte in streaming con `converse_stream`
+- 🔄 **Reranking** dei risultati prima della generazione per migliorare le fonti scelte
 
 
 # &lt; AlNao /&gt;

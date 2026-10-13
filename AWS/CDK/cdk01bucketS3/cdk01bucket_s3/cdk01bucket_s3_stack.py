@@ -9,7 +9,7 @@ class Cdk01BucketS3Stack(Stack):
 
         bucket = s3.Bucket(self,
             id="01BucketS3", 
-            bucket_name="cdk-01-bucket-s3", 
+            bucket_name="alnao-dev-cdk-01buckets3", 
             versioned=True,
             removal_policy=RemovalPolicy.DESTROY
         )

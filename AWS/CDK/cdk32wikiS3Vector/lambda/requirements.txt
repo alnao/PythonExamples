@@ -1,0 +1,2 @@
+# Libreria del layer delle Lambda: boto3 recente, con il client s3vectors e i filtri $startsWith
+boto3>=1.40

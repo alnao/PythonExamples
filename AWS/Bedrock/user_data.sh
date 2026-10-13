@@ -1,72 +1,66 @@
 #!/bin/bash
-cd /home/ubuntu
-echo "User data script start on $(date)" > /home/ubuntu/user_data.log
+# User data dell'EC2 (Ubuntu 24.04): installa il Pocket RAG come servizio systemd dietro Apache.
+# I segnaposto __REGION__, __BUCKET_NAME__, __API_KEY_PARAMETER__ e __APP_URL__ vengono
+# sostituiti da bedrock_rag_stack.sh prima del lancio dell'istanza. __APP_URL__ e' un URL
+# prefirmato (valido un'ora) del pacchetto con il codice locale caricato sul bucket.
+set -euxo pipefail
+exec > >(tee -a /var/log/user-data.log) 2>&1
+echo "User data start on $(date)"
 
-# Installa git, apache e aggiorna il sistema
-#sudo yum update -y
-#sudo yum install -y python3.11 python3.11-devel git gcc httpd
-sudo apt-get update -y
-sudo apt-get install -y python3.10 python3.10-venv python3.10-dev git gcc apache2
-sudo apt-get install -y build-essential python3-dev
-sudo apt-get install -y libssl-dev libffi-dev python3-pip
-sudo apt-get install -y libxml2-dev libxslt1-dev zlib1g
-sudo apt-get install -y libjpeg-dev libpng-dev
-sudo apt-get install -y libpq-dev
-sudo apt-get install -y libblas-dev liblapack-dev libatlas-base-dev gfor
-sudo apt-get install -y libtbb2 libtbb-dev
-sudo apt-get install -y libreadline-dev libbz2-dev libsqlite3-dev wget
-sudo apt-get install -y curl llvm libncurses5-dev libncursesw5-dev
-sudo apt-get install -y xz-utils tk-dev libxml2-dev libxmlsec1-dev libffi-dev liblzma-dev
-sudo apt-get install -y libfreetype6-dev liblcms2-dev libopenjp2-7-dev libtiff5-dev tcl8-dev
-sudo apt-get install -y libmpdec-dev libgdbm-dev libncursesw5-dev libreadline-dev
-sudo apt-get install -y libssl-dev libffi-dev libsqlite3-dev libbz2-dev libexpat1-dev
-sudo apt-get install -y liblzma-dev zlib1g-dev libgdbm-compat-dev
-sudo apt-get install -y libblas-dev liblapack-dev libatlas-base-dev gfortran
-sudo apt-get install -y libtbb2 libtbb-dev
-sudo apt-get install -y libpq-dev
-sudo apt-get install -y tesseract-ocr poppler-utils
+export DEBIAN_FRONTEND=noninteractive
+apt-get update -y
+apt-get install -y python3-venv apache2 tesseract-ocr tesseract-ocr-ita poppler-utils
 
-# Avvia e abilita Apache
-sudo systemctl start apache2
-sudo systemctl enable apache2
+# Codice dal pacchetto sul bucket (backend.py, requirements.txt, web/)
+APP_DIR=/opt/pocket-rag
+mkdir -p $APP_DIR
+curl -fsSL "__APP_URL__" -o /tmp/pocket-rag.tar.gz
+tar xzf /tmp/pocket-rag.tar.gz -C $APP_DIR
+rm -f /tmp/pocket-rag.tar.gz
 
-# Clona la tua repo
-git clone https://github.com/alnao/PythonExamples.git app
-cd app/AWS/Bedrock/web
+python3 -m venv $APP_DIR/venv
+$APP_DIR/venv/bin/pip install --upgrade pip
+$APP_DIR/venv/bin/pip install -r $APP_DIR/requirements.txt
 
-# Copia la pagina HTML dal repository
-sudo cp index.html /var/www/html/
-sudo cp index.js /var/www/html/
-sudo cp admin.html /var/www/html/
+cat > $APP_DIR/.env <<EOF
+AWS_REGION=__REGION__
+S3_BUCKET=__BUCKET_NAME__
+API_KEY_PARAMETER=__API_KEY_PARAMETER__
+EOF
+chown -R ubuntu:ubuntu $APP_DIR
 
-cd ..
-# Installa Python e dipendenze
-python3.10 -m venv venv
-source venv/bin/activate
+# Backend come servizio: riparte da solo dopo un errore o un riavvio dell'istanza
+cat > /etc/systemd/system/pocket-rag.service <<EOF
+[Unit]
+Description=Pocket RAG (FastAPI + Bedrock)
+After=network-online.target
+Wants=network-online.target
 
-pip install --upgrade pip
-pip install fastapi uvicorn[standard] boto3 pydantic-settings python-multipart chromadb tiktoken
-pip install PyPDF2 pillow python-docx openpyxl python-pptx
-pip install "langchain<0.1.0"
-pip install "boto3<2.0.0"
-pip install chromadb==0.3.22 #pip install "chromadb<0.4.0" #NO pip install hnswlib #https://stackoverflow.com/questions/73969269/error-could-not-build-wheels-for-hnswlib-which-is-required-to-install-pyprojec
-pip install "fastapi<1.0.0"     # Per evitare problemi di compatibilità con versioni future
-pip install "uvicorn<1.0.0"     # Per evitare problemi di compatibilità con versioni future
-pip install "pydantic>=2.7.0"
-pip install "tiktoken<0.4.0"    # Per evitare problemi di compatibilità con versioni future
-pip install "python-multipart<1.0.0"  # Per evitare problemi di compatibilità con versioni future
-sudo chmod 777 venv/ -R
-pip install pytesseract pdf2image pillow
-#nota questi devono essere dopo, non so il motivo
-sudo apt-get update
-sudo apt-get install -y tesseract-ocr tesseract-ocr-ita poppler-utils
+[Service]
+User=ubuntu
+WorkingDirectory=$APP_DIR
+ExecStart=$APP_DIR/venv/bin/uvicorn backend:app --host 127.0.0.1 --port 8000
+Restart=always
+RestartSec=5
 
-#crea cartella chroma
-mkdir -p ./chroma
-sudo chown -R ubuntu:ubuntu ./chroma
-sudo chmod -R u+rw ./chroma
+[Install]
+WantedBy=multi-user.target
+EOF
+systemctl daemon-reload
+systemctl enable --now pocket-rag
 
-# Avvia il servizio FastAPI (modifica il path/main se necessario)
-nohup venv/bin/uvicorn backend:app --host 0.0.0.0 --port 8000 > fastapi.log 2>&1 &
+# Apache sulla porta 80 inoltra tutto a uvicorn (sito e API)
+a2enmod proxy proxy_http
+cat > /etc/apache2/sites-available/pocket-rag.conf <<EOF
+<VirtualHost *:80>
+    ProxyPreserveHost On
+    ProxyTimeout 600
+    ProxyPass / http://127.0.0.1:8000/
+    ProxyPassReverse / http://127.0.0.1:8000/
+</VirtualHost>
+EOF
+a2dissite 000-default
+a2ensite pocket-rag
+systemctl reload apache2
 
-echo "User data script executed successfully on $(date)" >> /home/ubuntu/user_data.log
+echo "User data completed on $(date)"

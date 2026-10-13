@@ -1,0 +1,16 @@
+# Pocket RAG su EC2 (Python 3.12+): pip install -r requirements.txt
+fastapi>=0.115,<1.0
+uvicorn[standard]>=0.30,<1.0
+python-multipart>=0.0.9
+pydantic>=2.7,<3
+pydantic-settings>=2.3,<3
+boto3>=1.40
+chromadb>=1.0,<2.0
+pypdf>=5.0
+python-docx>=1.1
+openpyxl>=3.1
+python-pptx>=1.0
+pillow>=10.0
+# OCR delle pagine PDF senza testo (servono anche i pacchetti di sistema tesseract-ocr e poppler-utils)
+pytesseract>=0.3.10
+pdf2image>=1.17

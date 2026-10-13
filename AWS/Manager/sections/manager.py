@@ -9,7 +9,7 @@ pagina esegue solo dopo una conferma). L'elenco di un servizio regionale con la 
 dettagli e azioni lavorano sempre sulla region della risorsa.
 
 API:
-    GET  /api/manager/<servizio>/list          elenco (region o '__all__')
+    GET  /api/manager/<servizio>/list          elenco (region o '__all__'; refresh=1 rilegge i tag)
     GET  /api/manager/<servizio>/<lettura>     dettaglio (region della risorsa + parametri)
     POST /api/manager/<servizio>/<azione>      azione (JSON con region e parametri)
     GET  /api/manager/s3/download              redirect all'URL firmato dell'oggetto
@@ -268,9 +268,10 @@ def list_items(name):
     """Risorse del servizio nella region scelta o in tutte ('__all__')."""
     spec = service(name)
     profile = current_profile()
+    refresh = request.args.get('refresh') == '1'
     if spec.get('global_'):
         items = spec['list'](instance(spec))
-        add_tags(spec, items, profile)
+        add_tags(spec, items, profile, refresh)
         return jsonify({'items': items, 'warnings': [], 'global': True})
     items, warnings = [], []
     results = run_parallel(region_list(current_region()),
@@ -282,22 +283,30 @@ def list_items(name):
         for item in res:
             item['_region'] = r
             items.append(item)
-    add_tags(spec, items, profile)
+    add_tags(spec, items, profile, refresh)
     return jsonify({'items': items, 'warnings': warnings, 'global': False})
 
 
-def add_tags(spec, items, profile):
+def add_tags(spec, items, profile, refresh=False):
     """
-    Aggiunge _tags ({chiave: valore}, None se non si possono sapere) per le icone dei tag.
-    Dall'elenco se li contiene gia', altrimenti dalla Tagging API per ARN (cache del Tag Manager).
+    Aggiunge _tags ({chiave: valore}, None se non si possono sapere) per le icone e il
+    dettaglio. Dall'elenco se li contiene gia', altrimenti dalla Tagging API per ARN (cache
+    del Tag Manager, riletta con refresh; gli ARN che non vi compaiono si leggono a parte).
     """
-    lookup = TagLookup(profile)
+    entries = []
     for item in items:
         try:
-            item['_tags'] = lookup.resolve(spec['tags'](item), item.get('_region', ''))
+            entries.append((spec['tags'](item), item.get('_region', '')))
         except Exception as e:
             logger.warning(f"Tag non determinabili: {e}")
-            item['_tags'] = None
+            entries.append((None, ''))
+    try:
+        tags = TagLookup(profile, refresh).resolve_all(entries)
+    except Exception as e:
+        logger.warning(f"Tag non determinabili: {e}")
+        tags = [None] * len(items)
+    for item, item_tags in zip(items, tags):
+        item['_tags'] = item_tags
 
 
 # Le route fisse di S3 vengono prima di quelle generiche (Flask preferisce le regole senza variabili)

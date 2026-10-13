@@ -1,0 +1,3 @@
+pytest>=8.0
+# per i test delle Lambda e di upload_folder.py in locale
+boto3>=1.40

@@ -1,5 +1,9 @@
 import json
 import boto3
+try:
+    from .tags import tag_list
+except ImportError:  # modulo eseguito come script
+    from tags import tag_list
 #see https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/ssm/client/get_parameters_by_path.html
 
 class AwsSSMparameterStore:
@@ -25,7 +29,7 @@ class AwsSSMparameterStore:
         #if 'Parameters' in response:
         #    return response['Parameters']
         #return []
-    def put_parameter(self, name, value, type, description):
+    def put_parameter(self, name, value, type, description, tags=None):
         boto3.setup_default_session(profile_name=self.profile_name)
         ssm = boto3.client('ssm') #, 'us-east-2'
         response = ssm.put_parameter(
@@ -39,6 +43,8 @@ class AwsSSMparameterStore:
             #Policies='string',
             #DataType='string'
         )
+        # put_parameter non accetta Tags insieme a Overwrite=True: i tag si aggiungono a parte
+        ssm.add_tags_to_resource(ResourceType='Parameter', ResourceId=name, Tags=tag_list(tags))
         return response
 
 def main():

@@ -109,25 +109,30 @@ def multi_region_resources(profile, region, source, refresh):
 
 class TagLookup:
     """
-    Tag delle risorse per ARN, per le icone di Manager e Panoramic.
+    Tag delle risorse per ARN, per le icone e il dettaglio di Manager e Panoramic.
 
     Legge la Tagging API di tutte le region della lista (piu' us-east-1 per i servizi
     globali) usando la stessa cache del Tag Manager: una risorsa che non compare non ha
     tag (la Tagging API elenca solo quelle taggate almeno una volta). Per le region che
     non si riescono a leggere i tag restano sconosciuti (None) e non si mostra nessuna icona.
 
+    La cache puo' essere vecchia (tag_manager.cache_ttl): gli ARN che non vi compaiono
+    (per esempio risorse appena create) si rileggono direttamente per ARN, e con
+    refresh=True (pulsante "Rilegge l'elenco") si rilegge anche la cache.
+
     Le voci da risolvere sono ('inline', tags) quando l'elenco di AWS contiene gia' i tag,
     oppure ('arn', arn) con '{account}' e '{region}' da sostituire.
     """
 
-    def __init__(self, profile):
+    def __init__(self, profile, refresh=False):
         self.profile = profile
+        self.refresh = refresh
         self._index = None
         self._account = None
 
     def _load(self):
         regions = list(dict.fromkeys(load_config()['regions'] + [GLOBAL_REGION]))
-        results = run_parallel(regions, lambda r: region_resources(self.profile, r, 'tagging', False))
+        results = run_parallel(regions, lambda r: region_resources(self.profile, r, 'tagging', self.refresh))
         self._index, self.read_regions = {}, set()
         for r, res, err in results:
             if err:
@@ -146,27 +151,61 @@ class TagLookup:
                 self._account = ''
         return self._account
 
-    def resolve(self, entry, region=''):
-        """Tag {chiave: valore} della risorsa, oppure None se non si possono sapere."""
-        if not entry:
+    def _arn(self, entry, region):
+        """ARN completo di una voce ('arn', ...), None se non si puo' costruire."""
+        if not entry or entry[0] != 'arn' or not entry[1]:
             return None
-        kind, value = entry
-        if kind == 'inline':
-            return normalize_tags(value)
-        if not value:
-            return None
+        value = entry[1]
         if '{account}' in value:
             if not self.account:
                 return None
             value = value.replace('{account}', self.account)
-        value = value.replace('{region}', region or '')
-        if self._index is None:
-            self._load()
-        arn_region = parse_arn(value)['region'] or GLOBAL_REGION
-        if value in self._index:
-            return self._index[value]
+        return value.replace('{region}', region or '')
+
+    def _fetch_missing(self, arns):
+        """
+        Legge per ARN quelli che mancano dalla cache e li aggiunge all'indice. Gli ARN
+        senza region (S3) si cercano in tutte le region lette: la Tagging API li elenca
+        in quella del bucket.
+        """
+        by_region = {}
+        for arn in arns:
+            arn_region = parse_arn(arn)['region']
+            for r in [arn_region] if arn_region else self.read_regions:
+                if r in self.read_regions:
+                    by_region.setdefault(r, []).append(arn)
+        results = run_parallel(list(by_region), lambda r: TagManager(
+            region_name=r, aws_profile=self.profile).get_tags_by_arn(by_region[r]))
+        for r, res, err in results:
+            if err:
+                logger.warning(f"Tag per ARN non leggibili in {r}: {err}")
+                continue
+            self._index.update(res)
+
+    def resolve_all(self, entries):
+        """
+        Tag {chiave: valore} di ogni voce di entries [(voce, region)], oppure None per
+        quelle di cui non si possono sapere. Una sola lettura per ARN delle risorse
+        che mancano dalla cache.
+        """
+        arns = [self._arn(entry, region) for entry, region in entries]
+        if any(arns):
+            if self._index is None:
+                self._load()
+            missing = list(dict.fromkeys(a for a in arns if a and a not in self._index))
+            if missing:
+                self._fetch_missing(missing)
+        return [normalize_tags(entry[1]) if entry and entry[0] == 'inline' else self._from_index(arn)
+                for (entry, _), arn in zip(entries, arns)]
+
+    def _from_index(self, arn):
+        if not arn:
+            return None
+        if arn in self._index:
+            return self._index[arn]
+        arn_region = parse_arn(arn)['region'] or GLOBAL_REGION
         # region non letta (errore o fuori lista): meglio nessuna icona che un falso allarme
-        return {} if arn_region in self.read_regions or not parse_arn(value)['region'] else None
+        return {} if arn_region in self.read_regions or not parse_arn(arn)['region'] else None
 
 
 def normalize_tags(tags):

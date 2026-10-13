@@ -1,0 +1,72 @@
+// Funzioni comuni alle pagine della wiki: chiave API, chiamate al backend, escape HTML.
+// Le API sono sotto /api sullo stesso host del sito (niente CORS).
+
+const API = '/api';
+const KEY_STORAGE = 'wikiS3VectorApiKey';
+
+function getApiKey() {
+    try { return localStorage.getItem(KEY_STORAGE) || ''; } catch (e) { return ''; }
+}
+
+function setApiKey(value) {
+    try { localStorage.setItem(KEY_STORAGE, value); } catch (e) { /* storage non disponibile */ }
+}
+
+// Ogni testo che arriva dal backend (documenti, risposte, nomi file) passa da qui prima di innerHTML
+function escapeHtml(value) {
+    return String(value ?? '').replace(/[&<>"']/g, c => (
+        { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
+function errorMessage(data, status) {
+    const detail = data && (data.detail || data.error);
+    if (Array.isArray(detail)) return detail.map(d => d.msg || JSON.stringify(d)).join('; ');
+    return typeof detail === 'string' ? detail : `HTTP ${status}`;
+}
+
+async function apiFetch(path, options = {}) {
+    const headers = Object.assign({ 'X-API-Key': getApiKey() }, options.headers || {});
+    const response = await fetch(API + path, Object.assign({}, options, { headers }));
+    let data = null;
+    try { data = await response.json(); } catch (e) { data = null; }
+    if (!response.ok) throw new Error(errorMessage(data, response.status));
+    return data;
+}
+
+function apiJson(path, method, body) {
+    return apiFetch(path, {
+        method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
+    });
+}
+
+function alertHtml(type, html) {
+    return `<div class="alert alert-${type} mb-0">${html}</div>`;
+}
+
+// Campo "API key" nella navbar: valore salvato nel browser
+function setupApiKeyField() {
+    const input = document.getElementById('apiKey');
+    input.value = getApiKey();
+    input.addEventListener('change', () => setApiKey(input.value.trim()));
+}
+
+// Indicatore di stato nella navbar (/api/health non richiede la chiave)
+async function checkHealth() {
+    const indicator = document.getElementById('statusIndicator');
+    const text = document.getElementById('statusText');
+    try {
+        const response = await fetch(`${API}/health`);
+        const ok = response.ok;
+        indicator.className = `status-indicator status-${ok ? 'online' : 'offline'}`;
+        text.textContent = ok ? 'Online' : 'Offline';
+    } catch (e) {
+        indicator.className = 'status-indicator status-offline';
+        text.textContent = 'Offline';
+    }
+}
+
+function startHealthMonitoring() {
+    checkHealth();
+    setInterval(checkHealth, 30000);
+    document.addEventListener('visibilitychange', () => { if (!document.hidden) checkHealth(); });
+}

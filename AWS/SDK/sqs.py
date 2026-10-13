@@ -3,6 +3,10 @@ import boto3
 from datetime import datetime 
 import logging
 import warnings
+try:
+    from .tags import tag_dict
+except ImportError:  # modulo eseguito come script
+    from tags import tag_dict
 
 warnings.filterwarnings('ignore', category=FutureWarning, module='botocore.client')
 
@@ -23,14 +27,15 @@ class AwsSqs:
             return topics_iter['QueueUrls']
         return []
 
-    def create_queue(self,queue_name,delay_seconds,visiblity_timeout):
+    def create_queue(self,queue_name,delay_seconds,visiblity_timeout,tags=None):
         sqs_client = boto3.client("sqs") #, region_name=AWS_REGION
         response = sqs_client.create_queue(QueueName=queue_name,
             Attributes={
                 'DelaySeconds': str(delay_seconds),
                 'VisibilityTimeout': str(visiblity_timeout)
                 #  'FifoQueue': 'true'
-            })
+            },
+            tags=tag_dict(tags))
         return response
 
     def delete_queue(self, queue_name):

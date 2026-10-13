@@ -2,6 +2,10 @@ import boto3
 from typing import List, Dict, Optional
 from botocore.exceptions import ClientError
 import logging
+try:
+    from .tags import tag_list
+except ImportError:  # modulo eseguito come script
+    from tags import tag_list
 
 class AwsEcr:
     """
@@ -22,13 +26,14 @@ class AwsEcr:
         session = boto3.Session(profile_name=profile_name, region_name=region_name)
         self.ecr_client = session.client('ecr')
 
-    def create_repository(self, repository_name: str, image_tag_mutability: str = 'MUTABLE') -> Dict:
+    def create_repository(self, repository_name: str, image_tag_mutability: str = 'MUTABLE', tags: Optional[Dict] = None) -> Dict:
         """
         Crea un nuovo repository ECR
         
         Args:
             repository_name: Nome del repository
             image_tag_mutability: MUTABLE o IMMUTABLE
+            tags: tag da aggiungere o sovrascrivere a quelli standard
             
         Returns:
             Dict con i dettagli del repository creato
@@ -39,7 +44,8 @@ class AwsEcr:
                 imageTagMutability=image_tag_mutability,
                 imageScanningConfiguration={
                     'scanOnPush': True
-                }
+                },
+                tags=tag_list(tags)
             )
             self.logger.info(f"Repository {repository_name} creato con successo")
             return response['repository']

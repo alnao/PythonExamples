@@ -75,6 +75,7 @@ DEFAULTS = {
         'list_limit': 500,
         'logs_limit': 100,
         'dynamodb_max_read': 5000,
+        'standard_tags': {},
     },
 }
 SECTIONS = ('tag_manager', 'cost_explorer', 'panoramic', 'terraform', 'manager')

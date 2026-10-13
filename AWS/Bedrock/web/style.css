@@ -1,0 +1,21 @@
+.navbar-brand { font-weight: 600; }
+.api-key { width: 180px; }
+
+.status-indicator {
+    width: 12px; height: 12px; border-radius: 50%;
+    display: inline-block; margin-right: 0.4rem;
+}
+.status-online { background-color: #198754; }
+.status-offline { background-color: #dc3545; }
+.status-checking { background-color: #ffc107; }
+
+.hero-section {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white; padding: 2.5rem 0; margin-bottom: 2rem;
+}
+.endpoint-card { border-left: 4px solid #0d6efd; }
+
+.answer { white-space: pre-wrap; }
+.cite { font-size: 0.75em; vertical-align: super; }
+.source-excerpt { white-space: pre-wrap; font-size: 0.85rem; }
+.chunk-text { white-space: pre-wrap; font-size: 0.85rem; max-height: 220px; overflow: auto; }

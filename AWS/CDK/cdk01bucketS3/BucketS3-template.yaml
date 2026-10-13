@@ -2,7 +2,20 @@ Resources:
   01BucketS3FB71414A:
     Type: AWS::S3::Bucket
     Properties:
-      BucketName: cdk-01-bucket-s3
+      BucketName: alnao-dev-cdk-01buckets3
+      Tags:
+        - Key: CostCenter
+          Value: dev
+        - Key: Environment
+          Value: dev
+        - Key: ManagedBy
+          Value: CDK
+        - Key: Name
+          Value: aws-py-CDK.cdk01bucketS3
+        - Key: Owner
+          Value: AlNao
+        - Key: Project
+          Value: Development.aws.py-CDK.cdk01bucketS3
       VersioningConfiguration:
         Status: Enabled
     UpdateReplacePolicy: Delete
@@ -12,7 +25,7 @@ Resources:
   CDKMetadata:
     Type: AWS::CDK::Metadata
     Properties:
-      Analytics: v2:deflate64:H4sIAAAAAAAA/yXITQ5AMBBA4bPYt6N+FtZcQDiAUBWjTBOdRkTcHbF6X14KSa5ARf3hpR6tXHGAq+VeW/GuzmdwlUFbw6Ka6Nf9sTHehV2bz5WjERkd3aI+eXYUZ1BAoqLFI8o9EONmoPn7AKE+qE9xAAAA
+      Analytics: v2:deflate64:H4sIAAAAAAAA/zPSMzI31jNQTCwv1k1OydbNyUzSqw4uSUzO1kksL44vNtardipNzk4t0XFOy4Owamt1AipLMvLz9I31DI31TBWzijMzdYtK80oyc1P1giA0ACVBA4tYAAAA
     Metadata:
       aws:cdk:path: Cdk01BucketS3Stack/CDKMetadata/Default
     Condition: CDKMetadataAvailable
@@ -34,7 +47,13 @@ Conditions:
               - ap-northeast-2
           - Fn::Equals:
               - Ref: AWS::Region
+              - ap-northeast-3
+          - Fn::Equals:
+              - Ref: AWS::Region
               - ap-south-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - ap-south-2
           - Fn::Equals:
               - Ref: AWS::Region
               - ap-southeast-1
@@ -43,23 +62,39 @@ Conditions:
               - ap-southeast-2
           - Fn::Equals:
               - Ref: AWS::Region
+              - ap-southeast-3
+      - Fn::Or:
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - ap-southeast-4
+          - Fn::Equals:
+              - Ref: AWS::Region
               - ca-central-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - ca-west-1
           - Fn::Equals:
               - Ref: AWS::Region
               - cn-north-1
           - Fn::Equals:
               - Ref: AWS::Region
               - cn-northwest-1
-      - Fn::Or:
           - Fn::Equals:
               - Ref: AWS::Region
               - eu-central-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - eu-central-2
           - Fn::Equals:
               - Ref: AWS::Region
               - eu-north-1
           - Fn::Equals:
               - Ref: AWS::Region
               - eu-south-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - eu-south-2
+      - Fn::Or:
           - Fn::Equals:
               - Ref: AWS::Region
               - eu-west-1
@@ -81,7 +116,6 @@ Conditions:
           - Fn::Equals:
               - Ref: AWS::Region
               - sa-east-1
-      - Fn::Or:
           - Fn::Equals:
               - Ref: AWS::Region
               - us-east-1
@@ -91,25 +125,12 @@ Conditions:
           - Fn::Equals:
               - Ref: AWS::Region
               - us-west-1
-          - Fn::Equals:
-              - Ref: AWS::Region
-              - us-west-2
+      - Fn::Equals:
+          - Ref: AWS::Region
+          - us-west-2
 Parameters:
   BootstrapVersion:
     Type: AWS::SSM::Parameter::Value<String>
-    Default: /cdk-bootstrap/hnb659fds/version
+    Default: /cdk-bootstrap/alnao/dev/version
     Description: Version of the CDK Bootstrap resources in this environment, automatically retrieved from SSM Parameter Store. [cdk:skip]
-Rules:
-  CheckBootstrapVersion:
-    Assertions:
-      - Assert:
-          Fn::Not:
-            - Fn::Contains:
-                - - "1"
-                  - "2"
-                  - "3"
-                  - "4"
-                  - "5"
-                - Ref: BootstrapVersion
-        AssertDescription: CDK bootstrap stack version 6 required. Please run 'cdk bootstrap' with a recent version of the CDK CLI.
 

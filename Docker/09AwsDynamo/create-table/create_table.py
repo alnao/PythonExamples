@@ -7,6 +7,17 @@ AWS_REGION = os.getenv("AWS_DEFAULT_REGION", "eu-west-1")
 DYNAMODB_ENDPOINT = os.getenv("DYNAMODB_ENDPOINT")
 TABLE_NAME = os.getenv("TABLE_NAME", "alnao-persone")
 
+# Tag standard del repository (convenzione in CLAUDE.md), usati solo su AWS reale:
+# con DynamoDB Local (DYNAMODB_ENDPOINT valorizzato) la tabella si crea senza tag
+STANDARD_TAGS = {
+    "Name": "aws-py-Docker.09AwsDynamo",
+    "Environment": "dev",
+    "Project": "Development.aws.py-Docker.09AwsDynamo",
+    "Owner": "AlNao",
+    "CostCenter": "dev",
+    "ManagedBy": "Manual",
+}
+
 def create_table():
     dynamodb = boto3.resource(
         "dynamodb",
@@ -15,6 +26,10 @@ def create_table():
         aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID", "local"),
         aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY", "local")
     )
+
+    extra = {}
+    if not DYNAMODB_ENDPOINT:
+        extra["Tags"] = [{"Key": k, "Value": v} for k, v in STANDARD_TAGS.items()]
 
     try:
         table = dynamodb.create_table(
@@ -28,7 +43,8 @@ def create_table():
             ProvisionedThroughput={
                 "ReadCapacityUnits": 5,
                 "WriteCapacityUnits": 5
-            }
+            },
+            **extra
         )
         table.wait_until_exists()
         print(f"Tabella '{TABLE_NAME}' creata correttamente.")

@@ -29,7 +29,7 @@ Permessi IAM necessari:
 import json
 import logging
 import time
-from datetime import date
+from datetime import date, timedelta
 from functools import wraps
 
 from flask import Blueprint, jsonify, render_template, request
@@ -514,6 +514,42 @@ def cached_breakdown(profile, group):
     return {'group': group, 'month': None, 'items': []}
 
 
+def cached_day(profile, metric, day):
+    """
+    Costi per servizio di un giorno ('YYYY-MM-DD') senza chiamare AWS: dal Data Export
+    se ha il mese, altrimenti da una serie giornaliera in cache che contiene quel giorno.
+    partial = letto prima della fine del giorno (i costi di AWS arrivano con ore di ritardo).
+    """
+    month = day[:7]
+    group_by = [{'Type': 'DIMENSION', 'Key': 'SERVICE'}]
+    entry = None
+    try:
+        entry = cur.query(month, profile, 'DAILY', metric, group_by)
+    except Exception as ex:
+        logger.warning(f"Data Export: {month} non utilizzabile: {ex}")
+    if entry is None:
+        daily = [d for d in _cached_series(profile, metric, None) if d.get('granularity') == 'DAILY']
+        for dims in daily:
+            e = MonthStore(CACHE_DIR, 'costs', dims).get(month)
+            if e is not None and any(p['start'] == day for p in e['periods']):
+                entry = {**e, 'source': 'api'}
+                break
+    if entry is None:
+        return {'day': day, 'cached': False}
+    by_service = {}
+    for r in entry['rows']:
+        if r['period'] == day:
+            by_service[r['keys'][0]] = by_service.get(r['keys'][0], 0) + r['amount']
+    end_of_day = time.mktime(date.fromisoformat(day).timetuple()) + 86400
+    return {
+        'day': day, 'cached': True, 'source': entry.get('source'), 'loaded_at': entry.get('at'),
+        'partial': entry.get('at', 0) < end_of_day,
+        'total': round(sum(by_service.values()), 4),
+        'services': [{'service': s, 'amount': round(a, 4)}
+                     for s, a in sorted(by_service.items(), key=lambda kv: -kv[1]) if a],
+    }
+
+
 def cached_summary(profile):
     """
     Costi degli ultimi 3 mesi per la Home. Per ogni mese: Data Export se c'e', altrimenti
@@ -566,6 +602,7 @@ def cached_summary(profile):
     return {
         'profile': profile, 'metric': metric, 'months': out_months,
         'services': services, 'untagged': untagged, 'forecast': forecast,
+        'yesterday': cached_day(profile, metric, (date.today() - timedelta(days=1)).isoformat()),
         'cur_enabled': cur.enabled,
     }
 

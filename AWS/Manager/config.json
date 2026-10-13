@@ -31,7 +31,7 @@
     "Project": ["aws_auto", "AlNaoCom", "AlNaoIt", "Paths.games", "Awwotations", "Development", "Proxy", "Annotazioni"],
     "Owner": ["AlNao", "aws_auto", "external", "Paths.games.opsTeam"],
     "CostCenter": ["dev", "AlNaoWebsiteProd", "Paths.games", "Awwotation", "Annotazioni"],
-    "ManagedBy": ["Manual", "Terraform", "CloudFormation", "aws_auto", "Sh"]
+    "ManagedBy": ["Manual", "Terraform", "CloudFormation", "aws_auto", "Sh" , "CDK"]
   },
   "compliant_tags": {
     "_comment": "Lista di coppie chiave/valore che, se TUTTE presenti su una risorsa, la rendono compliant (ignora i tag obbligatori). Ogni oggetto nell'array rappresenta un set di tag che devono essere tutti presenti.",
@@ -49,7 +49,7 @@
     ]
   },
   "resources_skipped": {
-    "_comment": "Risorse di sistema AWS che non devono essere analizzate. Ogni entry ha 'service', 'resource_type' (opzionale), e 'name' (opzionale). Se 'resource_type' o 'name' mancano, vengono considerate tutte le risorse di quel servizio/tipo.",
+    "_comment": "Risorse di sistema AWS che non devono essere analizzate. Ogni entry ha 'service', 'resource_type' (opzionale), e 'name' (opzionale). Se 'resource_type' o 'name' mancano (null), vengono considerate tutte le risorse di quel servizio/tipo. In 'name' l'asterisco e' un jolly per qualsiasi sequenza di caratteri: 'CDKToolkit*' esclude i nomi che iniziano per CDKToolkit, '*-default' quelli che finiscono per -default. Il name e' la parte dell'ARN dopo il tipo (per uno stack CloudFormation: nome/id).",
     "entries": [
       {"service": "events", "resource_type": "event-bus", "name": "default"},
       {"service": "apprunner", "resource_type": "autoscalingconfiguration", "name": null},
@@ -72,6 +72,7 @@
       {"service": "lambda", "resource_type": "layer", "name": null},
       {"service": "lambda", "resource_type": "layer/version", "name": null},
       {"service": "elasticache", "resource_type": "user", "name": "default"},
+      {"service": "elasticache", "resource_type": "user", "name": "default.iam-user"},
       {"service": "events", "resource_type": "rule", "name": "AutoScalingManagedRule"},
       {"service": "memorydb", "resource_type": "parametergroup", "name": null},
       {"service": "memorydb", "resource_type": "user", "name": "default"},
@@ -96,12 +97,15 @@
       {"service": "lambda", "resource_type": "function/version", "name": null},
       {"service": "cloudformation", "resource_type": "stack", "name": "aws-sam-cli-managed-default/cf388af0-371b-11f1-b0b4-0aa6d0904d61"},
       {"service": "ssm", "resource_type": "managed-instance", "name": null},
-      {"service": "cloudformation", "resource_type": "stack", "name": "aws-sam-cli-managed-default"}
+      {"service": "ssm", "resource_type": "session", "name": "aws23user-*"},
+      {"service": "ssm", "resource_type": "document", "name": "SSM-SessionManagerRunShell"},
+      {"service": "cloudformation", "resource_type": "stack", "name": "aws-sam-cli-managed-default"},
+      {"service": "cloudformation", "resource_type": "stack", "name": "CDKToolkit*"}      
     ]
   },
   "tag_manager": {
     "_comment": "required_tags: tag che ogni risorsa deve avere (le righe senza sono evidenziate); prefix_match_keys: tag i cui valori che estendono un suggerito (Paths.games.aws sotto Paths.games) compaiono come sottovoci; cache_ttl: secondi di validita' della cache delle risorse lette; page_size: righe per pagina.",
-    "required_tags": ["Project", "Name", "Environment", "ManagedBy"],
+    "required_tags": ["Project", "Name", "Environment", "ManagedBy", "Owner", "CostCenter"],
     "prefix_match_keys": ["Project"],
     "cache_ttl": 3600,
     "page_size": 50
@@ -139,7 +143,7 @@
     }
   },
   "panoramic": {
-    "_comment": "Servizi letti dal pulsante 'Servizi principali'; 'Tutti i servizi' li legge tutti. Chiavi possibili: vpc, subnets, security_groups, ec2, rds, s3, cloudfront, lambda, dynamodb, apigateway, sqs, sns, ecr, eks, eks_nodes, cloudformation, cloudwatch_alarms, iam_users, iam_roles, route53, elasticache, load_balancers, secrets, ssm_parameters, kinesis, step_functions, efs.",
+    "_comment": "Servizi letti dal pulsante 'Servizi principali'; 'Tutti i servizi' li legge tutti. Chiavi possibili: vpc, subnets, security_groups, ec2, rds, s3, s3vectors, cloudfront, cloudfront_oac, lambda, lambda_layers, dynamodb, apigateway, sqs, sns, ecr, eks, eks_nodes, cloudformation, cloudwatch_alarms, log_groups, iam_users, iam_roles, route53, elasticache, load_balancers, secrets, ssm_parameters, kinesis, step_functions, efs.",
     "main_services": ["vpc", "ec2", "rds", "s3", "cloudfront", "lambda", "dynamodb", "apigateway", "sqs", "sns"]
   },
   "terraform": {
@@ -154,10 +158,18 @@
     "max_states": 200
   },
   "manager": {
-    "_comment": "max_upload_mb: dimensione massima dei file caricati su S3; list_limit: massimo di oggetti S3, righe DynamoDB per pagina, eventi di log ed esecuzioni mostrati; dynamodb_max_read: righe lette al massimo da uno Scan con filtro per ogni 'Carica dati' (le righe lette consumano capacita' anche se il filtro le scarta).",
+    "_comment": "max_upload_mb: dimensione massima dei file caricati su S3; list_limit: massimo di oggetti S3, righe DynamoDB per pagina, eventi di log ed esecuzioni mostrati; dynamodb_max_read: righe lette al massimo da uno Scan con filtro per ogni 'Carica dati' (le righe lette consumano capacita' anche se il filtro le scarta); standard_tags: tag proposti (e modificabili) nei form che creano risorse, come allarmi e log group CloudWatch.",
     "max_upload_mb": 10,
     "list_limit": 500,
     "logs_limit": 100,
-    "dynamodb_max_read": 5000
+    "dynamodb_max_read": 5000,
+    "standard_tags": {
+      "Name": "aws-py-Manager",
+      "Environment": "dev",
+      "Project": "Development.aws.py-Manager",
+      "Owner": "AlNao",
+      "CostCenter": "dev",
+      "ManagedBy": "Manual"
+    }
   }
 }

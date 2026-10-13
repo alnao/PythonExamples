@@ -6,7 +6,29 @@ import aws_cdk as cdk
 from cdk18efs.cdk18efs_stack import Cdk18EfsStack
 
 app = cdk.App()
+
+# tag standard su tutte le risorse dello stack (convenzione in CLAUDE.md)
+TAGS = {
+    "Name": "aws-py-CDK.cdk18efs",
+    "Environment": "dev",
+    "Project": "Development.aws.py-CDK.cdk18efs",
+    "Owner": "AlNao",
+    "CostCenter": "dev",
+    "ManagedBy": "CDK",
+}
+for key, value in TAGS.items():
+    cdk.Tags.of(app).add(key, value)
+
+# bootstrap CDK dell'account con i nomi del repository (vedi AWS/CDK/bootstrap/README.md)
+SYNTHESIZER = cdk.DefaultStackSynthesizer(
+    qualifier="alnaodev",
+    file_assets_bucket_name="alnao-dev-cdk",
+    image_assets_repository_name="alnao-dev-cdk",
+    bootstrap_stack_version_ssm_parameter="/cdk-bootstrap/alnao/dev/version",
+)
+
 Cdk18EfsStack(app, "Cdk18EfsStack",
+    synthesizer=SYNTHESIZER,
 
     # If you don't specify 'env', this stack will be environment-agnostic.
     # Account/Region-dependent features and context lookups will not work,

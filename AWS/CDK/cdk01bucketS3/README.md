@@ -11,7 +11,7 @@ Per l'installazione e la configurazione della CLI e del tool CDK, vedere il file
     cdk init app --language python
     python3 -m pip install -r requirements.txt
     python3 -m venv .venv
-    cdk bootstrap
+    ../bootstrap/bootstrap.sh create   # una volta per account: bootstrap con i nomi del repository (AWS/CDK/bootstrap)
     ```
 - Deploy del progetto
     ```
@@ -36,71 +36,30 @@ Per l'installazione e la configurazione della CLI e del tool CDK, vedere il file
     ```
 
 
-## AlNao.it
-Nessun contenuto in questo repository è stato creato con IA o automaticamente, tutto il codice è stato scritto con molta pazienza da Alberto Nao. Se il codice è stato preso da altri siti/progetti è sempre indicata la fonte. Per maggior informazioni visitare il sito [alnao.it](https://www.alnao.it/).
+
+
+
+# &lt; AlNao /&gt;
+Tutti i codici sorgente e le informazioni presenti in questo repository sono frutto di un attento e paziente lavoro di sviluppo da parte di AlNao, che si è impegnato a verificarne la correttezza nella massima misura possibile. Qualora parte del codice o dei contenuti sia stato tratto da fonti esterne, la relativa provenienza viene sempre citata, nel rispetto della trasparenza e della proprietà intellettuale. 
+
+
+Alcuni contenuti e porzioni di codice presenti in questo repository sono stati realizzati anche grazie al supporto di strumenti di intelligenza artificiale, il cui contributo ha permesso di arricchire e velocizzare la produzione del materiale. Ogni informazione e frammento di codice è stato comunque attentamente verificato e validato, con l’obiettivo di garantire la massima qualità e affidabilità dei contenuti offerti. 
+
+
+Per ulteriori dettagli, approfondimenti o richieste di chiarimento, si invita a consultare il sito [AlNao.it](https://www.alnao.it/).
+
 
 ## License
+Made with ❤️ by <a href="https://www.alnao.it">AlNao</a>
+&bull; 
 Public projects 
-<a href="https://it.wikipedia.org/wiki/GNU_General_Public_License"  valign="middle"><img src="https://img.shields.io/badge/License-GNU-blue" style="height:22px;"  valign="middle"></a> 
+<a href="https://www.gnu.org/licenses/gpl-3.0"  valign="middle"> <img src="https://img.shields.io/badge/License-GPL%20v3-blue?style=plastic" alt="GPL v3" valign="middle" /></a>
 *Free Software!*
 
 
+Il software è distribuito secondo i termini della GNU General Public License v3.0. L'uso, la modifica e la ridistribuzione sono consentiti, a condizione che ogni copia o lavoro derivato sia rilasciato con la stessa licenza. Il contenuto è fornito "così com'è", senza alcuna garanzia, esplicita o implicita.
 
 
-# Welcome to your CDK Python project!
+The software is distributed under the terms of the GNU General Public License v3.0. Use, modification, and redistribution are permitted, provided that any copy or derivative work is released under the same license. The content is provided "as is", without any warranty, express or implied.
 
-This is a blank project for CDK development with Python.
 
-The `cdk.json` file tells the CDK Toolkit how to execute your app.
-
-This project is set up like a standard Python project.  The initialization
-process also creates a virtualenv within this project, stored under the `.venv`
-directory.  To create the virtualenv it assumes that there is a `python3`
-(or `python` for Windows) executable in your path with access to the `venv`
-package. If for any reason the automatic creation of the virtualenv fails,
-you can create the virtualenv manually.
-
-To manually create a virtualenv on MacOS and Linux:
-
-```
-$ python -m venv .venv
-```
-
-After the init process completes and the virtualenv is created, you can use the following
-step to activate your virtualenv.
-
-```
-$ source .venv/bin/activate
-```
-
-If you are a Windows platform, you would activate the virtualenv like this:
-
-```
-% .venv\Scripts\activate.bat
-```
-
-Once the virtualenv is activated, you can install the required dependencies.
-
-```
-$ pip install -r requirements.txt
-```
-
-At this point you can now synthesize the CloudFormation template for this code.
-
-```
-$ cdk synth
-```
-
-To add additional dependencies, for example other CDK libraries, just add
-them to your `setup.py` file and rerun the `pip install -r requirements.txt`
-command.
-
-## Useful commands
-
- * `cdk ls`          list all stacks in the app
- * `cdk synth`       emits the synthesized CloudFormation template
- * `cdk deploy`      deploy this stack to your default AWS account/region
- * `cdk diff`        compare deployed stack with current state
- * `cdk docs`        open CDK documentation
-
-Enjoy!

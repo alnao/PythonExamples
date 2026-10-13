@@ -20,7 +20,7 @@ Per eseguirlo:
         pip3 install -r requirements.txt
     - configurare le credenziali AWS (~/.aws/credentials o variabili d'ambiente)
     - lanciare lo script:
-        python3 app.py
+        python3 app.pyW
     - aprire il browser alla pagina:
         http://localhost:5042
 """

@@ -21,5 +21,13 @@
         }
     ],
     "family": "api-persone-nodb",
-    "networkMode": "bridge"
+    "networkMode": "bridge",
+    "tags": [
+        {"key": "Name", "value": "aws-py-Docker.03ApiPersoneNoDb"},
+        {"key": "Environment", "value": "dev"},
+        {"key": "Project", "value": "Development.aws.py-Docker.03ApiPersoneNoDb"},
+        {"key": "Owner", "value": "AlNao"},
+        {"key": "CostCenter", "value": "dev"},
+        {"key": "ManagedBy", "value": "Sh"}
+    ]
 }

@@ -7,7 +7,29 @@ from cdk05lambda.cdk05lambda_stack import Cdk05LambdaStack
 
 
 app = cdk.App()
+
+# tag standard su tutte le risorse dello stack (convenzione in CLAUDE.md)
+TAGS = {
+    "Name": "aws-py-CDK.cdk05lambda",
+    "Environment": "dev",
+    "Project": "Development.aws.py-CDK.cdk05lambda",
+    "Owner": "AlNao",
+    "CostCenter": "dev",
+    "ManagedBy": "CDK",
+}
+for key, value in TAGS.items():
+    cdk.Tags.of(app).add(key, value)
+
+# bootstrap CDK dell'account con i nomi del repository (vedi AWS/CDK/bootstrap/README.md)
+SYNTHESIZER = cdk.DefaultStackSynthesizer(
+    qualifier="alnaodev",
+    file_assets_bucket_name="alnao-dev-cdk",
+    image_assets_repository_name="alnao-dev-cdk",
+    bootstrap_stack_version_ssm_parameter="/cdk-bootstrap/alnao/dev/version",
+)
+
 Cdk05LambdaStack(app, "Cdk05LambdaStack",
+    synthesizer=SYNTHESIZER,
     # If you don't specify 'env', this stack will be environment-agnostic.
     # Account/Region-dependent features and context lookups will not work,
     # but a single synthesized template can be deployed anywhere.

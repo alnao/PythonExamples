@@ -7,6 +7,14 @@ provider:
   profile: default
   region: eu-central-1
   stage: dev
+  # tag standard sulle risorse dello stack CloudFormation (convenzione in CLAUDE.md)
+  stackTags:
+    Name: aws-py-Lambda.py-example6-sqs-get
+    Environment: dev
+    Project: Development.aws.py-Lambda.py-example6-sqs-get
+    Owner: AlNao
+    CostCenter: dev
+    ManagedBy: Sh
   iam:
     role:
       statements:

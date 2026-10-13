@@ -100,7 +100,6 @@ function renderCosts(d) {
     const cur = months[months.length - 1];
     const prev = months[months.length - 2];
     const prev2 = months[months.length - 3];
-    const cached = months.filter(m => m.cached);
 
     const cards = [];
     if (cur) {
@@ -117,9 +116,18 @@ function renderCosts(d) {
         cards.push(statCard(`Mese precedente (${escapeHtml(monthLabel(prev.month))})`,
             prev.cached ? money(prev.total) : '–', note, prev.cached ? '' : 'stat-warning'));
     }
-    const tot = cached.reduce((a, m) => a + m.total, 0);
-    cards.push(statCard('Ultimi 3 mesi', cached.length ? money(tot) : '–',
-        cached.length < months.length ? `${cached.length} mesi su ${months.length} in cache` : 'tutti i mesi in cache'));
+    const y = d.yesterday;
+    if (y) {
+        const [yy, ym, yd] = y.day.split('-').map(Number);
+        const dayLabel = new Date(yy, ym - 1, yd).toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'long' });
+        const note = !y.cached ? 'non in cache'
+            : (y.services.slice(0, 2).map(s =>
+                `<div class="text-truncate" title="${escapeHtml(serviceLabel(s.service))}">${escapeHtml(serviceLabel(s.service))} (${money(s.amount)})</div>`).join('')
+              || 'nessun costo')
+              + (y.partial ? `<div>parziale, letto il ${fmtDate(y.loaded_at)}</div>` : '');
+        cards.push(statCard(`Ieri (${escapeHtml(dayLabel)})`, y.cached ? money(y.total) : '–',
+            note, y.cached ? '' : 'stat-warning'));
+    }
     if (d.untagged) {
         const pct = d.untagged.total ? d.untagged.amount / d.untagged.total * 100 : 0;
         cards.push(statCard(`Senza tag ${escapeHtml(d.untagged.key)}`,

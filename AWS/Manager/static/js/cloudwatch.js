@@ -137,6 +137,22 @@ async function setAlarmState() {
     }, `${CW}/alarms/state`, { region: a._region, name: a.AlarmName, state: newState, reason: $('stateReason').value }, loadAlarms);
 }
 
+/* Tag dal campo del form ("Chiave=valore, Chiave=valore"): le virgole non sono ammesse nei tag AWS. */
+function parseTags(text) {
+    const tags = {};
+    for (const pair of text.split(',').map(s => s.trim()).filter(Boolean)) {
+        const i = pair.indexOf('=');
+        if (i <= 0) throw new Error(`Tag non valido: "${pair}" (formato chiave=valore)`);
+        tags[pair.slice(0, i).trim()] = pair.slice(i + 1).trim();
+    }
+    return tags;
+}
+
+function tagsHtml(tags) {
+    const items = Object.entries(tags).map(([k, v]) => `<span class="badge text-bg-light border mono">${escapeHtml(k)}=${escapeHtml(v)}</span>`);
+    return `<div class="mt-2">Tag: ${items.length ? items.join(' ') : '<span class="text-muted">nessuno</span>'}</div>`;
+}
+
 async function createAlarm() {
     if (multiRegion()) { showAlert('Per creare un allarme scegli una region al posto di "Tutte"', 'warning'); return; }
     const body = {
@@ -144,11 +160,12 @@ async function createAlarm() {
         threshold: $('threshold').value, evaluation_periods: $('evaluationPeriods').value, period: $('period').value,
     };
     if (!body.alarm_name || !body.asg_name) { showAlert('Nome allarme e Auto Scaling Group sono obbligatori', 'warning'); return; }
+    try { body.tags = parseTags($('alarmTags').value); } catch (e) { showAlert(e.message, 'warning'); return; }
     await runAction({
         title: 'Creare l\'allarme?', confirmText: 'Crea',
         html: `Nuovo allarme <strong>${escapeHtml(body.alarm_name)}</strong>: CPU media dell'ASG
             <strong>${escapeHtml(body.asg_name)}</strong> sopra ${escapeHtml(body.threshold)}% per
-            ${escapeHtml(body.evaluation_periods)} periodi da ${escapeHtml(body.period)} secondi.` + contextHtml(),
+            ${escapeHtml(body.evaluation_periods)} periodi da ${escapeHtml(body.period)} secondi.` + tagsHtml(body.tags) + contextHtml(),
     }, `${CW}/alarms/create`, body, loadAlarms);
 }
 
@@ -200,11 +217,13 @@ async function createGroup() {
     const name = $('newGroupName').value.trim();
     const days = $('retentionDays').value;
     if (!name) { showAlert('Indicare il nome del log group', 'warning'); return; }
+    let tags;
+    try { tags = parseTags($('groupTags').value); } catch (e) { showAlert(e.message, 'warning'); return; }
     await runAction({
         title: 'Creare il log group?', confirmText: 'Crea',
         html: `Nuovo log group <strong class="mono">${escapeHtml(name)}</strong>, conservazione
-            ${Number(days) > 0 ? `${escapeHtml(days)} giorni` : 'illimitata'}.` + contextHtml(),
-    }, `${CW}/logs/groups/create`, { region: APP.region, name, retention_days: days }, loadGroups);
+            ${Number(days) > 0 ? `${escapeHtml(days)} giorni` : 'illimitata'}.` + tagsHtml(tags) + contextHtml(),
+    }, `${CW}/logs/groups/create`, { region: APP.region, name, retention_days: days, tags }, loadGroups);
 }
 
 // ---------------------------------------------------------------- stream ed eventi

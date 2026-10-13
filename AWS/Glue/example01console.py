@@ -14,14 +14,19 @@ Comandi AWS-CLI per creare ed eseguire lo script
     ```
     aws s3 cp ./example01console.py s3://prova-alberto/CODE/glue/example01console.py
     ```
+* Tag standard del repository per le risorse create (convenzione in CLAUDE.md)
+    ```
+    TAGS_IAM="Key=Name,Value=aws-py-Glue Key=Environment,Value=dev Key=Project,Value=Development.aws.py-Glue Key=Owner,Value=AlNao Key=CostCenter,Value=dev Key=ManagedBy,Value=Sh"
+    TAGS_GLUE="Name=aws-py-Glue,Environment=dev,Project=Development.aws.py-Glue,Owner=AlNao,CostCenter=dev,ManagedBy=Sh"
+    ```
 * Creazione regola IAM
     ```
-	aws iam create-role --role-name glue-esempio01-role --assume-role-policy-document "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"Service\":\"glue.amazonaws.com\"},\"Action\":\"sts:AssumeRole\"}]}"
+	aws iam create-role --role-name glue-esempio01-role --tags $TAGS_IAM --assume-role-policy-document "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"Service\":\"glue.amazonaws.com\"},\"Action\":\"sts:AssumeRole\"}]}"
     aws iam put-role-policy --role-name glue-esempio01-role --policy-name WriteToBucket_policy --policy-document "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Action\":\"s3:*\",\"Resource\":[\"arn:aws:s3:::*\",\"arn:aws:s3:::*/*\"]}]}"
     ```
 * Creazione un nuovo job:
     ```
-    aws glue create-job --name glue-esempio01 --role glue-esempio01-role --command Name=glueetl,PythonVersion=3,ScriptLocation=s3://prova-alberto/CODE/glue/example01console.py
+    aws glue create-job --name glue-esempio01 --role glue-esempio01-role --tags $TAGS_GLUE --command Name=glueetl,PythonVersion=3,ScriptLocation=s3://prova-alberto/CODE/glue/example01console.py
     ```
 * Elenco i jobs:
     ```

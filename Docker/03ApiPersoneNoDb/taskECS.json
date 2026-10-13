@@ -20,5 +20,13 @@
             "essential": true
         }
     ],
-    "family": "api-persone-nodb"
+    "family": "api-persone-nodb",
+    "tags": [
+        {"key": "Name", "value": "aws-py-Docker.03ApiPersoneNoDb"},
+        {"key": "Environment", "value": "dev"},
+        {"key": "Project", "value": "Development.aws.py-Docker.03ApiPersoneNoDb"},
+        {"key": "Owner", "value": "AlNao"},
+        {"key": "CostCenter", "value": "dev"},
+        {"key": "ManagedBy", "value": "Sh"}
+    ]
 }

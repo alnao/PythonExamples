@@ -42,10 +42,11 @@ async function mPost(op, body, confirmOpts) {
 // ---------------------------------------------------------------- pannelli
 
 /* Riempie un pannello. Il dettaglio di una risorsa si apre sempre con i suoi tag
- * suggeriti (suggestedTagRows); withTags = false per lo spinner di caricamento. */
+ * suggeriti (suggestedTagRows) e si chiude con tutti i tag in JSON (tagsJson);
+ * withTags = false per lo spinner di caricamento. */
 function setPanel(which, title, html, actions = '', withTags = true) {
     $(`${which}Title`).innerHTML = title;
-    $(`${which}Body`).innerHTML = which === 'detail' && withTags && item() ? withTagRows(html, item()._tags) : html;
+    $(`${which}Body`).innerHTML = which === 'detail' && withTags && item() ? withTagRows(html, item()._tags) + tagsJson(item()._tags) : html;
     $(`${which}Actions`).innerHTML = actions;
 }
 
@@ -76,6 +77,12 @@ function withTagRows(html, tags) {
     const first = i >= 0 && !/<table|<h6/.test(html.slice(0, i));
     return first ? html.slice(0, i + kv.length) + rows + html.slice(i + kv.length)
         : kv + rows + '</tbody></table>' + html;
+}
+
+/* Tutti i tag della risorsa come oggetto JSON, in fondo al dettaglio (niente se non determinabili). */
+function tagsJson(tags) {
+    if (tags === null || tags === undefined) return '';
+    return h6('<i class="fas fa-tags me-1 text-secondary"></i>Tag (JSON)') + pretty(tags);
 }
 
 /* Rende sicura l'apertura: gli errori finiscono nel pannello del dettaglio. */
@@ -986,13 +993,14 @@ function ddbShowItem(row) {
 
 // ---------------------------------------------------------------- elenco
 
-async function loadList() {
+/* refresh = true (pulsante "Rilegge l'elenco") rilegge anche i tag dalla Tagging API. */
+async function loadList(refresh = false) {
     $('itemList').innerHTML = loadingHtml();
     state.index = -1;
     setPanel('detail', 'Dettaglio', '<div class="empty-state">Seleziona un elemento dall\'elenco</div>');
     setPanel('extra', '&nbsp;', '');
     try {
-        const d = await apiGet(`${API}/list?${query({ region: APP.region })}`);
+        const d = await apiGet(`${API}/list?${query({ region: APP.region, ...(refresh ? { refresh: 1 } : {}) })}`);
         state.items = d.items;
         if ((d.warnings || []).length) appendAlertHtml(d.warnings.map(escapeHtml).join('<br>'), 'warning');
         renderList();
@@ -1042,6 +1050,6 @@ document.addEventListener('DOMContentLoaded', () => {
         $('extraCol').className = 'col-lg-6';
     }
     loadList();
-    $('btnReload').addEventListener('click', loadList);
+    $('btnReload').addEventListener('click', () => loadList(true));
     $('itemSearch').addEventListener('input', debounce(renderList, 150));
 });

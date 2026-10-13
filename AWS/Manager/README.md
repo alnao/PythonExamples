@@ -58,7 +58,11 @@ Dopo il nome di ogni risorsa un'icona dice se ha i tag previsti dal Tag Manager
 I tag vengono dall'elenco di AWS quando li contiene (EC2, security group, RDS, EFS, ASG,
 Elastic IP, API Gateway, VPC, subnet, EKS, Secrets Manager), altrimenti dalla Tagging API
 per ARN, usando la stessa cache del Tag Manager (1 ora, `tag_manager.cache_ttl`; le modifiche
-fatte dal Tag Manager la aggiornano). Una risorsa che la Tagging API non conosce non ha tag.
+fatte dal Tag Manager la aggiornano). Gli ARN che non sono nella cache (per esempio le risorse
+create dopo l'ultima lettura) si rileggono subito per ARN, e nel Manager il pulsante **Rilegge
+l'elenco** rilegge anche la cache (così si vedono i tag cambiati dalla console), come ogni
+lettura del Panoramic. Una risorsa
+che la Tagging API non conosce non ha tag.
 Se una region non si riesce a leggere, o per i servizi non coperti (utenti e ruoli IAM, nodi
 EKS), l'icona non compare.
 
@@ -93,7 +97,8 @@ funzionalità sono le stesse).
 
 ### Home
 - **Costi**: mese in corso (con la stima a fine mese se già calcolata oggi), mese precedente
-  con la variazione, totale degli ultimi 3 mesi, quota dei costi senza tag, fonte di ogni mese
+  con la variazione, costo di ieri con i due servizi principali (dal Data Export o da una serie
+  giornaliera in cache), quota dei costi senza tag, fonte di ogni mese
   e i primi 10 costi del mese (con il mese prima in grigio), con la tendina **Raggruppa per**:
   servizio o un tag di `suggested_tags` (prima Project e CostCenter). Per un tag servono il
   Data Export o una serie con quel tag già in cache (si carica dal Cost Explorer scegliendo il
@@ -106,12 +111,16 @@ funzionalità sono le stesse).
 
 ### Panoramic
 Non legge nulla all'apertura: **Servizi principali** legge i servizi elencati in
-`panoramic.main_services`, **Tutti i servizi** tutti i 27 (VPC di default e subnet, security
-group, EC2, RDS, S3, CloudFront, Lambda, DynamoDB, API Gateway REST e HTTP, SQS, SNS, ECR, EKS e
-nodi, CloudFormation, allarmi, utenti e ruoli IAM, Route 53, ElastiCache, load balancer,
-Secrets Manager, parametri SSM, Kinesis, Step Functions, EFS). Indice con i conteggi, ricerca
-in tutte le tabelle, "Nascondi servizi vuoti"; gli errori (es. permessi) sono indicati nella
-sezione del servizio.
+`panoramic.main_services`, **Tutti i servizi** tutti i 31 (VPC di default e subnet, security
+group, EC2, RDS, S3, vector bucket S3 Vectors con i loro indici, CloudFront e Origin Access
+Control, Lambda e layer, DynamoDB, API Gateway REST e HTTP, SQS, SNS, ECR, EKS e nodi,
+CloudFormation, allarmi e log group CloudWatch, utenti e ruoli IAM, Route 53, ElastiCache, load
+balancer, Secrets Manager, parametri SSM, Kinesis, Step Functions, EFS). Indice con i conteggi,
+ricerca in tutte le tabelle, "Nascondi servizi vuoti" (attivo di default); gli errori (es. permessi) sono indicati nella
+sezione del servizio. Il filtro **Project** è quello del Tag Manager: valori di `suggested_tags`
+con le sottovoci trovate nelle risorse lette e "Altri valori", con uguaglianza stretta; quando è
+attivo spariscono le righe di cui non si conoscono i tag (utenti e ruoli IAM, nodi EKS, layer Lambda,
+Origin Access Control).
 
 ### Tag Manager
 Come il TagManager originale (Tagging API + Resource Explorer, filtri, tag rapido, gestione
@@ -135,7 +144,8 @@ Manager (metadati e versioni; il valore solo con **Mostra valore**), ECS (cluste
 e VPC (subnet, route table, internet e NAT gateway). Tre colonne: elenco con
 ricerca, dettaglio, sotto-risorse e azioni. Le proprietà della risorsa si aprono con i tag di
 `suggested_tags` (nome in un badge blu con l'icona del tag) e il loro valore, con il badge rosso
-"mancante" se il tag non c'è.
+"mancante" se il tag non c'è; in fondo al dettaglio ci sono tutti i tag della risorsa come
+oggetto JSON.
 
 **DynamoDB**, pensato anche per tabelle molto grandi: aprire una tabella legge solo la
 descrizione (`DescribeTable`, con numero di righe e dimensione stimati da AWS), le righe si
@@ -158,6 +168,8 @@ ricerca e dati a destra, in una colonna più larga.
 - **Log**: log group con filtro per prefisso, stream, ultimi eventi, ricerca con un filter
   pattern (ultima ora, 24 ore, 7 o 30 giorni), creazione e cancellazione di gruppi e stream,
   scrittura di un evento
+- Il nuovo allarme e il nuovo log group ricevono i tag di `manager.standard_tags`, proposti nel
+  form come `chiave=valore` separati da virgola e modificabili prima della creazione
 
 ### Terraform
 Risorse gestite da Terraform, lette dagli state (backend s3) sui bucket elencati in
@@ -238,12 +250,12 @@ Un solo `config.json` con i parametri di tutti i tool:
 | `max_workers` | letture in parallelo sulle region |
 | `suggested_tags` | tag suggeriti e loro valori (Tag Manager e Cost Explorer) |
 | `compliant_tags` | set di tag che rendono una risorsa conforme anche senza i tag obbligatori |
-| `resources_skipped` | risorse di sistema da non segnalare |
+| `resources_skipped` | risorse di sistema da non segnalare: `service`, `resource_type` e `name` (null = tutti); in `name` l'asterisco è un jolly, per esempio `CDKToolkit*` |
 | `tag_manager` | `required_tags`, `prefix_match_keys`, `cache_ttl` (secondi), `page_size` |
 | `cost_explorer` | `default_months`, `default_metric`, `default_group`, `prefix_match_keys`, `cur_service_names`, `service_aliases` |
 | `panoramic` | `main_services`: servizi del pulsante "Servizi principali" |
 | `terraform` | `buckets` (bucket con gli state), `state_suffixes` (suffissi dei file di state), `max_states` (state letti al massimo per bucket) |
-| `manager` | `max_upload_mb` (upload su S3), `list_limit` (oggetti S3, righe DynamoDB per pagina, esecuzioni), `logs_limit` (eventi di log), `dynamodb_max_read` (righe lette al massimo da uno Scan con filtro a ogni clic) |
+| `manager` | `max_upload_mb` (upload su S3), `list_limit` (oggetti S3, righe DynamoDB per pagina, esecuzioni), `logs_limit` (eventi di log), `dynamodb_max_read` (righe lette al massimo da uno Scan con filtro a ogni clic), `standard_tags` (tag delle risorse create dal Manager) |
 
 ## Struttura del progetto
 
@@ -269,7 +281,7 @@ Manager/
 │   ├── cost_explorer.py, cost_cache.py, cur_source.py
 │   ├── tag_manager.py
 │   ├── cloudwatch_manager.py
-│   ├── panoramic.py        # i 27 servizi della panoramica
+│   ├── panoramic.py        # i 31 servizi della panoramica
 │   ├── summary.py          # contatori della Home
 │   ├── terraform_states.py # state di Terraform su S3: elenco, lettura, riassunto sicuro
 │   ├── cloudformation_resources.py  # stack, risorse e tag di CloudFormation

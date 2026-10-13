@@ -8,6 +8,7 @@ globali (S3, CloudFront, IAM, Route 53) una volta sola; tutte le letture vanno i
 
 import logging
 import time
+from datetime import datetime, timezone
 
 from common import GLOBAL_REGION, aws_session, run_parallel
 
@@ -101,11 +102,46 @@ def fetch_cloudfront(s):
              'Stato': d['Status'], 'Abilitato': 'Sì' if d['Enabled'] else 'No'} for d in dists]
 
 
+def fetch_cloudfront_oac(s):
+    controls = []
+    for page in s.client('cloudfront').get_paginator('list_origin_access_controls').paginate():
+        controls.extend(page.get('OriginAccessControlList', {}).get('Items', []))
+    return [{'ID': o['Id'], 'Nome': o['Name'], 'Origine': o.get('OriginAccessControlOriginType', ''),
+             'Descrizione': o.get('Description', '')} for o in controls]
+
+
+def fetch_s3vectors(s):
+    """Vector bucket di S3 Vectors con i nomi dei loro indici."""
+    client = s.client('s3vectors')
+    rows = []
+    for b in _paginate(client, 'list_vector_buckets', 'vectorBuckets'):
+        indexes = _paginate(client, 'list_indexes', 'indexes', vectorBucketName=b['vectorBucketName'])
+        rows.append({'_arn': b.get('vectorBucketArn'), 'Vector bucket': b['vectorBucketName'],
+                     'Indici': ', '.join(i['indexName'] for i in indexes), 'Creato': b.get('creationTime')})
+    return rows
+
+
 def fetch_lambda(s):
     functions = _paginate(s.client('lambda'), 'list_functions', 'Functions')
     return [{'_arn': f.get('FunctionArn'), 'Funzione': f['FunctionName'], 'Runtime': f.get('Runtime', f.get('PackageType', '')),
              'Memoria (MB)': f.get('MemorySize'), 'Ultima modifica': f.get('LastModified', '')}
             for f in functions]
+
+
+def fetch_lambda_layers(s):
+    layers = _paginate(s.client('lambda'), 'list_layers', 'Layers')
+    return [{'Layer': x['LayerName'], 'Ultima versione': x.get('LatestMatchingVersion', {}).get('Version'),
+             'Runtime': ', '.join(x.get('LatestMatchingVersion', {}).get('CompatibleRuntimes', [])),
+             'Creato': x.get('LatestMatchingVersion', {}).get('CreatedDate', '')} for x in layers]
+
+
+def fetch_log_groups(s):
+    groups = _paginate(s.client('logs'), 'describe_log_groups', 'logGroups')
+    # creationTime e' in millisecondi; per la Tagging API l'ARN e' senza il ':*' finale
+    return [{'_arn': g.get('logGroupArn') or g.get('arn', '').removesuffix(':*'), 'Log group': g['logGroupName'],
+             'Conservazione (giorni)': g.get('retentionInDays', 'illimitata'), 'Dimensione (byte)': g.get('storedBytes', 0),
+             'Creato': datetime.fromtimestamp(g['creationTime'] / 1000, tz=timezone.utc).isoformat() if g.get('creationTime') else ''}
+            for g in groups]
 
 
 def fetch_dynamodb(s):
@@ -248,8 +284,11 @@ SERVICES = [
     ('ec2', 'Istanze EC2', False, ['ID', 'Nome', 'Tipo', 'Stato', 'IP pubblico', 'IP privato'], fetch_ec2),
     ('rds', 'Istanze RDS', False, ['Identificatore', 'Motore', 'Classe', 'Stato', 'Endpoint'], fetch_rds),
     ('s3', 'Bucket S3', True, ['Bucket', 'Creato'], fetch_s3),
+    ('s3vectors', 'Vector bucket S3 Vectors', False, ['Vector bucket', 'Indici', 'Creato'], fetch_s3vectors),
     ('cloudfront', 'Distribuzioni CloudFront', True, ['ID', 'Dominio', 'Alias', 'Stato', 'Abilitato'], fetch_cloudfront),
+    ('cloudfront_oac', 'Origin Access Control CloudFront', True, ['ID', 'Nome', 'Origine', 'Descrizione'], fetch_cloudfront_oac),
     ('lambda', 'Funzioni Lambda', False, ['Funzione', 'Runtime', 'Memoria (MB)', 'Ultima modifica'], fetch_lambda),
+    ('lambda_layers', 'Layer Lambda', False, ['Layer', 'Ultima versione', 'Runtime', 'Creato'], fetch_lambda_layers),
     ('dynamodb', 'Tabelle DynamoDB', False, ['Tabella'], fetch_dynamodb),
     ('apigateway', 'API Gateway', False, ['ID', 'Nome', 'Tipo', 'Descrizione'], fetch_apigateway),
     ('sqs', 'Code SQS', False, ['Coda', 'URL'], fetch_sqs),
@@ -259,6 +298,7 @@ SERVICES = [
     ('eks_nodes', 'Nodi EKS (istanze EC2)', False, ['Istanza', 'Stato', 'Node group', 'Cluster'], fetch_eks_nodes),
     ('cloudformation', 'Stack CloudFormation', False, ['Stack', 'Stato', 'Creato', 'Aggiornato'], fetch_cloudformation),
     ('cloudwatch_alarms', 'Allarmi CloudWatch', False, ['Allarme', 'Stato', 'Metrica', 'Namespace'], fetch_cloudwatch_alarms),
+    ('log_groups', 'Log group CloudWatch', False, ['Log group', 'Conservazione (giorni)', 'Dimensione (byte)', 'Creato'], fetch_log_groups),
     ('iam_users', 'Utenti IAM', True, ['Utente', 'Creato', 'Ultimo accesso'], fetch_iam_users),
     ('iam_roles', 'Ruoli IAM (non di sistema)', True, ['Ruolo', 'Path', 'Creato'], fetch_iam_roles),
     ('route53', 'Zone Route 53', True, ['Zona', 'Record', 'Privata'], fetch_route53),

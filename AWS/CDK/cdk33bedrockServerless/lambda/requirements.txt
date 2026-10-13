@@ -1,0 +1,8 @@
+# Librerie del layer delle Lambda (Python 3.13, x86_64): create con ./build_layer.sh
+# boto3 incluso per avere di sicuro il client s3vectors, indipendentemente dal runtime
+boto3>=1.40
+pypdf>=5.0
+python-docx>=1.1
+openpyxl>=3.1
+python-pptx>=1.0
+pillow>=10.0

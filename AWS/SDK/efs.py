@@ -1,4 +1,8 @@
 import boto3
+try:
+    from .tags import tag_list
+except ImportError:  # modulo eseguito come script
+    from tags import tag_list
 
 class AwsEfs:
     def __init__(self, profile_name):
@@ -6,8 +10,8 @@ class AwsEfs:
         self.client = boto3.client('efs')
         boto3.setup_default_session(profile_name=self.profile_name)
 
-    def create_file_system(self, creation_token):
-        response = self.client.create_file_system(CreationToken=creation_token)
+    def create_file_system(self, creation_token, tags=None):
+        response = self.client.create_file_system(CreationToken=creation_token, Tags=tag_list(tags))
         if 'FileSystems' in response:
             return response['FileSystems']
         return response

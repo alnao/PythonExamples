@@ -1,4 +1,8 @@
 import boto3
+try:
+    from .tags import tag_list
+except ImportError:  # modulo eseguito come script
+    from tags import tag_list
 #see https://docs.aws.amazon.com/code-library/latest/ug/python_3_ec2_code_examples.html
 #see https://github.com/awsdocs/aws-doc-sdk-examples/tree/main/python/example_code/ec2#code-examples
 
@@ -67,12 +71,13 @@ class AwsEc2SecurityGroup:
         return []
 
     #see #https://docs.aws.amazon.com/it_it/AWSEC2/latest/UserGuide/example_ec2_CreateSecurityGroup_section.html
-    def create(self,group_name, vpc =""):
+    def create(self,group_name, vpc ="", tags=None):
         ec2_resource = boto3.resource("ec2")
+        tag_specifications=[{'ResourceType': 'security-group', 'Tags': tag_list(tags)}]
         if vpc !="" :
-            ret= ec2_resource.create_security_group(GroupName=group_name, Description=group_name, VpcId=vpc )
+            ret= ec2_resource.create_security_group(GroupName=group_name, Description=group_name, VpcId=vpc, TagSpecifications=tag_specifications )
         else:
-            ret= ec2_resource.create_security_group(GroupName=group_name, Description=group_name)
+            ret= ec2_resource.create_security_group(GroupName=group_name, Description=group_name, TagSpecifications=tag_specifications)
         return ret
     
     #see https://kiamatthews.medium.com/using-python-to-add-rules-to-an-aws-security-group-ee56def5bf78

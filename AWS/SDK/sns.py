@@ -2,6 +2,10 @@ import json
 import boto3
 from datetime import datetime 
 from botocore.exceptions import ClientError
+try:
+    from .tags import tag_list
+except ImportError:  # modulo eseguito come script
+    from tags import tag_list
 #see https://hands-on.cloud/boto3-sqs-tutorial/
 
 #see https://github.com/boto/botocore/issues/2705
@@ -14,9 +18,9 @@ class AwsSns:
         boto3.setup_default_session(profile_name=self.profile_name)
         self.sns_client = boto3.client('sns')#, region_name=region_name
         
-    def create_topic(self, topic_name):
+    def create_topic(self, topic_name, tags=None):
         try:
-            response = self.sns_client.create_topic(Name=topic_name)
+            response = self.sns_client.create_topic(Name=topic_name, Tags=tag_list(tags))
             return response['TopicArn']
         except ClientError as e:
             print(f"Error creating topic: {e}")

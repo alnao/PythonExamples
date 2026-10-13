@@ -2,30 +2,32 @@
   "Version": "2012-10-17",
   "Statement": [
     {
+      "Sid": "BedrockModels",
       "Effect": "Allow",
-      "Action": [
-        "bedrock:InvokeModel",
-        "bedrock:InvokeModelWithResponseStream"
-      ],
-      "Resource": "*"
-    },
-    {
-      "Effect": "Allow",
-      "Action": [
-        "s3:*"
-      ],
+      "Action": "bedrock:InvokeModel",
       "Resource": [
-        "arn:aws:s3:::ragdemo-alnao-bucket",
-        "arn:aws:s3:::ragdemo-alnao-bucket/*"
+        "arn:aws:bedrock:__REGION__::foundation-model/amazon.titan-embed-text-v2:0",
+        "arn:aws:bedrock:__REGION__:__ACCOUNT_ID__:inference-profile/eu.amazon.nova-lite-v1:0",
+        "arn:aws:bedrock:*::foundation-model/amazon.nova-lite-v1:0"
       ]
     },
     {
+      "Sid": "DocumentsObjects",
       "Effect": "Allow",
-      "Action": [
-        "logs:*",
-        "cloudwatch:*"
-      ],
-      "Resource": "*"
+      "Action": ["s3:GetObject", "s3:PutObject", "s3:DeleteObject"],
+      "Resource": "arn:aws:s3:::__BUCKET_NAME__/*"
+    },
+    {
+      "Sid": "DocumentsList",
+      "Effect": "Allow",
+      "Action": "s3:ListBucket",
+      "Resource": "arn:aws:s3:::__BUCKET_NAME__"
+    },
+    {
+      "Sid": "ApiKeyParameter",
+      "Effect": "Allow",
+      "Action": "ssm:GetParameter",
+      "Resource": "arn:aws:ssm:__REGION__:__ACCOUNT_ID__:parameter__API_KEY_PARAMETER__"
     }
   ]
 }

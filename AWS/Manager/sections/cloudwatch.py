@@ -42,6 +42,16 @@ def required(data, *names):
     return [data[n] for n in names]
 
 
+def tags_of(data):
+    """Tag della risorsa da creare: quelli del form oppure manager.standard_tags di config.json."""
+    tags = data.get('tags')
+    if tags is None:
+        return load_config()['manager']['standard_tags']
+    if not isinstance(tags, dict) or not all(isinstance(v, str) for v in tags.values()):
+        raise ValueError("I tag devono essere coppie chiave=valore")
+    return tags
+
+
 def in_regions(fn):
     """fn(region) su una o tutte le region: (elementi con _region, warnings)."""
     items, warnings = [], []
@@ -57,7 +67,7 @@ def in_regions(fn):
 
 @bp.route('/cloudwatch')
 def index():
-    return render_template('cloudwatch.html')
+    return render_template('cloudwatch.html', standard_tags=load_config()['manager']['standard_tags'])
 
 
 # ----------------------------------------------------------------------
@@ -123,7 +133,8 @@ def create_alarm():
     alarms().create_cpu_alarm(alarm_name=name, asg_name=asg,
                               threshold=float(data.get('threshold', 80)),
                               evaluation_periods=int(data.get('evaluation_periods', 2)),
-                              period=int(data.get('period', 300)))
+                              period=int(data.get('period', 300)),
+                              tags=tags_of(data))
     return jsonify({'message': f"Allarme {name} creato"})
 
 
@@ -146,7 +157,7 @@ def list_log_groups():
 def create_log_group():
     data = body()
     name, = required(data, 'name')
-    logs().create_log_group(name, retention_days=int(data.get('retention_days') or 0))
+    logs().create_log_group(name, retention_days=int(data.get('retention_days') or 0), tags=tags_of(data))
     return jsonify({'message': f"Log group {name} creato"})
 
 

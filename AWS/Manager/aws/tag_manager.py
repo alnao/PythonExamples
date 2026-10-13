@@ -85,6 +85,18 @@ def load_skipped_resources() -> List[Dict]:
     return []
 
 
+def name_matches(name: str, pattern: str) -> bool:
+    """
+    Confronta il name di una risorsa con quello di resources_skipped: uguale, oppure con *
+    come jolly per qualsiasi sequenza di caratteri ("CDKToolkit*" = inizia per CDKToolkit,
+    "*-default" = finisce per -default).
+    """
+    if '*' not in pattern:
+        return name == pattern
+    regex = '.*'.join(re.escape(part) for part in pattern.split('*'))
+    return re.fullmatch(regex, name, flags=re.DOTALL) is not None
+
+
 def is_system_resource(arn: str, resource_info: Dict, skipped_list: List[Dict]) -> bool:
     """
     Verifica se una risorsa è nella lista delle risorse di sistema da escludere.
@@ -143,17 +155,13 @@ def is_system_resource(arn: str, resource_info: Dict, skipped_list: List[Dict]) 
         # Deve corrispondere il servizio
         if service != entry_service:
             continue
-        
-        # Se resource_type è None nell'entry, matcher tutti i tipi di questo servizio
-        if entry_type is None:
-            return True
-        
-        # Se il type corrisponde e name è None, matcher tutti i nomi di questo tipo
-        if resource_type == entry_type and entry_name is None:
-            return True
-        
-        # Se tutti e tre corrispondono esattamente
-        if resource_type == entry_type and name == entry_name:
+
+        # resource_type None = tutti i tipi del servizio, altrimenti deve corrispondere
+        if entry_type is not None and resource_type != entry_type:
+            continue
+
+        # name None = tutti i nomi, altrimenti uguale o corrispondente al jolly *
+        if entry_name is None or name_matches(name, entry_name):
             return True
     
     return False
@@ -282,6 +290,19 @@ class TagManager:
         resources.sort(key=lambda r: (r['service'], r['resource_type'], r['name']))
         self.logger.info(f"Trovate {len(resources)} risorse nella region {self.region_name}")
         return resources
+
+    def get_tags_by_arn(self, arns: List[str]) -> Dict[str, Dict[str, str]]:
+        """
+        Tag attuali di risorse precise, letti senza cache: {arn: {chiave: valore}}.
+        Le risorse mai taggate non compaiono. ResourceARNList accetta al massimo 100 ARN
+        e non si puo' usare con la paginazione, quindi una chiamata ogni 100 ARN.
+        """
+        found = {}
+        for i in range(0, len(arns), 100):
+            page = self.client.get_resources(ResourceARNList=arns[i:i + 100])
+            for item in page.get('ResourceTagMappingList', []):
+                found[item['ResourceARN']] = {t['Key']: t['Value'] for t in item.get('Tags', [])}
+        return found
 
     def _format_resource(self, item: Dict) -> Dict:
         """Trasforma un elemento di ResourceTagMappingList nel formato usato dalla UI."""

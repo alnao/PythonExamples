@@ -25,8 +25,10 @@ A collection of independent Python examples by AlNao ("Python Examples"), docume
   ```
 - Tests exist only in a few places:
   - AWS CDK projects (`AWS/CDK/cdkNN*/tests/unit/`): `cd AWS/CDK/<project> && pytest tests/unit`, single test with `pytest tests/unit/test_<file>.py::<test_name>` (the unit tests only synthesize the stack locally).
+  - `AWS/CDK/cdk32wikiS3Vector` and `AWS/CDK/cdk33bedrockServerless`: same command; besides the stack synthesis it tests the Lambdas with fake S3, S3 Vectors and Bedrock clients (no AWS calls). The real deploy needs `./build_layer.sh` first.
   - Robot Framework suites: `robot <file>.robot` inside `RobotFramework/Es0*` and `Docker/10RobotFramework` (they need the services under test running, see each README).
 - Docker examples are run with `docker compose up` from their folder (see each README).
+- Every CDK app (`AWS/CDK/cdk*`) uses the account's custom bootstrap from `AWS/CDK/bootstrap/` (bucket and ECR `alnao-dev-cdk`, SSM `/cdk-bootstrap/alnao/dev/version`, qualifier `alnaodev`) through the `SYNTHESIZER` block in `app.py`; a new CDK project must copy that block and pass `synthesizer=SYNTHESIZER` to its stack. `bootstrap.sh create|destroy <region>` creates the bootstrap or removes it from a region (stack, ECR, versioned asset bucket).
 
 ## AWS/Managers (Flask web apps)
 
@@ -38,3 +40,20 @@ Same structure for every manager: a class wrapping boto3 (`tag_manager.py`, `cos
   - `cost_cache.py`: disk cache that never expires, one file per month (`cache/costs/<filters>/YYYY-MM.json`); a request loads only missing months, one call per run of consecutive months. Months read before month end are marked incomplete and are refreshed only on explicit user request. Never delete or overwrite cached months (the data has been paid for); old-format files were migrated to `cache/legacy/`.
   - `cur_source.py`: free source from AWS Data Exports (CUR 2.0 Parquet on S3, configured in `.env`, template `.env.example`). For each month the order is Data Export → API cache → paid API with confirmation. The Parquet files are reduced to a daily table in `cache/cur/` and queried to produce the same series as the API, with service names mapped to the Cost Explorer ones (`SERVICE_NAMES`, `cur_service_names` in `config.json`).
   - the browser computes charts, cross filters, zoom (month/week/day) and tables from rows `{period, month, service, group, amount}`; `static/charts.js` holds the fixed 8-color palette, colors follow the entity, not its rank.
+
+
+
+## AWS Tagging convention (applies to every resource on AWS cloud)
+
+Every resource created/managed in AWS that supports tags carries the standard tags of its example (`Descrizione` = the folder path after the "AWS" level, with "." between subfolders: `AWS/CDK/cdk01bucketS3` becomes `CDK.cdk01bucketS3`, so `Project = Development.aws.py-CDK.cdk01bucketS3`; for folders outside AWS the first level is kept: `Docker/03ApiPersoneNoDb` becomes `Docker.03ApiPersoneNoDb`, so `Project = Development.aws.py-Docker.03ApiPersoneNoDb`):
+```
+Name        = "aws-py-<Descrizione>"
+Environment = "dev"
+Project     = "Development.aws.py-<Descrizione>"
+Owner       = "AlNao"
+CostCenter  = "dev"
+ManagedBy   = "Manual/Terraform/CloudFormation/Sh/CDK"
+```
+`ManagedBy` follows the tool that creates the resource: `Sh` for AWS CLI scripts/commands and Serverless Framework, `CDK` for CDK stacks, `Manual` for the console and for Python code using boto3 (AWS/SDK, AWS/Manager, scripts).
+
+

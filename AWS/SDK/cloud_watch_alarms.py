@@ -3,6 +3,10 @@ from botocore.exceptions import ClientError
 from typing import List, Dict, Optional, Union
 import logging
 import json
+try:
+    from .tags import tag_list
+except ImportError:  # modulo eseguito come script
+    from tags import tag_list
 
 class AwsCloudWatchAlarm:
     """
@@ -29,7 +33,8 @@ class AwsCloudWatchAlarm:
                         comparison_operator: str = 'GreaterThanThreshold',
                         evaluation_periods: int = 2,
                         period: int = 300,
-                        alarm_actions: Optional[List[str]] = None) -> Dict:
+                        alarm_actions: Optional[List[str]] = None,
+                        tags: Optional[Dict] = None) -> Dict:
         """
         Create a CPU utilization alarm for an Auto Scaling Group
         
@@ -41,6 +46,7 @@ class AwsCloudWatchAlarm:
             evaluation_periods: Number of periods before triggering alarm
             period: The period in seconds over which the metric is evaluated
             alarm_actions: List of ARNs to execute when alarm triggers
+            tags: Tags to add to (or override in) the standard ones
             
         Returns:
             Dictionary containing the response from AWS
@@ -62,7 +68,8 @@ class AwsCloudWatchAlarm:
                 EvaluationPeriods=evaluation_periods,
                 Threshold=threshold,
                 ComparisonOperator=comparison_operator,
-                AlarmActions=alarm_actions or []
+                AlarmActions=alarm_actions or [],
+                Tags=tag_list(tags)
             )
             self.logger.info(f"Created alarm {alarm_name} for ASG {asg_name}")
             return response

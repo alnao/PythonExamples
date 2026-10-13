@@ -1,20 +1,23 @@
-# questo script verifica se il modello di embedding Titan embed è accessibile
-# eseguirlo da terminale con: python check_model.py 
-# assicurarsi di avere le variabili d'ambiente AWS configurate
+# Verifica che i tre modelli Bedrock configurati in .env (o i default) rispondano.
+# Eseguire con: python check_model.py   (servono credenziali AWS; ogni prova costa frazioni di centesimo)
 
-import boto3
-import json
-bedrock = boto3.client('bedrock-runtime', region_name='eu-central-1')
-try:
-    body = json.dumps({'inputText': 'Hello world'})  # Titan embed expects string input
-    resp = bedrock.invoke_model(
-        modelId='amazon.titan-embed-text-v2:0',
-        body=body,
-        contentType='application/json',
-        accept='application/json'
-    )
-    print('✅ Titan embed model accessible')
-    print(resp['ResponseMetadata']['HTTPStatusCode'])
-    print(resp['ResponseMetadata'])
-except Exception as e:
-    print('❌ Error:', str(e))
+from backend import settings, embed_one, chat, bedrock, converse_text
+
+checks = {
+    f"embedding ({settings.EMBEDDING_MODEL})": lambda: f"{len(embed_one('Hello world'))} dimensioni",
+    f"chat ({settings.CHAT_MODEL})": lambda: chat("Rispondi solo con la parola OK."),
+    f"immagini ({settings.IMAGE_MODEL})": lambda: converse_text(bedrock.converse(
+        modelId=settings.IMAGE_MODEL,
+        messages=[{"role": "user", "content": [{"text": "Rispondi solo con la parola OK."}]}],
+        inferenceConfig={"maxTokens": 2000},
+    )),
+}
+if not settings.IMAGE_MODEL.strip():
+    checks.pop(f"immagini ({settings.IMAGE_MODEL})")  # OCR locale, nessun modello da provare
+
+print(f"Region: {settings.AWS_REGION}")
+for name, check in checks.items():
+    try:
+        print(f"✅ {name}: {check()}")
+    except Exception as e:
+        print(f"❌ {name}: {e}")

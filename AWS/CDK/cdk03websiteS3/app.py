@@ -7,7 +7,29 @@ from cdk03website_s3.cdk03website_s3_stack import Cdk03WebsiteS3Stack
 
 
 app = cdk.App()
+
+# tag standard su tutte le risorse dello stack (convenzione in CLAUDE.md)
+TAGS = {
+    "Name": "aws-py-CDK.cdk03websiteS3",
+    "Environment": "dev",
+    "Project": "Development.aws.py-CDK.cdk03websiteS3",
+    "Owner": "AlNao",
+    "CostCenter": "dev",
+    "ManagedBy": "CDK",
+}
+for key, value in TAGS.items():
+    cdk.Tags.of(app).add(key, value)
+
+# bootstrap CDK dell'account con i nomi del repository (vedi AWS/CDK/bootstrap/README.md)
+SYNTHESIZER = cdk.DefaultStackSynthesizer(
+    qualifier="alnaodev",
+    file_assets_bucket_name="alnao-dev-cdk",
+    image_assets_repository_name="alnao-dev-cdk",
+    bootstrap_stack_version_ssm_parameter="/cdk-bootstrap/alnao/dev/version",
+)
+
 Cdk03WebsiteS3Stack(app, "Cdk03WebsiteS3Stack",
+    synthesizer=SYNTHESIZER,
     # If you don't specify 'env', this stack will be environment-agnostic.
     # Account/Region-dependent features and context lookups will not work,
     # but a single synthesized template can be deployed anywhere.

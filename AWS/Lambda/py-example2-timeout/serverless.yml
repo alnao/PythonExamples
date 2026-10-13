@@ -27,6 +27,14 @@ provider:
   profile: default
   region: eu-central-1
   stage: dev
+  # tag standard sulle risorse dello stack CloudFormation (convenzione in CLAUDE.md)
+  stackTags:
+    Name: aws-py-Lambda.py-example2-timeout
+    Environment: dev
+    Project: Development.aws.py-Lambda.py-example2-timeout
+    Owner: AlNao
+    CostCenter: dev
+    ManagedBy: Sh
   memorySize: 258
   timeout: 3
 

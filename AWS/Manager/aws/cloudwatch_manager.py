@@ -23,8 +23,9 @@ class CloudWatchAlarmManager:
     def create_cpu_alarm(self, alarm_name: str, asg_name: str, threshold: float,
                          comparison_operator: str = 'GreaterThanThreshold',
                          evaluation_periods: int = 2, period: int = 300,
-                         alarm_actions: Optional[List[str]] = None) -> Dict:
-        """Crea un allarme sulla CPU media di un Auto Scaling Group."""
+                         alarm_actions: Optional[List[str]] = None,
+                         tags: Optional[Dict] = None) -> Dict:
+        """Crea un allarme sulla CPU media di un Auto Scaling Group; tags = {chiave: valore}."""
         response = self.cloudwatch.put_metric_alarm(
             AlarmName=alarm_name,
             AlarmDescription=f'CPU Utilization monitoring for {asg_name}',
@@ -37,6 +38,7 @@ class CloudWatchAlarmManager:
             Threshold=threshold,
             ComparisonOperator=comparison_operator,
             AlarmActions=alarm_actions or [],
+            Tags=[{'Key': k, 'Value': v} for k, v in (tags or {}).items()],
         )
         logger.info(f"Creato l'allarme {alarm_name} per l'ASG {asg_name}")
         return response
@@ -88,12 +90,11 @@ class CloudWatchLogsManager:
 
     def create_log_group(self, log_group_name: str, retention_days: int = 30,
                          tags: Optional[Dict] = None) -> Dict:
-        """Crea un log group; retention_days 0 = conservazione illimitata."""
-        response = self.logs.create_log_group(logGroupName=log_group_name)
+        """Crea un log group; retention_days 0 = conservazione illimitata; tags = {chiave: valore}."""
+        kwargs = {'tags': tags} if tags else {}
+        response = self.logs.create_log_group(logGroupName=log_group_name, **kwargs)
         if retention_days > 0:
             self.logs.put_retention_policy(logGroupName=log_group_name, retentionInDays=retention_days)
-        if tags:
-            self.logs.tag_log_group(logGroupName=log_group_name, tags=tags)
         logger.info(f"Creato il log group {log_group_name}")
         return response
 

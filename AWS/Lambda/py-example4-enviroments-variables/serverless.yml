@@ -27,6 +27,14 @@ provider:
   profile: default
   region: eu-central-1
   stage: dev
+  # tag standard sulle risorse dello stack CloudFormation (convenzione in CLAUDE.md)
+  stackTags:
+    Name: aws-py-Lambda.py-example4-enviroments-variables
+    Environment: dev
+    Project: Development.aws.py-Lambda.py-example4-enviroments-variables
+    Owner: AlNao
+    CostCenter: dev
+    ManagedBy: Sh
   environment:
     variable1: value1
     FIRST_NAME: "Alberto"

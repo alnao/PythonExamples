@@ -13,6 +13,9 @@ Prerequisiti
 - Python 3.10+
 - Credenziali AWS configurate (aws configure oppure variabile AWS_PROFILE)
 - IAM policy: polly:SynthesizeSpeech, s3:PutObject, s3:GetObject, s3:ListBucket
+- Se il bucket S3 va creato, crearlo da console con i tag standard del repository:
+    Name=aws-py-Polly, Environment=dev, Project=Development.aws.py-Polly,
+    Owner=AlNao, CostCenter=dev, ManagedBy=Manual
 
 Avvio
 -----

@@ -14,7 +14,7 @@ Nota: il comando synth e deploy funzionano solo se docker è installato nel sist
     cdk init app --language python
     python3 -m pip install -r requirements.txt
     python3 -m venv .venv
-    cdk bootstrap
+    ../bootstrap/bootstrap.sh create   # una volta per account: bootstrap con i nomi del repository (AWS/CDK/bootstrap)
     ```
 
 - Deploy del progetto

@@ -5,6 +5,10 @@ import json
 from typing import List, Dict, Optional, Union, Generator
 from datetime import datetime, timedelta
 import time
+try:
+    from .tags import tag_dict
+except ImportError:  # modulo eseguito come script
+    from tags import tag_dict
 
 class AwsCloudWatchLogs:
     """
@@ -32,26 +36,21 @@ class AwsCloudWatchLogs:
         Args:
             log_group_name: Name of the log group
             retention_days: Number of days to retain logs (0 means infinite retention)
-            tags: Optional dictionary of tags
+            tags: Tags to add to (or override in) the standard ones
             
         Returns:
             AWS response dictionary
         """
         try:
             response = self.logs.create_log_group(
-                logGroupName=log_group_name
+                logGroupName=log_group_name,
+                tags=tag_dict(tags)
             )
             
             if retention_days > 0:
                 self.logs.put_retention_policy(
                     logGroupName=log_group_name,
                     retentionInDays=retention_days
-                )
-                
-            if tags:
-                self.logs.tag_log_group(
-                    logGroupName=log_group_name,
-                    tags=tags
                 )
                 
             self.logger.info(f"Created log group: {log_group_name}")

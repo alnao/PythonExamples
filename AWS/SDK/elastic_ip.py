@@ -1,5 +1,9 @@
 import boto3
 from botocore.exceptions import ClientError
+try:
+    from .tags import tag_list
+except ImportError:  # modulo eseguito come script
+    from tags import tag_list
 
 #https://boto3.amazonaws.com/v1/documentation/api/latest/guide/ec2-example-elastic-ip-addresses.html
 class AwsElasticIp:
@@ -15,10 +19,10 @@ class AwsElasticIp:
             return response['Addresses']
         return []
 
-    def allocate_address(self,profile_name,vpc,instance):
+    def allocate_address(self,profile_name,vpc,instance,tags=None):
         ec2 = boto3.client('ec2')
         try:
-            allocation = ec2.allocate_address(Domain=vpc)
+            allocation = ec2.allocate_address(Domain=vpc, TagSpecifications=[{'ResourceType': 'elastic-ip', 'Tags': tag_list(tags)}])
             response = ec2.associate_address(AllocationId=allocation['AllocationId'],InstanceId=instance)
             return response
         except ClientError as e:

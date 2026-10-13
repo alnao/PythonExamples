@@ -20,9 +20,17 @@ $ curl -d '{"nome":"Andrea", "cognome":"Nao"}' -H "Content-Type: application/jso
 ```
 
 
+# Tag delle risorse AWS
+Tutte le risorse create su AWS ricevono i tag standard del repository (`Project=Development.aws.py-Docker.03ApiPersoneNoDb`, `ManagedBy=Sh`): le task definition li hanno nei file `taskECS*.json`, per gli altri comandi si usano queste variabili (ECR vuole `Key`/`Value`, ECS `key`/`value`):
+```bash
+$ TAGS_ECR="Key=Name,Value=aws-py-Docker.03ApiPersoneNoDb Key=Environment,Value=dev Key=Project,Value=Development.aws.py-Docker.03ApiPersoneNoDb Key=Owner,Value=AlNao Key=CostCenter,Value=dev Key=ManagedBy,Value=Sh"
+$ TAGS_ECS="key=Name,value=aws-py-Docker.03ApiPersoneNoDb key=Environment,value=dev key=Project,value=Development.aws.py-Docker.03ApiPersoneNoDb key=Owner,value=AlNao key=CostCenter,value=dev key=ManagedBy,value=Sh"
+```
+
 # Comandi per caricare in AWS-ECR 
 Riferimento https://medium.com/codex/run-a-python-code-on-aws-batch-part-2-uploading-data-to-ecr-and-creation-of-computing-c5dab12cd3eb
 ```bash
+$ aws ecr create-repository --repository-name nome-ecs-repo-uno --region eu-west-1 --tags $TAGS_ECR
 $ aws ecr get-login-password --region eu-west-1 | docker login --username AWS --password-stdin xxxxxxx.dkr.ecr.eu-west-1.amazonaws.com
 $ docker build -t nome-ecs-repo-uno .
 $ docker tag nome-ecs-repo-uno:latest xxxxxxx.dkr.ecr.eu-west-1.amazonaws.com/nome-ecs-repo-uno:latest
@@ -32,7 +40,7 @@ $ docker push xxxxxxx.dkr.ecr.eu-west-1.amazonaws.com/nome-ecs-repo-uno:latest
 # Comandi per eseguire in AWS-ECS
 ```bash
 $ aws ecs register-task-definition --cli-input-json file://taskECS.json
-$ aws ecs run-task --cluster docker-cluster --task-definition api-persone-nodb:2 --count 1
+$ aws ecs run-task --cluster docker-cluster --task-definition api-persone-nodb:2 --count 1 --propagate-tags TASK_DEFINITION
 $ aws ecs list-tasks --cluster docker-cluster 
 ```
 
@@ -48,7 +56,7 @@ $ aws ecs stop-task --cluster docker-cluster --task xxxx
 Riferimento bridge network in https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task_definition_parameters.html#network_mode
 ```bash
 $ aws ecs register-task-definition --cli-input-json file://taskECSbridge.json
-$ aws ecs run-task --cluster docker-cluster --task-definition api-persone-nodb:3 --count 1
+$ aws ecs run-task --cluster docker-cluster --task-definition api-persone-nodb:3 --count 1 --propagate-tags TASK_DEFINITION
 $ aws ecs list-tasks --cluster docker-cluster 
 $ curl  <PUBLIC_IP>:32770/persone
 $ curl  <PUBLIC_IP>:32769/persone
@@ -62,7 +70,7 @@ $ aws ecs stop-task --cluster docker-cluster --task 8493986540274fb7a803a30482b7
 
 # Comandi per eseguire in AWS-ECS con Fargate
 ```bash
-$ aws ecs create-cluster --cluster-name fargate-cluster
+$ aws ecs create-cluster --cluster-name fargate-cluster --tags $TAGS_ECS
 ```
 Verificare regola IAM con AmazonEC2ContainerRegistryFullAccess, AmazonECS_FullAccess, AmazonSSMManagedInstanceCore	
 ```
@@ -73,7 +81,7 @@ Riferimenti https://docs.aws.amazon.com/AmazonECS/latest/developerguide/example_
 ```bash
 $	aws ecs register-task-definition --cli-input-json file://taskECSwithFargate.json
 $	aws ecs list-task-definitions
-$ 	aws ecs create-service --cluster fargate-cluster --service-name fargate-service --task-definition api-persone-nodb-farg:1 --desired-count 1 --launch-type "FARGATE" --network-configuration "awsvpcConfiguration={subnets=[subnet-xxxxxx],securityGroups=[sg-xxxxxx],assignPublicIp=ENABLED}" --enable-execute-command
+$ 	aws ecs create-service --cluster fargate-cluster --service-name fargate-service --task-definition api-persone-nodb-farg:1 --desired-count 1 --launch-type "FARGATE" --network-configuration "awsvpcConfiguration={subnets=[subnet-xxxxxx],securityGroups=[sg-xxxxxx],assignPublicIp=ENABLED}" --enable-execute-command --tags $TAGS_ECS --propagate-tags TASK_DEFINITION
 $ 	aws ecs list-services --cluster fargate-cluster
 $	aws ecs describe-services --cluster fargate-cluster --services fargate-service
 $	aws ecs list-tasks --cluster fargate-cluster --service fargate-service
