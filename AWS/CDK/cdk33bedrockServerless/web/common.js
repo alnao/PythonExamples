@@ -39,6 +39,48 @@ function apiJson(path, method, body) {
     });
 }
 
+// Stima dei costi Bedrock: prezzi di eu-central-1, IVA esclusa (Titan verificato sul conto di ottobre
+// 2026: 1,35 milioni di token addebitati 0,27 $). Oltre COST_CONFIRM_USD la pagina chiede conferma.
+const TITAN_USD_PER_MTOKEN = 0.20;
+const NOVA_IN_USD_PER_MTOKEN = 0.078;
+const NOVA_OUT_USD_PER_MTOKEN = 0.31;
+const CHARS_PER_TOKEN = 4;          // media indicativa per testi italiani e inglesi
+const CHUNK_CHARS = 1000;           // parti da 1000 caratteri...
+const CHUNK_OVERHEAD = 1.25;        // ...di cui 200 ripetuti dalla precedente
+const COST_CONFIRM_USD = 0.01;
+// caratteri di testo per byte del file, stima prudente (i formati Office sono zip compressi)
+const TEXT_PER_BYTE = { pdf: 0.5, docx: 2, xlsx: 2, pptx: 0.5 };
+
+function tokensCost(tokens, usdPerMillion = TITAN_USD_PER_MTOKEN) {
+    return { tokens: Math.ceil(tokens), usd: tokens * usdPerMillion / 1e6 };
+}
+
+/* Embedding di un testo di `chars` caratteri, sovrapposizione delle parti compresa */
+function textEmbeddingCost(chars) {
+    return tokensCost(chars * CHUNK_OVERHEAD / CHARS_PER_TOKEN);
+}
+
+/* Stima dal peso del file; null per le immagini (descrizione con Nova Lite, circa 0,0003 $) */
+function fileEmbeddingCost(file) {
+    if (file.type.startsWith('image/')) return null;
+    const extension = file.name.split('.').pop().toLowerCase();
+    return textEmbeddingCost(file.size * (TEXT_PER_BYTE[extension] ?? 1));
+}
+
+function formatUsd(usd) {
+    return usd.toFixed(usd < 0.1 ? 3 : 2).replace('.', ',');
+}
+
+function costText(estimate, model) {
+    return `circa ${formatUsd(estimate.usd)} $ (~${estimate.tokens.toLocaleString('it-IT')} token ${model}, stima indicativa IVA esclusa)`;
+}
+
+/* Conferma solo se la stima supera COST_CONFIRM_USD; true = si procede */
+function confirmCost(what, estimate, model) {
+    if (!estimate || estimate.usd < COST_CONFIRM_USD) return true;
+    return confirm(`${what} potrebbe avere costi di ${costText(estimate, model)}.\n\nProcediamo?`);
+}
+
 function alertHtml(type, html) {
     return `<div class="alert alert-${type} mb-0">${html}</div>`;
 }

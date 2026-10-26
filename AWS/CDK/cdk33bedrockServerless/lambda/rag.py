@@ -35,6 +35,8 @@ CHAT_MODEL = os.environ.get("CHAT_MODEL", "eu.amazon.nova-lite-v1:0")
 CHAT_TEMPERATURE = os.environ.get("CHAT_TEMPERATURE", "0.2")
 # modello multimodale per descrivere le immagini; vuoto = immagini non accettate (niente OCR qui)
 IMAGE_MODEL = os.environ.get("IMAGE_MODEL", "eu.amazon.nova-lite-v1:0")
+# nello stack i modelli sono gli ARN dei profili di inferenza (con i tag): qui il nome da mostrare
+IMAGE_MODEL_NAME = os.environ.get("IMAGE_MODEL_NAME", IMAGE_MODEL)
 CHUNK_SIZE = int(os.environ.get("CHUNK_SIZE", "1000"))
 CHUNK_OVERLAP = int(os.environ.get("CHUNK_OVERLAP", "200"))
 # brani al massimo per domanda e caratteri al massimo del contesto mandato al modello di chat:

@@ -39,6 +39,32 @@ function apiJson(path, method, body) {
     });
 }
 
+// Stima dei costi degli embedding: Titan Text Embeddings V2 in eu-central-1, IVA esclusa (verificato
+// sul conto di ottobre 2026: 1,35 milioni di token addebitati 0,27 $). Oltre COST_CONFIRM_USD si chiede conferma.
+const TITAN_USD_PER_MTOKEN = 0.20;
+const CHARS_PER_TOKEN = 4;          // media indicativa per testi italiani, inglesi e codice
+const CHUNK_CHARS = 1500;           // parti da circa 1500 caratteri...
+const CHUNK_OVERHEAD = 1.1;         // ...con 3 righe ripetute e il percorso del file
+const COST_CONFIRM_USD = 0.01;
+
+function tokensCost(tokens) {
+    return { tokens: Math.ceil(tokens), usd: tokens * TITAN_USD_PER_MTOKEN / 1e6 };
+}
+
+function formatUsd(usd) {
+    return usd.toFixed(usd < 0.1 ? 3 : 2).replace('.', ',');
+}
+
+function costText(estimate) {
+    return `circa ${formatUsd(estimate.usd)} $ (~${estimate.tokens.toLocaleString('it-IT')} token Titan Embeddings, stima indicativa IVA esclusa)`;
+}
+
+/* Conferma solo se la stima supera COST_CONFIRM_USD; true = si procede */
+function confirmCost(what, estimate) {
+    if (estimate.usd < COST_CONFIRM_USD) return true;
+    return confirm(`${what} potrebbe avere costi di ${costText(estimate)}.\n\nProcediamo?`);
+}
+
 function alertHtml(type, html) {
     return `<div class="alert alert-${type} mb-0">${html}</div>`;
 }

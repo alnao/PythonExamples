@@ -1,5 +1,7 @@
 # AWS CDK 33 - Bedrock Serverless, Pocket RAG senza server
 
+> ⚠️ Nota importante: l'esecuzione di questi esempi nel cloud potrebbe causare costi indesiderati ⚠️
+
 ## 🚀 Panoramica
 
 Versione **serverless** del [Pocket RAG su EC2](../../Bedrock/): stesso sistema RAG (Retrieval-Augmented Generation) con Amazon Bedrock, ma senza istanze accese. Si paga solo quando si carica un documento o si fa una domanda. Tutto gira a Francoforte (`eu-central-1`) ed è descritto con **AWS CDK** in Python.
@@ -24,18 +26,19 @@ I modelli si cambiano in `MODELS` nello stack: la policy IAM delle Lambda viene 
 
 ```
 browser ── CloudFront ──┬── /*      bucket S3 del sito (privato, Origin Access Control)
-                        └── /api/*  HTTP API Gateway ── Lambda Api ──┬── Bedrock (domande)
+                        └── /api/*  HTTP API Gateway ── Lambda Api ──┬── Bedrock (domande, profilo Chat)
                                                                      ├── S3 Vectors (ricerca)
                                                                      └── S3 (stato, POST prefirmati)
 browser ── POST prefirmato ── bucket documenti uploads/<doc_id>/<file>
-                                   └── evento ObjectCreated ── Lambda Ingest ──┬── Bedrock (embedding, immagini)
+                                   └── evento ObjectCreated ── Lambda Ingest ──┬── Bedrock (profili Embedding e Image)
                                                                               └── S3 Vectors (scrittura)
 ```
 
 ```
 ├── app.py                          # 🚀 app CDK: tag standard e stack a Francoforte
 ├── cdk33bedrock_serverless/
-│   └── cdk33bedrock_serverless_stack.py # 🏗️ bucket, S3 Vectors, Lambda, API Gateway, CloudFront, segreto
+│   ├── cdk33bedrock_serverless_stack.py # 🏗️ bucket, S3 Vectors, profili Bedrock, Lambda, API Gateway, CloudFront, segreto
+│   └── tags.py                     # 🏷️ tag standard e apply_tags (usata da app.py e dai test)
 ├── lambda/
 │   ├── api.py                      # ⚡ API (router, chiave, domande, documenti, reindex)
 │   ├── ingest.py                   # 📥 indicizzazione dei file caricati
@@ -83,7 +86,9 @@ Al termine `cdk deploy` stampa:
 - `ApiKeyCommand`: il comando che legge la chiave API da inserire nel campo in alto a destra del sito
 - `DocumentsBucket`: il bucket dei documenti
 
-Tutte le risorse hanno i tag standard del repository (`Project=Development.aws.py-CDK.cdk33bedrockServerless`, `ManagedBy=CDK`), anche quelle di supporto create da CDK; i layer Lambda non accettano tag.
+Tutte le risorse hanno i tag standard del repository (`Project=Development.aws.py-CDK.cdk33bedrockServerless`, `ManagedBy=CDK`), anche quelle di supporto create da CDK; non hanno tag solo i tipi che CloudFormation non permette di taggare (layer Lambda, policy IAM inline, route e integrazioni di API Gateway, OAC, permessi Lambda, policy dei bucket). Il test `test_all_resources_tagged` controlla ogni risorsa del template e fallisce se ne compare una nuova senza tag.
+
+**Costi di Bedrock con i tag**: una chiamata a Bedrock con l'ID del modello (`eu.amazon.nova-lite-v1:0`) produce un costo senza tag, che in Cost Explorer non arriva a nessun `Project`, ed è la voce principale di questo esempio. Per questo lo stack crea tre *application inference profile* con i tag dello stack, uno per uso (`Embedding` copiato da Titan, `Chat` e `Image` copiati dal profilo cross-region di Nova Lite), e le Lambda ricevono i loro ARN in `EMBEDDING_MODEL`, `CHAT_MODEL` e `IMAGE_MODEL`: Converse e InvokeModel accettano l'ARN come `modelId`. I profili non costano nulla; nel CUR si vede anche la divisione tra embedding, domande e immagini. Perché il tag compaia in Cost Explorer `Project` deve essere attivato come *cost allocation tag* nella console Billing (una volta per account).
 
 Le risorse hanno nomi fissi al posto dei suffissi casuali di CDK, comprese quelle create internamente da CDK (svuotamento dei bucket al destroy, notifiche S3, copia del sito):
 
@@ -96,9 +101,10 @@ Le risorse hanno nomi fissi al posto dei suffissi casuali di CDK, comprese quell
 | Ruoli IAM | `Cdk33BedrockServerlessStack-<Lambda>ServiceRole` |
 | Policy IAM (inline nei ruoli) | `Cdk33BedrockServerlessStack-<Lambda>ServicePolicy` (la Lambda AutoDeleteObjects non ne ha) |
 | Layer Lambda | `Cdk33BedrockServerless-Libraries`, `Cdk33BedrockServerless-AwsCli` |
+| Profili di inferenza Bedrock | `Cdk33BedrockServerless-Embedding`, `Cdk33BedrockServerless-Chat`, `Cdk33BedrockServerless-Image` |
 | Segreto, HTTP API, OAC | `Cdk33BedrockServerless-ApiKey`, `Cdk33BedrockServerless-HttpApi`, `Cdk33BedrockServerless-Site` |
 
-Restano con un identificativo generato solo le risorse che non hanno un nome scelto dall'utente: l'ID della distribuzione CloudFront (il dominio `xxxx.cloudfront.net`) e quello dell'API Gateway. I nomi dei bucket sono unici in tutto il mondo e quelli dei ruoli IAM in tutto l'account: lo stack si può installare una sola volta per account.
+Restano con un identificativo generato solo le risorse che non hanno un nome scelto dall'utente: l'ID della distribuzione CloudFront (il dominio `xxxx.cloudfront.net`), quello dell'API Gateway e quello dei profili di inferenza (nel loro ARN). I nomi dei bucket sono unici in tutto il mondo e quelli dei ruoli IAM in tutto l'account: lo stack si può installare una sola volta per account.
 
 **Cleanup**: `cdk destroy` cancella tutto, compresi i bucket con il loro contenuto e l'indice vettoriale. Il bootstrap resta, perché è condiviso con gli altri progetti CDK: quando nella region non ci sono più stack CDK si toglie con `../bootstrap/bootstrap.sh destroy eu-central-1`.
 
@@ -135,6 +141,7 @@ curl -s -H "X-API-Key: $KEY" -H "Content-Type: application/json" -d '{"question"
 Limiti da conoscere:
 - API Gateway chiude le richieste dopo 30 secondi: le domande con Nova Lite rispondono in pochi secondi, ma un modello di chat molto più lento potrebbe non bastare
 - file fino a 250 MB (`MAX_UPLOAD_MB` nello stack): la pagina controlla la dimensione prima di caricare, mostra l'avanzamento e, se S3 rifiuta il file, il motivo (per esempio `EntityTooLarge`)
+- **conferma dei costi**: prima di caricare un file la pagina stima il costo degli embedding dal suo peso (per PDF e formati Office con un rapporto prudente tra testo e byte) e, oltre 0,01 $, chiede conferma; lo stesso per una domanda con 1000 brani (circa 0,012 $). "Ricostruisci indice" mostra sempre la stima, calcolata sui caratteri dei documenti già indicizzati
 - l'indicizzazione di un file ha a disposizione 15 minuti, il massimo di Lambda, con 3008 MB di memoria (il massimo concesso di default agli account nuovi) e senza nuovi tentativi automatici: se il tempo sta per finire (lettura del PDF o embedding) il documento passa in stato `error` con il motivo, invece di restare `processing`
 - un PDF grande ma scansionato produce poco o nessun testo, perché qui non c'è OCR
 - una domanda cerca da 5 a 1000 brani (42 di default; S3 Vectors li restituisce a pagine da 100). I più simili entrano nel contesto del modello fino a 600.000 caratteri, circa 150.000 token (`CONTEXT_MAX_CHARS` nelle Lambda, Nova Lite ne accetta 300.000): gli altri vengono trovati ma non usati, e la pagina lo dice. Con molti brani la risposta richiede più secondi, sempre entro i 29 di API Gateway
@@ -143,7 +150,7 @@ Limiti da conoscere:
 
 ## 💰 Analisi dei Costi
 
-Prezzi indicativi di Francoforte (`eu-central-1`) a ottobre 2026, IVA esclusa; per S3 Vectors sono usati i prezzi pubblicati per US East (Francoforte può essere leggermente più cara). Verificare sempre sulle pagine dei prezzi AWS e di [Amazon Bedrock](https://aws.amazon.com/bedrock/pricing/); per Amazon Nova Lite con il profilo EU la stima usa 0,08 $ per milione di token in input e 0,31 $ in output.
+Prezzi indicativi di Francoforte (`eu-central-1`) a ottobre 2026, IVA esclusa; per S3 Vectors sono usati i prezzi pubblicati per US East (Francoforte può essere leggermente più cara). Verificare sempre sulle pagine dei prezzi AWS e di [Amazon Bedrock](https://aws.amazon.com/bedrock/pricing/); per Amazon Nova Lite con il profilo EU la stima usa 0,08 $ per milione di token in input e 0,31 $ in output. **Titan Text Embeddings V2 costa 0,20 $ per milione di token**: prezzo verificato sul conto del 13 ottobre 2026 (1,35 milioni di token addebitati 0,27 $), dieci volte quello usato nelle prime versioni di questo README.
 
 Scenario uguale a quello della versione EC2: ogni giorno 5 documenti caricati (circa 100 parti), 2 immagini e 50 domande.
 
@@ -156,19 +163,20 @@ Scenario uguale a quello della versione EC2: ogni giorno 5 documenti caricati (c
 | S3 Vectors | ~3.000 vettori (~17 MB): archiviazione, scritture (minimo 128 KB a chiamata) e ~1.500 ricerche/mese | < 0,01 $ | 0,01 $ |
 | Secrets Manager | 1 segreto × 0,40 $/mese | 0,01 $ | 0,40 $ |
 | CloudWatch Logs | pochi MB di log, conservati 1 settimana | < 0,01 $ | 0,01 $ |
-| Bedrock Titan Embeddings V2 | ~31.000 token/giorno × 0,02 $/milione | < 0,01 $ | 0,02 $ |
+| Bedrock Titan Embeddings V2 | ~31.000 token/giorno × 0,20 $/milione | < 0,01 $ | 0,19 $ |
 | Bedrock Nova Lite (risposte) | 50 domande × (~12.000 token in, cioè 42 brani, + ~300 out) | 0,05 $ | 1,58 $ |
 | Bedrock Nova Lite (immagini) | 2 immagini × (~1.700 token in + ~500 out) | < 0,01 $ | 0,02 $ |
-| **Totale** | | **~0,07 $** | **~2,20 $** |
+| **Totale** | | **~0,08 $** | **~2,35 $** |
 
 Note sui costi:
-- un file molto grande costa di più da indicizzare: 15 minuti della Lambda da 3 GB sono circa 0,045 $, più gli embedding (circa 0,02 $ per milione di token)
+- un file molto grande costa di più da indicizzare: 15 minuti della Lambda da 3 GB sono circa 0,045 $, più gli embedding: circa 0,06 $ per milione di caratteri di testo (0,20 $ per milione di token, parti sovrapposte comprese). Esempio reale: due documenti di qualche centinaio di pagine sono stati 1,35 milioni di token, cioè 0,27 $
 - senza traffico il costo fisso è di circa 0,45 $ al mese (segreto, file su S3, vettori archiviati)
 - la voce principale è Nova Lite per le domande, e dipende dai brani usati: circa 0,0002 $ a domanda con 5 brani, 0,001 $ con 42, 0,012 $ con il contesto pieno (1000 brani); poi il segreto (0,40 $ al mese). Le immagini con Nova Lite costano circa 0,0003 $ l'una
 - con 1000 domande al giorno da 42 brani il totale sale a circa 1,10 $ al giorno (~33 $ al mese), quasi tutto Nova Lite; con 5 brani a domanda resta sotto 0,30 $ al giorno
 
 
 ## 🚀 Sviluppi Futuri
+- ✅ **Versione gestita** con Bedrock Knowledge Base al posto di estrazione, chunking ed embedding fatti a mano: [cdk34bedrockKnowledgeBase](../cdk34bedrockKnowledgeBase/), con il confronto tra le due
 - 🔍 **OCR** dei PDF scansionati con Amazon Textract (asincrono, attivato dalla Lambda Ingest)
 - 👥 **Login** con Amazon Cognito al posto della chiave unica, con filtro per utente sui metadati dei vettori
 - 💬 **Risposte in streaming** con Lambda Function URL e `converse_stream`, senza il limite dei 30 secondi

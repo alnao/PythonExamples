@@ -214,3 +214,11 @@ def test_upload_folder_selection_and_plan(tmp_path):
     assert upload_folder.plan(local, remote, delete=False) == (["repo/AWS/README.md"], [], 0)
     remote["repo/AWS/README.md"] = local["repo/AWS/README.md"][1]
     assert upload_folder.plan(local, remote, delete=True) == ([], ["repo/vecchio.md"], 1)
+
+
+def test_upload_folder_embedding_cost():
+    # repository da 5 MB: circa 1,4 milioni di token, quasi 0,30 $ (il caso misurato sul conto)
+    tokens, usd = upload_folder.embedding_cost(5 * 1024 * 1024)
+    assert 1_400_000 < tokens < 1_500_000 and 0.28 < usd < 0.30
+    # un file piccolo resta sotto la soglia di conferma
+    assert upload_folder.embedding_cost(100 * 1024)[1] < upload_folder.COST_CONFIRM_USD

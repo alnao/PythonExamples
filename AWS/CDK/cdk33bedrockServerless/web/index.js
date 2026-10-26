@@ -69,6 +69,10 @@ async function ingestDocument() {
         resultDiv.innerHTML = alertHtml('warning', `Il file pesa ${megabytes(file.size)} MB: il massimo è ${maxUploadMb} MB`);
         return;
     }
+    if (!confirmCost(`L'indicizzazione di "${file.name}" (${megabytes(file.size)} MB)`, fileEmbeddingCost(file), 'Titan Embeddings')) {
+        resultDiv.innerHTML = alertHtml('secondary', 'Caricamento annullato');
+        return;
+    }
     const button = document.getElementById('ingestBtn');
     button.disabled = true;
     resultDiv.innerHTML = alertHtml('info', 'Caricamento su S3...');
@@ -126,6 +130,12 @@ function usageHtml(data) {
     return `<div class="small text-muted mt-2">Brani trovati: ${data.found}, usati per la risposta: ${data.used}${note}</div>`;
 }
 
+/* Caso peggiore di una domanda: tutti i k brani nel contesto (al massimo 600.000 caratteri) e 1024 token di risposta */
+function queryCost(k) {
+    const input = tokensCost(Math.min(k * CHUNK_CHARS, 600000) / CHARS_PER_TOKEN, NOVA_IN_USD_PER_MTOKEN);
+    return { tokens: input.tokens, usd: input.usd + tokensCost(1024, NOVA_OUT_USD_PER_MTOKEN).usd };
+}
+
 async function queryDocuments() {
     const resultDiv = document.getElementById('queryResult');
     const question = document.getElementById('queryText').value.trim();
@@ -133,11 +143,12 @@ async function queryDocuments() {
         resultDiv.innerHTML = alertHtml('warning', 'Scrivi una domanda');
         return;
     }
+    const k = Number(document.getElementById('topK').value);
+    if (!confirmCost(`Una domanda con ${k} brani`, queryCost(k), 'Nova Lite')) return;
     const button = document.getElementById('queryBtn');
     button.disabled = true;
     resultDiv.innerHTML = alertHtml('info', 'Ricerca nei documenti...');
     try {
-        const k = Number(document.getElementById('topK').value);
         const data = await apiJson('/query', 'POST', { question, k });
         resultDiv.innerHTML = `<div class="bg-light p-3 rounded answer">${answerHtml(data.answer)}</div>`
             + usageHtml(data) + sourcesHtml(data.sources);

@@ -4,7 +4,8 @@ Stack del Pocket RAG serverless (Francoforte):
     browser ── CloudFront ──┬── /*      bucket S3 del sito (privato, Origin Access Control)
                             └── /api/*  HTTP API Gateway ── Lambda Api
     browser ── POST prefirmato ── bucket documenti (uploads/) ── evento ── Lambda Ingest
-    Lambda ── Bedrock (Titan embedding, chat, immagini) e indice S3 Vectors
+    Lambda ── profili di inferenza con i tag ── Bedrock (Titan embedding, chat, immagini)
+    Lambda ── indice S3 Vectors
 """
 
 from aws_cdk import (
@@ -16,6 +17,7 @@ from aws_cdk import (
     Stack,
     aws_apigatewayv2 as apigw,
     aws_apigatewayv2_integrations as integrations,
+    aws_bedrock as bedrock,
     aws_cloudfront as cloudfront,
     aws_cloudfront_origins as origins,
     aws_iam as iam,
@@ -40,6 +42,10 @@ MODELS = {
     "IMAGE_MODEL": "eu.amazon.nova-lite-v1:0",
 }
 GEO_PREFIXES = ("eu.", "us.", "apac.", "global.")
+# Un profilo di inferenza dell'applicazione per ogni uso: i profili hanno i tag dello stack, cosi'
+# il costo di Bedrock arriva al Project dell'esempio in Cost Explorer (chiamando l'ID del modello
+# il costo resta senza tag) e nel CUR si vede anche la divisione tra embedding, chat e immagini
+PROFILE_NAMES = {"EMBEDDING_MODEL": "Embedding", "CHAT_MODEL": "Chat", "IMAGE_MODEL": "Image"}
 MAX_UPLOAD_MB = 250
 
 # Nomi fissi delle risorse (al posto dei suffissi casuali di CDK e CloudFormation):
@@ -110,13 +116,18 @@ class Cdk33BedrockServerlessStack(Stack):
             compatible_architectures=[_lambda.Architecture.X86_64],
             description="Librerie del Pocket RAG serverless",
         )
+        # Le Lambda chiamano i modelli con l'ARN del profilo (Converse e InvokeModel lo accettano come modelId)
+        profiles = {key: self.inference_profile(PROFILE_NAMES[key], model_id)
+                    for key, model_id in MODELS.items() if model_id}
         environment = {
             "DOCS_BUCKET": documents.bucket_name,
             "INDEX_ARN": index.attr_index_arn,
             "CHAT_TEMPERATURE": "0.2",
             "CHUNK_SIZE": "1000",
             "CHUNK_OVERLAP": "200",
-            **MODELS,
+            **{key: profiles[key].attr_inference_profile_arn if key in profiles else "" for key in MODELS},
+            # nome leggibile del modello delle immagini per supported-formats
+            "IMAGE_MODEL_NAME": MODELS["IMAGE_MODEL"],
         }
 
         # file fino a 250 MB: 3008 MB di memoria (e quindi piu' CPU; e' anche il massimo concesso di default
@@ -133,7 +144,10 @@ class Cdk33BedrockServerlessStack(Stack):
         documents.grant_read_write(ingest_fn)
         documents.grant_read_write(api_fn)
         api_key.grant_read(api_fn)
-        bedrock_models = iam.PolicyStatement(actions=["bedrock:InvokeModel"], resources=self.model_arns())
+        # il profilo e, sotto, i modelli (o il profilo cross-region) da cui e' copiato
+        bedrock_models = iam.PolicyStatement(
+            actions=["bedrock:InvokeModel"],
+            resources=[p.attr_inference_profile_arn for p in profiles.values()] + self.model_arns())
         ingest_fn.add_to_role_policy(bedrock_models)
         api_fn.add_to_role_policy(bedrock_models)
         ingest_fn.add_to_role_policy(iam.PolicyStatement(
@@ -243,14 +257,27 @@ class Cdk33BedrockServerlessStack(Stack):
             log_group=log_group,
         )
 
+    def model_source(self, model_id: str) -> str:
+        """ARN del profilo cross-region (ID con prefisso eu., us., ...) o del modello nella region."""
+        if model_id.startswith(GEO_PREFIXES):
+            return f"arn:aws:bedrock:{self.region}:{self.account}:inference-profile/{model_id}"
+        return f"arn:aws:bedrock:{self.region}::foundation-model/{model_id}"
+
+    def inference_profile(self, name: str, model_id: str) -> bedrock.CfnApplicationInferenceProfile:
+        """Profilo di inferenza dell'applicazione copiato dal modello (riceve i tag come ogni risorsa)."""
+        return bedrock.CfnApplicationInferenceProfile(
+            self, f"{name}Profile",
+            inference_profile_name=f"{NAME}-{name}",
+            description=f"{name} del Pocket RAG serverless con {model_id}",
+            model_source=bedrock.CfnApplicationInferenceProfile.InferenceProfileModelSourceProperty(
+                copy_from=self.model_source(model_id)),
+        )
+
     def model_arns(self) -> list:
         """ARN dei modelli: per i profili cross-region servono il profilo e il modello in ogni region."""
         arns = []
         for model_id in filter(None, MODELS.values()):
+            arns.append(self.model_source(model_id))
             if model_id.startswith(GEO_PREFIXES):
-                base_model = model_id.split(".", 1)[1]
-                arns.append(f"arn:aws:bedrock:{self.region}:{self.account}:inference-profile/{model_id}")
-                arns.append(f"arn:aws:bedrock:*::foundation-model/{base_model}")
-            else:
-                arns.append(f"arn:aws:bedrock:{self.region}::foundation-model/{model_id}")
+                arns.append(f"arn:aws:bedrock:*::foundation-model/{model_id.split('.', 1)[1]}")
         return arns

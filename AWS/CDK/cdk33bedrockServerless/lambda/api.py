@@ -62,7 +62,7 @@ def supported_formats(body):
         "document_formats": list(rag.OFFICE_EXTENSIONS),
         "image_formats": list(rag.IMAGE_FORMATS),
         "notes": {"pdf": "solo il testo con pypdf (nessun OCR nella versione serverless)",
-                  "images": (f"descrizione generata da {rag.IMAGE_MODEL}" if rag.IMAGE_MODEL.strip()
+                  "images": (f"descrizione generata da {rag.IMAGE_MODEL_NAME}" if rag.IMAGE_MODEL.strip()
                              else "disattivate (IMAGE_MODEL vuoto)")},
         "max_upload_mb": MAX_UPLOAD_MB,
         "max_k": rag.MAX_K,

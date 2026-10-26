@@ -82,6 +82,7 @@
       {"service": "rds", "resource_type": "cluster-pg", "name": null},
       {"service": "rds", "resource_type": "subgrp", "name": "default"},
       {"service": "xray", "resource_type": "sampling-rule", "name": "Default"},
+      {"service": "xray", "resource_type": "group", "name": "Default"},
       {"service": "kms", "resource_type": "key", "name": null},
       {"service": "resource-explorer-2", "resource_type": "index", "name": null},
       {"service": "resource-explorer-2", "resource_type": "view", "name": null},

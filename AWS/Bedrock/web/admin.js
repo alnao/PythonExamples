@@ -68,7 +68,10 @@ async function forget(doc, button) {
 }
 
 async function reindex() {
-    if (!confirm('Ricostruire l\'indice da tutti i file salvati su S3?\nGli embedding vengono ricalcolati (costo Bedrock di qualche centesimo).')) return;
+    // le parti sono gia' da CHUNK_CHARS caratteri con la sovrapposizione compresa
+    const chunks = documents.reduce((sum, d) => sum + d.chunks, 0);
+    const estimate = tokensCost(chunks * CHUNK_CHARS / CHARS_PER_TOKEN);
+    if (!confirm(`Ricostruire l'indice da tutti i file salvati su S3?\nGli embedding vengono ricalcolati: ${costText(estimate)}.`)) return;
     const button = document.getElementById('reindexBtn');
     button.disabled = true;
     showAlert('info', 'Ricostruzione in corso...');

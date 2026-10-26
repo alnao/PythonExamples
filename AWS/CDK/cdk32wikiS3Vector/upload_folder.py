@@ -13,6 +13,7 @@ Esempi:
     python upload_folder.py ../../../AWS --prefix AWS          # solo AWS/, salvata come AWS/...
     python upload_folder.py ../../.. --delete --dry-run        # mostra cosa farebbe, senza toccare nulla
     python upload_folder.py ../../.. --exclude "AI/*" --exclude "*.csv"
+    python upload_folder.py ../../.. --yes                    # senza chiedere conferma del costo stimato
 """
 
 import argparse
@@ -29,6 +30,12 @@ sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "lam
 from wiki import MAX_FILE_KB, is_supported  # noqa: E402  (stesse regole della Lambda Ingest)
 
 STACK_NAME = "Cdk32WikiS3VectorStack"
+# stima del costo degli embedding: Titan Text Embeddings V2 in eu-central-1, IVA esclusa (verificato sul
+# conto di ottobre 2026: 1,35 milioni di token addebitati 0,27 $); oltre COST_CONFIRM_USD si chiede conferma
+TITAN_USD_PER_MTOKEN = 0.20
+CHARS_PER_TOKEN = 4         # media indicativa per testi italiani, inglesi e codice
+CHUNK_OVERHEAD = 1.1        # 3 righe ripetute tra le parti e il percorso del file nel testo
+COST_CONFIRM_USD = 0.01
 SKIP_DIRS = {"node_modules", "venv", "__pycache__", "cdk.out", "layer", "cache", "dist", "build"}
 # contenuti che fanno pensare a credenziali: il file non viene caricato
 SECRET_PATTERNS = [re.compile(p) for p in (
@@ -89,6 +96,12 @@ def plan(local: dict, remote: dict, delete: bool):
     return upload, remove, unchanged
 
 
+def embedding_cost(total_bytes: int):
+    """(token, dollari) stimati per indicizzare file di testo per total_bytes byte."""
+    tokens = int(total_bytes * CHUNK_OVERHEAD / CHARS_PER_TOKEN)
+    return tokens, tokens * TITAN_USD_PER_MTOKEN / 1_000_000
+
+
 def bucket_from_stack(session, stack: str) -> str:
     outputs = session.client("cloudformation").describe_stacks(StackName=stack)["Stacks"][0].get("Outputs", [])
     for output in outputs:
@@ -103,6 +116,7 @@ def main():
     parser.add_argument("--prefix", default="", help="percorso nella wiki sotto cui mettere i file (es. AWS)")
     parser.add_argument("--delete", action="store_true", help="cancella dal bucket i file spariti dalla cartella")
     parser.add_argument("--dry-run", action="store_true", help="mostra cosa farebbe senza caricare ne' cancellare")
+    parser.add_argument("--yes", action="store_true", help="carica senza chiedere conferma del costo stimato")
     parser.add_argument("--exclude", action="append", default=[], help="percorsi da saltare (es. \"AI/*\"), ripetibile")
     parser.add_argument("--bucket", help="bucket dei file (default: output FilesBucket dello stack)")
     parser.add_argument("--stack", default=STACK_NAME)
@@ -127,8 +141,14 @@ def main():
     for path in remove:
         print(f"  da togliere {path}")
     print(f"Bucket {bucket}: {len(upload)} da caricare, {len(remove)} da cancellare, {unchanged} invariati, {len(skipped)} saltati")
+    tokens, usd = embedding_cost(sum(os.path.getsize(local[p][0]) for p in upload))
+    if upload:
+        print(f"Costo stimato degli embedding: circa {usd:.3f} $ (~{tokens:,} token Titan, stima indicativa IVA esclusa)")
     if args.dry_run or not (upload or remove):
         return
+    if usd >= COST_CONFIRM_USD and not args.yes:
+        if input("Potrebbe avere costi indesiderati. Procediamo? [s/N] ").strip().lower() not in ("s", "si", "sì", "y", "yes"):
+            sys.exit("Annullato: nessun file caricato")
 
     def put(path):
         full, _ = local[path]

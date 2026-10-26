@@ -76,7 +76,8 @@ async function forget(doc, button) {
 }
 
 async function reindex() {
-    if (!confirm('Reindicizzare tutti i file salvati su S3?\nGli embedding vengono ricalcolati (costo Bedrock di qualche centesimo).')) return;
+    const estimate = textEmbeddingCost(documents.reduce((sum, d) => sum + (d.text_length || 0), 0));
+    if (!confirm(`Reindicizzare tutti i file salvati su S3?\nGli embedding vengono ricalcolati: ${costText(estimate, 'Titan Embeddings')}.`)) return;
     const button = document.getElementById('reindexBtn');
     button.disabled = true;
     try {

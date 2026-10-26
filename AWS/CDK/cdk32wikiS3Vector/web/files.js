@@ -84,6 +84,12 @@ async function uploadFile() {
         resultDiv.innerHTML = alertHtml('warning', `Il file pesa ${Math.ceil(file.size / 1024)} KB: il massimo è ${maxFileKb} KB`);
         return;
     }
+    // file di testo: un byte e' circa un carattere
+    if (!confirmCost(`L'indicizzazione di "${file.name}" (${Math.ceil(file.size / 1024)} KB)`,
+                     tokensCost(file.size * CHUNK_OVERHEAD / CHARS_PER_TOKEN))) {
+        resultDiv.innerHTML = alertHtml('secondary', 'Caricamento annullato');
+        return;
+    }
     const button = document.getElementById('uploadBtn');
     button.disabled = true;
     try {
@@ -181,7 +187,9 @@ async function deleteFile(path, button) {
 }
 
 async function reindex() {
-    if (!confirm('Reindicizzare tutti i file?\nGli embedding vengono ricalcolati (costa frazioni di centesimo).')) return;
+    const chunks = files.reduce((sum, f) => sum + (f.chunks || 0), 0);
+    const estimate = tokensCost(chunks * CHUNK_CHARS / CHARS_PER_TOKEN);
+    if (!confirm(`Reindicizzare tutti i ${files.length} file?\nGli embedding vengono ricalcolati: ${costText(estimate)}.`)) return;
     try {
         const data = await apiFetch('/reindex', { method: 'POST' });
         showAlert('success', `${data.queued} file rimessi in coda`);

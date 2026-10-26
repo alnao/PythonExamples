@@ -1,5 +1,7 @@
 # AWS CDK 32 - Wiki con S3 Vectors (ricerca semantica senza LLM)
 
+> ⚠️ Nota importante: l'esecuzione di questi esempi nel cloud potrebbe causare costi indesiderati ⚠️
+
 ## 🚀 Panoramica
 
 Una piccola wiki dove si caricano file di testo (documentazione, codice, configurazione) e si cerca **per significato**: alla domanda "esempio di Lambda che legge da una coda SQS" risponde con i file e i passaggi più pertinenti, con il numero delle righe, anche se non contengono quelle parole esatte. È pensata per indicizzare questo stesso repository, ma va bene per qualsiasi cartella di file di testo.
@@ -29,7 +31,8 @@ pagina "File" o upload_folder.py ── bucket dei file  files/<percorso>
 ```
 ├── app.py                              # 🚀 app CDK: tag standard, bootstrap alnao-dev-cdk, Francoforte
 ├── cdk32wiki_s3_vector/
-│   └── cdk32wiki_s3_vector_stack.py    # 🏗️ bucket, S3 Vectors, Lambda, API Gateway, CloudFront, segreto
+│   ├── cdk32wiki_s3_vector_stack.py    # 🏗️ bucket, S3 Vectors, profilo Bedrock, Lambda, API Gateway, CloudFront, segreto
+│   └── tags.py                         # 🏷️ tag standard e apply_tags (usata da app.py e dai test)
 ├── lambda/
 │   ├── wiki.py                         # 🧩 parti per righe, embedding, vettori, filtri
 │   ├── ingest.py                       # 📥 indicizzazione e cancellazione guidate dagli eventi S3
@@ -70,8 +73,13 @@ Le risorse hanno nomi fissi al posto dei suffissi casuali di CDK, comprese quell
 | Policy IAM (inline nei ruoli) | `Cdk32WikiS3VectorStack-<Lambda>ServicePolicy` (la Lambda AutoDeleteObjects non ne ha) |
 | Layer Lambda | `Cdk32WikiS3Vector-Libraries`, `Cdk32WikiS3Vector-AwsCli` |
 | Segreto, HTTP API, OAC | `Cdk32WikiS3Vector-ApiKey`, `Cdk32WikiS3Vector-HttpApi`, `Cdk32WikiS3Vector-Site` |
+| Profilo di inferenza Bedrock | `Cdk32WikiS3Vector-Embedding` |
 
-Restano con un identificativo generato da AWS solo la distribuzione CloudFront (il dominio `xxxx.cloudfront.net`) e l'ID dell'API Gateway. I nomi dei bucket sono unici in tutto il mondo e quelli dei ruoli IAM in tutto l'account: lo stack si può installare una sola volta per account.
+Non hanno tag solo i tipi che CloudFormation non permette di taggare (layer Lambda, policy IAM inline, route e integrazioni di API Gateway, OAC, permessi Lambda, policy dei bucket); il test `test_all_resources_tagged` controlla ogni risorsa del template e fallisce se ne compare una nuova senza tag.
+
+**Costi di Bedrock con i tag**: una chiamata a Titan con l'ID del modello produce un costo senza tag, che in Cost Explorer non arriva a nessun `Project`. Per questo lo stack crea un *application inference profile* `Cdk32WikiS3Vector-Embedding` copiato da Titan, con i tag dello stack, e le Lambda ricevono il suo ARN in `EMBEDDING_MODEL` (InvokeModel lo accetta come `modelId`). Il profilo non costa nulla. Perché il tag compaia in Cost Explorer `Project` deve essere attivato come *cost allocation tag* nella console Billing (una volta per account).
+
+Restano con un identificativo generato da AWS solo la distribuzione CloudFront (il dominio `xxxx.cloudfront.net`), l'ID dell'API Gateway e quello del profilo di inferenza (nel suo ARN). I nomi dei bucket sono unici in tutto il mondo e quelli dei ruoli IAM in tutto l'account: lo stack si può installare una sola volta per account.
 
 ## 🛠️ Deploy
 
@@ -97,8 +105,11 @@ python upload_folder.py ../../..                        # carica i file nuovi o 
 python upload_folder.py ../../../AWS --prefix AWS       # solo AWS/, salvata come AWS/...
 python upload_folder.py ../../.. --delete               # toglie anche i file spariti dalla cartella
 python upload_folder.py ../../.. --exclude "AI/*" --exclude "*.csv"
+python upload_folder.py ../../.. --yes                  # senza chiedere conferma del costo stimato
 ```
 Lo script confronta l'MD5 di ogni file locale con l'ETag su S3, quindi rilanciarlo carica solo le differenze. Salta le cartelle nascoste e di servizio (`.git`, `node_modules`, `venv`, `cdk.out`, `layer`, `cache`, ...), i file nascosti (`.env`), quelli oltre 1024 KB e quelli che **sembrano contenere credenziali** (chiavi AWS `AKIA...`, `aws_secret_access_key`, chiavi private): la wiki è leggibile da chiunque abbia la chiave API, quindi un file con segreti non deve finirci. Il controllo è una rete di sicurezza, non una garanzia (e può saltare per prudenza file innocui, per esempio template CloudFormation con hash lunghi): prima del primo caricamento conviene sempre guardare l'elenco di `--dry-run`.
+
+**Conferma dei costi**: lo script stampa il costo stimato degli embedding dei file da caricare e, oltre 0,01 $, chiede conferma (`--yes` per non chiederla). Anche la pagina "File" chiede conferma per un file oltre 0,01 $ (circa 180 KB di testo), e "Reindicizza tutto" mostra sempre la stima calcolata sulle parti già indicizzate.
 
 **Cleanup**: `cdk destroy` cancella tutto, compresi i file e l'indice vettoriale.
 
@@ -124,19 +135,19 @@ Limiti: file fino a 1024 KB, fino a 100 passaggi per ricerca (una pagina di S3 V
 
 ## 💰 Analisi dei Costi
 
-Prezzi indicativi di Francoforte (`eu-central-1`) a ottobre 2026, IVA esclusa; per S3 Vectors sono usati i prezzi pubblicati per US East. Scenario: questo repository indicizzato (circa 1000 file di testo, 5 MB, 5000 parti) e 50 ricerche al giorno.
+Prezzi indicativi di Francoforte (`eu-central-1`) a ottobre 2026, IVA esclusa; per S3 Vectors sono usati i prezzi pubblicati per US East. **Titan Text Embeddings V2 costa 0,20 $ per milione di token**: prezzo verificato sul conto del 13 ottobre 2026 (1,35 milioni di token addebitati 0,27 $), dieci volte quello usato nelle prime versioni di questo README. Scenario: questo repository indicizzato (circa 1000 file di testo, 5 MB, 5000 parti) e 50 ricerche al giorno.
 
 | Voce | Calcolo | Al giorno | Al mese (30 gg) |
 |------|---------|-----------|-----------------|
 | Secrets Manager | 1 segreto × 0,40 $/mese | 0,01 $ | 0,40 $ |
 | S3 Vectors | ~5000 vettori (~30 MB × 0,06 $/GB) e ~1500 ricerche (2,50 $/milione) | < 0,01 $ | 0,01 $ |
-| Titan Embeddings V2 (ricerche) | 50 domande × ~20 token × 0,02 $/milione | < 0,01 $ | < 0,01 $ |
+| Titan Embeddings V2 (ricerche) | 50 domande × ~20 token × 0,20 $/milione | < 0,01 $ | < 0,01 $ |
 | S3 (file, stato, sito) | ~10 MB | < 0,01 $ | < 0,01 $ |
 | Lambda, API Gateway, CloudFront | dentro il free tier | 0 $ | ~0,01 $ |
 | CloudWatch Logs | pochi MB, conservati 1 settimana | < 0,01 $ | 0,01 $ |
 | **Totale** | | **~0,015 $** | **~0,45 $** |
 
-Una tantum, la prima indicizzazione dell'intero repository costa circa 0,06 $: circa 1,3 milioni di token di Titan (0,03 $), le scritture su S3 Vectors (0,20 $ per GB, con un minimo di 128 KB per chiamata: circa 0,025 $ per 1000 file) e le Lambda, dentro il free tier. Ogni sincronizzazione successiva costa solo per i file cambiati.
+Una tantum, la prima indicizzazione dell'intero repository costa circa 0,29 $: circa 1,3 milioni di token di Titan (0,26 $), le scritture su S3 Vectors (0,20 $ per GB, con un minimo di 128 KB per chiamata: circa 0,025 $ per 1000 file) e le Lambda, dentro il free tier. Ogni sincronizzazione successiva costa solo per i file cambiati.
 
 Il costo fisso è quasi tutto il segreto della chiave API: le ricerche, senza modello di chat, costano praticamente nulla.
 
@@ -145,7 +156,7 @@ Il costo fisso è quasi tutto il segreto della chiave API: le ricerche, senza mo
 - 💬 **Risposta scritta** opzionale: i passaggi trovati come contesto per un modello di chat (come in cdk33bedrockServerless), solo quando serve
 - 🔄 **Sincronizzazione automatica** dal repository: `upload_folder.py` lanciato da una GitHub Action a ogni push
 - 🔗 **Link ai file** su GitHub con il numero di riga
-- ⚖️ **Confronto** con Bedrock Knowledge Base su S3 Vectors: stessi file, chunking ed embedding gestiti da AWS
+- ⚖️ **Confronto** con Bedrock Knowledge Base su S3 Vectors: stessi file, chunking ed embedding gestiti da AWS (il RAG gestito è nel [cdk34bedrockKnowledgeBase](../cdk34bedrockKnowledgeBase/), con la modalità "Solo i brani" simile a questa wiki)
 
 
 # &lt; AlNao /&gt;

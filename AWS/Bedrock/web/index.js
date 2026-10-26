@@ -8,6 +8,10 @@ async function ingestDocument() {
         resultDiv.innerHTML = alertHtml('warning', 'Scegli un file');
         return;
     }
+    if (!confirmCost(`L'indicizzazione di "${file.name}" (${(file.size / 1024 / 1024).toFixed(1)} MB)`, fileEmbeddingCost(file))) {
+        resultDiv.innerHTML = alertHtml('secondary', 'Caricamento annullato');
+        return;
+    }
     const button = document.getElementById('ingestBtn');
     button.disabled = true;
     resultDiv.innerHTML = alertHtml('info', 'Caricamento e indicizzazione in corso (PDF scansionati e immagini richiedono qualche secondo)...');

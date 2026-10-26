@@ -3,6 +3,7 @@ Stack della wiki con S3 Vectors (Francoforte): ricerca semantica nei file di tes
 
     browser ── CloudFront ──┬── /*      bucket S3 del sito (privato, Origin Access Control)
                             └── /api/*  HTTP API Gateway ── Lambda Api ── Titan + S3 Vectors (ricerca)
+    Titan e' chiamato con un profilo di inferenza dell'applicazione con i tag (costo con il Project)
     browser o upload_folder.py ── bucket dei file (files/<percorso>)
         ├── evento ObjectCreated ── Lambda Ingest ── Titan + S3 Vectors (scrittura)
         └── evento ObjectRemoved ── Lambda Ingest ── S3 Vectors (cancellazione)
@@ -17,6 +18,7 @@ from aws_cdk import (
     Stack,
     aws_apigatewayv2 as apigw,
     aws_apigatewayv2_integrations as integrations,
+    aws_bedrock as bedrock,
     aws_cloudfront as cloudfront,
     aws_cloudfront_origins as origins,
     aws_iam as iam,
@@ -102,10 +104,21 @@ class Cdk32WikiS3VectorStack(Stack):
             compatible_runtimes=[_lambda.Runtime.PYTHON_3_13],
             description="boto3 per la wiki con S3 Vectors",
         )
+
+        # Profilo di inferenza dell'applicazione copiato da Titan: ha i tag dello stack, cosi' il costo
+        # degli embedding arriva al Project dell'esempio in Cost Explorer (chiamando l'ID del modello
+        # resterebbe senza tag); le Lambda lo usano come modelId
+        model_arn = f"arn:aws:bedrock:{self.region}::foundation-model/{EMBEDDING_MODEL}"
+        embedding_profile = bedrock.CfnApplicationInferenceProfile(
+            self, "EmbeddingProfile",
+            inference_profile_name=f"{NAME}-Embedding",
+            description=f"Embedding della wiki con {EMBEDDING_MODEL}",
+            model_source=bedrock.CfnApplicationInferenceProfile.InferenceProfileModelSourceProperty(copy_from=model_arn),
+        )
         environment = {
             "FILES_BUCKET": files.bucket_name,
             "INDEX_ARN": index.attr_index_arn,
-            "EMBEDDING_MODEL": EMBEDDING_MODEL,
+            "EMBEDDING_MODEL": embedding_profile.attr_inference_profile_arn,
             "MAX_FILE_KB": str(MAX_FILE_KB),
         }
         ingest_fn = self.function("Ingest", "ingest.handler", libraries, environment,
@@ -118,8 +131,9 @@ class Cdk32WikiS3VectorStack(Stack):
         files.grant_read_write(api_fn)
         files.grant_delete(api_fn)
         api_key.grant_read(api_fn)
+        # il profilo e il modello da cui e' copiato
         embedding = iam.PolicyStatement(actions=["bedrock:InvokeModel"],
-                                        resources=[f"arn:aws:bedrock:{self.region}::foundation-model/{EMBEDDING_MODEL}"])
+                                        resources=[embedding_profile.attr_inference_profile_arn, model_arn])
         ingest_fn.add_to_role_policy(embedding)
         api_fn.add_to_role_policy(embedding)
         ingest_fn.add_to_role_policy(iam.PolicyStatement(

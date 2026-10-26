@@ -1,5 +1,7 @@
 # AWS Bedrock RAG Example - Pocket RAG su EC2
 
+> ⚠️ Nota importante: l'esecuzione di questi esempi nel cloud potrebbe causare costi indesiderati ⚠️
+
 ## 🚀 Panoramica
 
 Questo esempio implementa un sistema **RAG (Retrieval-Augmented Generation)** su una istanza EC2 a Francoforte (`eu-central-1`) con **Amazon Bedrock**: si caricano documenti, il sistema li divide in parti, ne calcola gli embedding e risponde alle domande in italiano citando le fonti.
@@ -11,7 +13,7 @@ Questo esempio implementa un sistema **RAG (Retrieval-Augmented Generation)** su
 - **🤖 Risposte** generate da Amazon Nova Lite con la **Converse API** di Bedrock (stesso formato per tutti i modelli), con le fonti citate come `[1]`, `[2]`
 - **💾 Persistenza**: originali su S3, indice ChromaDB su disco con backup automatico su S3 e ricostruzione completa dai file (`/api/reindex`)
 - **🔐 Sicurezza**: chiave API (header `X-API-Key`) su tutte le API, porta 80 aperta solo al proprio IP, nessuna porta SSH (si entra con Session Manager), policy IAM con i permessi minimi
-- **🌐 Interfaccia web** in italiano: pagina per caricare e chiedere, pagina admin per vedere i documenti e farli *dimenticare*
+- **🌐 Interfaccia web** in italiano: pagina per caricare e chiedere, pagina admin per vedere i documenti e farli *dimenticare*; prima di caricare un file grande o di ricostruire l'indice mostra il costo stimato degli embedding e chiede conferma
 
 Esiste anche la versione **senza server** (Lambda, API Gateway, CloudFront, S3 Vectors) nella cartella [`AWS/CDK/cdk33bedrockServerless`](../CDK/cdk33bedrockServerless/): costa molto meno se usata poco, ma non ha l'OCR.
 
@@ -166,7 +168,7 @@ Interfaccia web: `http://IP_PUBBLICO` per caricare documenti e fare domande, `ht
 
 ## 💰 Analisi dei Costi
 
-Prezzi indicativi di Francoforte (`eu-central-1`) a ottobre 2026, IVA esclusa: verificare sempre sulle pagine dei prezzi AWS e di [Amazon Bedrock](https://aws.amazon.com/bedrock/pricing/). Per Amazon Nova Lite con il profilo EU la stima usa 0,08 $ per milione di token in input e 0,31 $ in output.
+Prezzi indicativi di Francoforte (`eu-central-1`) a ottobre 2026, IVA esclusa: verificare sempre sulle pagine dei prezzi AWS e di [Amazon Bedrock](https://aws.amazon.com/bedrock/pricing/). Per Amazon Nova Lite con il profilo EU la stima usa 0,08 $ per milione di token in input e 0,31 $ in output. **Titan Text Embeddings V2 costa 0,20 $ per milione di token**: prezzo verificato sul conto del 13 ottobre 2026 (1,35 milioni di token addebitati 0,27 $), dieci volte quello usato nelle prime versioni di questo README.
 
 Scenario: istanza accesa 24 ore su 24; ogni giorno 5 documenti caricati (circa 100 parti), 2 immagini e 50 domande.
 
@@ -177,18 +179,19 @@ Scenario: istanza accesa 24 ore su 24; ogni giorno 5 documenti caricati (circa 1
 | IPv4 pubblico | 0,005 $/ora × 24 | 0,12 $ | 3,65 $ |
 | S3 (documenti e backup dell'indice, ~1 GB) | 0,0245 $/GB-mese + richieste | < 0,01 $ | 0,03 $ |
 | SSM Parameter Store e Session Manager | parametro standard | 0 $ | 0 $ |
-| Bedrock Titan Embeddings V2 | ~31.000 token/giorno × 0,02 $/milione | < 0,01 $ | 0,02 $ |
+| Bedrock Titan Embeddings V2 | ~31.000 token/giorno × 0,20 $/milione | < 0,01 $ | 0,19 $ |
 | Bedrock Nova Lite (risposte) | 50 domande × (~1.500 token in + ~300 out) | 0,01 $ | 0,32 $ |
 | Bedrock Nova Lite (immagini) | 2 immagini × (~1.700 token in + ~500 out) | < 0,01 $ | 0,02 $ |
 | Traffico in uscita | entro i 100 GB/mese gratuiti | 0 $ | 0 $ |
-| **Totale** | | **~0,77 $** | **~23,45 $** |
+| **Totale** | | **~0,78 $** | **~23,62 $** |
 
 Note sui costi:
 - quasi tutto il costo è l'istanza accesa: fermandola quando non serve (`aws ec2 stop-instances`) si pagano solo il disco (~1,90 $/mese) e S3; l'IPv4 pubblico si paga solo mentre l'istanza è accesa
 - con 1000 domande al giorno la parte Bedrock sale a circa 0,21 $/giorno (~6,40 $/mese), mentre l'istanza resta la stessa fino a quando regge il carico
+- indicizzare costa circa 0,06 $ per milione di caratteri di testo (parti sovrapposte comprese): due documenti di qualche centinaio di pagine sono stati 1,35 milioni di token, cioè 0,27 $. La pagina stima il costo dal peso del file (per PDF e formati Office con un rapporto prudente tra testo e byte) e oltre 0,01 $ chiede conferma
 - le immagini con Nova Lite costano circa 0,0003 $ l'una; con `IMAGE_MODEL` vuoto (solo OCR con Tesseract) la voce va a zero
 - per cambiare modello si aggiornano sia `.env` sia `policy.json`, che autorizza solo i modelli usati
-- la [versione serverless](../CDK/cdk33bedrockServerless/) con lo stesso scenario costa circa 0,07 $ al giorno (~2,20 $ al mese, con 42 brani per domanda invece di 4), perché non ha nulla acceso quando non si usa
+- la [versione serverless](../CDK/cdk33bedrockServerless/) con lo stesso scenario costa circa 0,08 $ al giorno (~2,35 $ al mese, con 42 brani per domanda invece di 4), perché non ha nulla acceso quando non si usa
 
 
 ## 🚀 Sviluppi Futuri
