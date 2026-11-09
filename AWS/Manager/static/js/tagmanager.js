@@ -290,6 +290,19 @@ function hasAllRequiredTags(r) {
     return getMissingTags(r).length === 0;
 }
 
+/* Badge di un tag nella tabella: oltre TAG_MAX_CHARS caratteri e' accorciato (CSS
+ * .tag-long) con il testo intero nel tooltip; i tag obbligatori restano sempre interi. */
+const TAG_MAX_CHARS = 40;
+
+function tagBadgeHtml(k, v) {
+    const testo = `<span class="tag-key">${escapeHtml(k)}</span>: ${escapeHtml(v)}`;
+    if (REQUIRED_TAGS.includes(k) || `${k}: ${v}`.length <= TAG_MAX_CHARS) {
+        return `<span class="badge tag-badge">${testo}</span>`;
+    }
+    return `<span class="badge tag-badge tag-long" data-bs-toggle="tooltip"`
+        + ` data-bs-title="${escapeHtml(`${k}: ${v}`)}">${testo}</span>`;
+}
+
 function renderTable() {
     const body = $('resourcesBody');
 
@@ -332,9 +345,7 @@ function renderTable() {
                 tagContent += '<span class="badge no-tag-badge"><i class="fas fa-triangle-exclamation me-1"></i>nessun tag</span>';
             }
         } else {
-            tagContent += Object.entries(r.tags).map(([k, v]) =>
-                `<span class="badge tag-badge"><span class="tag-key">${escapeHtml(k)}</span>: ${escapeHtml(v)}</span>`
-            ).join(' ');
+            tagContent += Object.entries(r.tags).map(([k, v]) => tagBadgeHtml(k, v)).join(' ');
         }
         
         // Badge dei tag mancanti nella colonna Tag
@@ -348,9 +359,9 @@ function renderTable() {
             <tr class="${rowClass}">
                 <td><input type="checkbox" class="form-check-input row-check" data-arn="${escapeHtml(r.arn)}" ${checked}></td>
                 <td>
-                    <span class="badge bg-secondary">${escapeHtml(r.service)}</span>
+                    <span class="badge bg-secondary">${escapeHtml(r.service)}${r.resource_type
+                        ? `<span class="opacity-75 mx-1">/</span><span class="fw-normal">${escapeHtml(r.resource_type)}</span>` : ''}</span>
                     ${APP.region === ALL ? regionBadge(r.region) : ''}
-                    <div class="text-muted small" style="margin-top: 2px;">${escapeHtml(r.resource_type || '-')}</div>
                 </td>
                 <td>
                     <div class="resource-name" style="cursor: pointer;" data-arn="${escapeHtml(r.arn)}" title="Clicca per mostrare/nascondere ARN">
@@ -360,7 +371,6 @@ function renderTable() {
                 </td>
                 <td>${tagContent}</td>
                 <td class="text-end text-nowrap">
-                    <span class="badge ${src.classe} me-2" title="${escapeHtml(src.titolo)}">${src.testo}</span>
                     <button class="btn btn-sm ${fast.classe} btn-fast-tag" data-arn="${escapeHtml(r.arn)}"
                             title="${escapeHtml(fast.titolo)}" ${fast.disabilitato ? 'disabled' : ''}>
                         <i class="fas ${fast.icona}"></i>
@@ -371,6 +381,7 @@ function renderTable() {
                     <button class="btn btn-sm btn-outline-primary btn-tags" data-arn="${escapeHtml(r.arn)}" title="Gestisci tag">
                         <i class="fas fa-tags"></i>
                     </button>
+                    <div class="mt-1"><span class="badge ${src.classe}" title="${escapeHtml(src.titolo)}">${src.testo}</span></div>
                 </td>
             </tr>`;
     }).join('');

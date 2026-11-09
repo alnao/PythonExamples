@@ -37,6 +37,7 @@ const state = {
     charts: {},
     tables: {},          // righe per l'esportazione CSV
     expanded: new Set(),  // padri con i sottovalori aperti nella tabella per tag (chiusi di default)
+    showDelta: false,    // colonna "ultima vs precedente" nelle tabelle (nascosta di default)
     drill: { service: null, data: null, chart: null, seq: 0 },
     missing: [],         // richieste che mancano alla vista corrente
     modalItems: [],      // richieste proposte nella modale
@@ -438,6 +439,10 @@ function renderTagNotes() {
             + 'ai tag solo i costi successivi all\'attivazione, quindi i mesi precedenti risultano quasi tutti '
             + '"senza tag". Per ricalcolarli si può richiedere un backfill (fino a 12 mesi) da '
             + 'Billing &rarr; Cost allocation tags &rarr; <em>Backfill tags</em>.', 'info');
+        // e' solo una nota: la visuale compatta la nasconde
+        const note = $('alertBox').lastElementChild;
+        note.classList.add('compact-hide');
+        note.classList.toggle('d-none', $('compactView').checked);
     }
 }
 
@@ -471,6 +476,20 @@ function applyFilters(rows) {
 
 function hasClientFilters() { return !!($('serviceFilter').value || $('groupFilter').value); }
 
+// Filtri del browser attivi (servizio, valore, soglia, voci): accendono l'icona per azzerarli
+function hasAnyFilter() {
+    return hasClientFilters() || (parseFloat($('minAmount').value) || 0) !== 0 || $('topN').value !== '8';
+}
+
+// Azzera i filtri del browser; lo zoom resta com'e'
+function resetFilters() {
+    $('serviceFilter').value = '';
+    $('groupFilter').value = '';
+    $('minAmount').value = '0';
+    $('topN').value = '8';
+    render();
+}
+
 function totalsBy(rows, keyFn) {
     const out = {};
     rows.forEach(r => { const k = keyFn(r); out[k] = (out[k] || 0) + r.amount; });
@@ -497,7 +516,7 @@ function renderFilterSelects() {
     const svcSel = $('serviceFilter');
     const prevSvc = svcSel.value;
     const svcTot = totalsBy(rows, r => r.service);
-    svcSel.innerHTML = '<option value="">Tutti</option>' + Object.keys(svcTot)
+    svcSel.innerHTML = '<option value="">Tutti i servizi</option>' + Object.keys(svcTot)
         .filter(k => svcTot[k] !== 0)
         .sort((a, b) => svcTot[b] - svcTot[a])
         .map(k => `<option value="${escapeHtml(k)}">${escapeHtml(serviceLabel(k))} · ${money(svcTot[k])}</option>`)
@@ -516,7 +535,9 @@ function renderFilterSelects() {
         families[fam].total += rawTot[v];
         families[fam].members.push(v);
     });
-    const opts = ['<option value="">Tutti</option>'];
+    // senza etichetta: la prima voce dice cosa filtra ("Tutti i project")
+    const info = groupInfo();
+    const opts = [`<option value="">Tutti i ${escapeHtml((info.isTag ? info.key : info.name).toLowerCase())}</option>`];
     Object.keys(families).sort((a, b) => families[b].total - families[a].total).forEach(fam => {
         const f = families[fam];
         if (f.total === 0) return;
@@ -654,7 +675,10 @@ function renderZoomBar() {
     // briciole: tutto il periodo > livelli precedenti > vista attuale
     const levels = [...state.zoomStack, state.zoom].filter(Boolean);
     const crumbs = [null, ...levels];
+    // nella visuale compatta senza "Tutto il periodo": ci si torna dalla tendina o con lo zoom out
+    const compact = $('compactView').checked;
     $('zoomCrumbs').innerHTML = crumbs.map((z, i) => {
+        if (compact && !z) return '';
         const label = z ? rangeLabel(z) : `Tutto il periodo (${rangeLabel(full)})`;
         return i === crumbs.length - 1
             ? `<li class="breadcrumb-item active fw-semibold">${escapeHtml(label)}</li>`
@@ -767,7 +791,8 @@ function render() {
 
     $('chartsRow').classList.remove('d-none');
     $('rollupBox').classList.toggle('d-none', !info.prefix);
-    $('groupFilterLabel').textContent = info.isTag ? `Valore di ${info.key}` : info.name;
+    $('groupFilter').title = info.isTag ? `Valore di ${info.key}` : info.name;
+    $('btnClearFilters').disabled = !hasAnyFilter();
     const per = { month: 'al mese', week: 'a settimana', day: 'al giorno' }[spec.bucket];
     const where = rangeLabel(spec.range);
     $('chartServiceTitle').textContent = `Costi per servizio, ${per} · ${where}`;
@@ -917,7 +942,8 @@ function renderKpis(rows, spec, buckets) {
 }
 
 /* Tabella voce x colonna (mesi, settimane o giorni dello zoom) con totale, quota e
- * variazione tra le ultime due colonne concluse. Per il gruppo, raggruppando i
+ * variazione tra le ultime due colonne concluse (nascosta di default, si mostra con
+ * l'icona nell'intestazione di "Quota"). Per il gruppo, raggruppando i
  * sottovalori, sotto ogni padre sono elencati i figli: chiusi, si aprono e chiudono con
  * la freccia. La lente in fondo alla riga filtra la voce (un secondo clic toglie il
  * filtro); per i servizi c'e' anche il dettaglio per usage type. */
@@ -926,7 +952,8 @@ function renderTable(kind, table, agg, buckets, colors, labelFn, rows, bfn) {
     const grand = entries.reduce((a, [, e]) => a + e.total, 0);
     const keys = buckets.map(b => b.key);
     const { last, prev } = lastTwo(buckets);
-    const withDelta = !!(last && prev);
+    const canDelta = !!(last && prev);
+    const withDelta = canDelta && state.showDelta;
     const active = kind === 'service' ? $('serviceFilter').value : dec($('groupFilter').value);
     const children = (kind === 'group' && rollupOn())
         ? aggregate(rows.filter(r => r.group !== normGroup(r.group)), r => r.group, bfn) : {};
@@ -937,8 +964,12 @@ function renderTable(kind, table, agg, buckets, colors, labelFn, rows, bfn) {
 
     const head = ['Voce', ...buckets.map(b => b.label), 'Totale', 'Quota',
         ...(withDelta ? [`${last.label} vs ${prev.label}`] : [])];
+    const deltaToggle = canDelta
+        ? `<button class="btn btn-link btn-sm p-0 ms-1 btn-delta" title="${withDelta ? 'Nascondi' : 'Mostra'} il confronto ${escapeHtml(`${last.label} vs ${prev.label}`)}">`
+            + `<i class="fas ${withDelta ? 'fa-eye-slash' : 'fa-eye'}"></i></button>`
+        : '';
     let html = '<thead class="table-light"><tr>'
-        + head.map((h, i) => `<th class="${i ? 'num' : ''}">${escapeHtml(h)}</th>`).join('')
+        + head.map((h, i) => `<th class="${i ? 'num' : ''}">${escapeHtml(h)}${h === 'Quota' ? deltaToggle : ''}</th>`).join('')
         + '<th></th></tr></thead><tbody>';
     const csv = [['Voce', ...keys, 'Totale', 'Quota %']];
 
@@ -996,6 +1027,11 @@ function renderTable(kind, table, agg, buckets, colors, labelFn, rows, bfn) {
         else setFilter('groupFilter', enc(b.dataset.key));
     }));
     table.querySelectorAll('.btn-drill').forEach(b => b.addEventListener('click', () => openDrill(b.dataset.service)));
+    // la scelta vale per entrambe le tabelle
+    table.querySelectorAll('.btn-delta').forEach(b => b.addEventListener('click', () => {
+        state.showDelta = !state.showDelta;
+        render();
+    }));
     // apre e chiude i sottovalori senza ridisegnare (la scelta resta nei render successivi)
     table.querySelectorAll('.btn-toggle').forEach(b => b.addEventListener('click', () => {
         const k = b.dataset.key;
@@ -1348,13 +1384,19 @@ document.addEventListener('DOMContentLoaded', () => {
         renderFilterSelects();
         render();
     });
-    $('btnReset').addEventListener('click', () => {
-        $('serviceFilter').value = '';
-        $('groupFilter').value = '';
-        $('minAmount').value = '0';
-        $('topN').value = '8';
-        render();
-    });
+    $('btnReset').addEventListener('click', resetFilters);
+    $('btnClearFilters').addEventListener('click', resetFilters);
+
+    // visuale compatta (attiva all'apertura): restano solo zoom, grafici e dettaglio per tag;
+    // anche il sottotitolo dell'intestazione (viene dalla macro page_header) si nasconde
+    document.querySelectorAll('.page-subtitle').forEach(el => el.classList.add('compact-hide'));
+    const applyCompact = () => {
+        document.querySelectorAll('.compact-hide').forEach(el =>
+            el.classList.toggle('d-none', $('compactView').checked));
+        if (state.monthly) renderZoomBar();
+    };
+    $('compactView').addEventListener('change', applyCompact);
+    applyCompact();
 
     // zoom
     $('btnZoomOut').addEventListener('click', zoomOut);

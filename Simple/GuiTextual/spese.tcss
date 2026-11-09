@@ -1,0 +1,65 @@
+/* Stile di spese.py. Le variabili $primary, $accent, $surface... cambiano con il tema. */
+
+#corpo {
+    height: 1fr;
+}
+
+#modulo {
+    width: 36;
+    padding: 0 1;
+    border-right: tall $primary;
+}
+
+.titolo {
+    text-style: bold;
+    color: $accent;
+    margin: 1 0 0 0;
+}
+
+#modulo Input, #modulo Select {
+    margin: 0;
+}
+
+/* i campi non validi si colorano da soli: Textual aggiunge la classe -invalid */
+Input.-invalid {
+    border: tall $error;
+}
+
+#aggiungi {
+    width: 100%;
+    margin: 0;
+}
+
+#riepilogo {
+    padding: 0 1;
+    background: $surface;
+}
+
+#tabella {
+    width: 1fr;
+    border: round $primary;
+}
+
+/* finestra modale di conferma */
+ConfermaElimina {
+    align: center middle;
+    background: $background 60%;
+}
+
+#dialogo {
+    width: 50;
+    height: auto;
+    padding: 1 2;
+    border: round $error;
+    background: $surface;
+}
+
+#pulsanti-dialogo {
+    height: auto;
+    margin-top: 1;
+    align: center middle;
+}
+
+#pulsanti-dialogo Button {
+    margin: 0 1;
+}

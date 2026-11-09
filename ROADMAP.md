@@ -1,4 +1,8 @@
 # Python Repository AlNao Roadmap
+- Awwotazioni
+    - progetto con pyproject.toml e uv: pacchetto installabile, entry point, ruff per lint e formattazione, mypy per i tipi, pre-commit. Serve da modello per tutti i progetti futuri.
+    - Django nuovo per awwotazioni
+    - game Platformer
 - AI
     - **AlNaoAIRunners**
         - gestione limit copilot
@@ -45,6 +49,10 @@
 
 
 ## Completed 2026
+- ✅ 09/11 Simple [Pytest](./Simple/Pytest/README.md) con test di conto4 ed expense_manager
+- ✅ 09/11 Simple [GuiTextual](./Simple/GuiTextual/README.md) gestore spese con Textual
+- ✅ 09/11 DataScientist [Polars](./DataScientist/Polars/README.md) e [DuckDB](./DataScientist/DuckDB/README.md)
+- ✅ 09/11 Docker [16 SQLAlchemyPostgres](./Docker/16SQLAlchemyPostgres/README.md) con Alembic e PostgreSQL
 - ✅ 06/03 AI/Copilot [simple prompt](./AI/Copilot/Esempio01_SimplePrompt/README.md)
 - ✅ 02/03 AI/BuildLLM [first examples from chapter 5](./AI/BuildLargeLanguageModel/ch5_file2_generator_inconsistency.py)
 - ✅ 23/02 AI/LLama && [LiteLLM](./AI/litellm/litellm_base/README.md)

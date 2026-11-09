@@ -128,3 +128,23 @@ def test_inference_profiles():
     assert len(statements) == 2
     for name in ("Embedding", "Chat", "Image"):
         assert all({"Fn::GetAtt": [f"{name}Profile", "InferenceProfileArn"]} in s["Resource"] for s in statements)
+
+
+def test_lambdas_cannot_create_log_groups():
+    """Al destroy le ultime righe di log arrivano dopo la cancellazione del log group: senza
+    logs:CreateLogGroup Lambda non puo' ricrearlo senza tag e senza scadenza."""
+    t = template()
+    roles = t.find_resources("AWS::IAM::Role")
+    policies = t.find_resources("AWS::IAM::Policy")
+    for fn in t.find_resources("AWS::Lambda::Function").values():
+        role_id = fn["Properties"]["Role"]["Fn::GetAtt"][0]
+        role = roles[role_id]["Properties"]
+        assert "ManagedPolicyArns" not in role, role_id
+        statements = [s for p in role.get("Policies", []) for s in p["PolicyDocument"]["Statement"]]
+        statements += [s for p in policies.values() if {"Ref": role_id} in p["Properties"]["Roles"]
+                       for s in p["Properties"]["PolicyDocument"]["Statement"]]
+        assert not [s for s in statements if "logs:CreateLogGroup" in str(s["Action"]) or s["Action"] in ("logs:*", "*")]
+        name = fn["Properties"]["FunctionName"].split("-", 1)[1]
+        assert {"Effect": "Allow", "Action": ["logs:CreateLogStream", "logs:PutLogEvents"],
+                "Resource": {"Fn::Join": ["", ["arn:", {"Ref": "AWS::Partition"},
+                                                f":logs:eu-central-1:123456789012:log-group:/Cdk33BedrockServerless/{name}:*"]]}} in statements

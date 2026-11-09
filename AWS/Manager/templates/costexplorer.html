@@ -5,6 +5,11 @@
 
 {% call page_header('Cost Explorer', 'Costi per servizio e per tag · ogni richiesta a Cost Explorer costa ' ~ ('%.2f'|format(api_cost)) ~ ' $, i dati letti restano in cache', 'fa-coins') %}
 <div class="d-flex align-items-center gap-2">
+    <div class="form-check form-switch mb-0 me-2"
+         title="Mostra solo lo zoom, i due grafici e il dettaglio per tag">
+        <input class="form-check-input" type="checkbox" id="compactView" checked>
+        <label class="form-check-label" for="compactView">Visuale compatta</label>
+    </div>
     <span class="badge d-none" id="curStatus"></span>
     <span class="badge text-bg-light border" id="apiCalls"
           title="Richieste a Cost Explorer fatte da quando e' partita l'app: ognuna costa {{ '%.2f'|format(api_cost) }} $">
@@ -14,7 +19,7 @@
 {% endcall %}
 
 <!-- Filtri: la prima riga richiede una lettura da AWS, la seconda filtra nel browser -->
-<div class="card mb-3 toolbar" id="filters">
+<div class="card mb-3 toolbar compact-hide" id="filters">
     <div class="card-body py-2">
         <div class="row g-2 align-items-end">
             <div class="col-auto w-presets">
@@ -85,18 +90,6 @@
         <hr class="my-2">
 
         <div class="row g-2 align-items-end">
-            <div class="col-6 col-md-3 col-xl-2">
-                <label for="serviceFilter" class="form-label">Servizio</label>
-                <select class="form-select form-select-sm" id="serviceFilter">
-                    <option value="">Tutti</option>
-                </select>
-            </div>
-            <div class="col-6 col-md-3 col-xl-2">
-                <label for="groupFilter" class="form-label" id="groupFilterLabel">Valore</label>
-                <select class="form-select form-select-sm" id="groupFilter">
-                    <option value="">Tutti</option>
-                </select>
-            </div>
             <div class="col-6 col-md-2 col-xl-1">
                 <label for="topN" class="form-label" title="Le voci oltre queste confluiscono in 'Altri'">Voci</label>
                 <select class="form-select form-select-sm" id="topN">
@@ -151,7 +144,7 @@
 </div>
 
 <!-- Riepilogo -->
-<div class="row g-2 mb-3" id="kpis">
+<div class="row g-2 mb-3 compact-hide" id="kpis">
     <div class="col-6 col-lg-3"><div class="card stat h-100"><div class="card-body">
         <div class="stat-label" id="kpiTotalLabel">Totale del periodo</div>
         <div class="stat-value" id="kpiTotal">&ndash;</div>
@@ -178,6 +171,9 @@
 <div class="card mb-3" id="zoomBar">
     <div class="card-body py-2">
         <div class="d-flex flex-wrap align-items-center gap-2">
+            <button class="btn btn-sm btn-outline-secondary" id="btnClearFilters" title="Azzera i filtri (lo zoom resta com'è)" disabled>
+                <i class="fas fa-filter-circle-xmark"></i>
+            </button>
             <button class="btn btn-sm btn-outline-secondary" id="btnZoomOut" title="Torna al livello precedente">
                 <i class="fas fa-magnifying-glass-minus"></i>
             </button>
@@ -185,8 +181,13 @@
                 <ol class="breadcrumb mb-0" id="zoomCrumbs"></ol>
             </nav>
             <div class="ms-auto d-flex flex-wrap align-items-center gap-2">
-                <label for="zoomSelect" class="text-secondary fw-semibold mb-0">Vai a</label>
-                <select class="form-select form-select-sm w-auto" id="zoomSelect"></select>
+                <select class="form-select form-select-sm w-auto" id="serviceFilter" title="Servizio">
+                    <option value="">Tutti i servizi</option>
+                </select>
+                <select class="form-select form-select-sm w-auto" id="groupFilter" title="Valore">
+                    <option value="">Tutti i valori</option>
+                </select>
+                <select class="form-select form-select-sm w-auto" id="zoomSelect" title="Vai a"></select>
                 <span class="text-secondary fw-semibold ms-2">Raggruppa per</span>
                 <div class="btn-group btn-group-sm" role="group" id="bucketGroup">
                     <input type="radio" class="btn-check" name="bucket" id="bucketMonth" value="month">
@@ -198,11 +199,6 @@
                 </div>
             </div>
         </div>
-        <div class="footer-note mt-1">
-            <i class="fas fa-magnifying-glass-plus me-1"></i>Zoom: trascina sul grafico per scegliere un intervallo,
-            doppio clic su una colonna (o clic sulla sua etichetta) per entrare nel mese o nella settimana.
-            Settimane e giorni usano i dati giornalieri.
-        </div>
     </div>
 </div>
 
@@ -212,7 +208,6 @@
         <div class="card h-100">
             <div class="card-header">
                 <div id="chartServiceTitle">Costi per servizio</div>
-                <div class="card-hint">Clic su una barra per filtrare quel servizio</div>
             </div>
             <div class="card-body"><div class="chart-box"><canvas id="chartService"></canvas></div></div>
         </div>
@@ -221,16 +216,15 @@
         <div class="card h-100">
             <div class="card-header">
                 <div id="chartGroupTitle">Costi per tag</div>
-                <div class="card-hint">Clic su una barra per filtrare quel valore</div>
             </div>
             <div class="card-body"><div class="chart-box"><canvas id="chartGroup"></canvas></div></div>
         </div>
     </div>
 </div>
-<div class="footer-note mb-3" id="estimatedNote"></div>
+<div class="footer-note mb-3 compact-hide" id="estimatedNote"></div>
 
-<!-- Tabelle -->
-<div class="card mb-3">
+<!-- Tabelle (nella visuale compatta resta solo quella per tag) -->
+<div class="card mb-3 compact-hide">
     <div class="card-header d-flex justify-content-between align-items-center">
         <span id="tableServiceTitle">Dettaglio per servizio</span>
         <button class="btn btn-sm btn-outline-secondary" data-csv="service"><i class="fas fa-file-csv me-1"></i>CSV</button>

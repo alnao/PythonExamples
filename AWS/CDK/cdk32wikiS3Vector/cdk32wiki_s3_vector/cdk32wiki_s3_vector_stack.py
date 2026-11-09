@@ -197,9 +197,16 @@ class Cdk32WikiS3VectorStack(Stack):
     def physical_names(self) -> None:
         """Nomi fissi per Lambda, ruoli, policy e layer, comprese le risorse create internamente da
         CDK; le Lambda di supporto ricevono anche un log group dello stack (con i tag e cancellato
-        dal destroy) al posto di quello che Lambda creerebbe da sola al primo avvio."""
-        for resource in [c for c in self.node.find_all() if isinstance(c, CfnResource)]:
-            owner = next((name for marker, name in SUPPORT_OWNERS if marker in f"/{resource.node.path}/"), None)
+        dal destroy) al posto di quello che Lambda creerebbe da sola al primo avvio.
+
+        I ruoli delle Lambda perdono AWSLambdaBasicExecutionRole (logs:CreateLogGroup su tutto) e possono
+        solo scrivere nel proprio log group: al destroy le ultime righe di log delle Lambda chiamate dalle
+        risorse personalizzate arrivano dopo la cancellazione del gruppo, e Lambda lo ricreerebbe senza
+        tag e senza scadenza."""
+        resources = [c for c in self.node.find_all() if isinstance(c, CfnResource)]
+        lambda_owners = {self.owner(r) for r in resources if r.cfn_resource_type == "AWS::Lambda::Function"} - {None}
+        for resource in resources:
+            owner = self.owner(resource)
             kind = resource.cfn_resource_type
             if owner is None:
                 continue
@@ -211,10 +218,25 @@ class Cdk32WikiS3VectorStack(Stack):
                     resource.add_property_override("LoggingConfig.LogGroup", log_group.log_group_name)
             elif kind == "AWS::IAM::Role":
                 self.set_name(resource, "RoleName", f"{self.stack_name}-{owner}ServiceRole")
+                if owner in lambda_owners:
+                    resource.add_property_deletion_override("ManagedPolicyArns")
+                    resource.add_property_override("Policies", [{
+                        "PolicyName": "Logs",
+                        "PolicyDocument": {"Version": "2012-10-17", "Statement": [{
+                            "Effect": "Allow",
+                            "Action": ["logs:CreateLogStream", "logs:PutLogEvents"],
+                            "Resource": f"arn:{self.partition}:logs:{self.region}:{self.account}:log-group:/{NAME}/{owner}:*",
+                        }]},
+                    }])
             elif kind == "AWS::IAM::Policy":
                 self.set_name(resource, "PolicyName", f"{self.stack_name}-{owner}ServicePolicy")
             elif kind == "AWS::Lambda::LayerVersion":
                 self.set_name(resource, "LayerName", f"{NAME}-{owner}")
+
+    @staticmethod
+    def owner(resource: CfnResource):
+        """Nome della risorsa da SUPPORT_OWNERS, riconosciuta dal percorso del construct (None se non c'e')."""
+        return next((name for marker, name in SUPPORT_OWNERS if marker in f"/{resource.node.path}/"), None)
 
     @staticmethod
     def set_name(resource: CfnResource, prop: str, value: str) -> None:

@@ -68,7 +68,7 @@ Le risorse hanno nomi fissi al posto dei suffissi casuali di CDK, comprese quell
 | Bucket S3 | `alnao-dev-cdk-cdk32wikis3vector-files`, `alnao-dev-cdk-cdk32wikis3vector-site` |
 | Vector bucket e indice | `alnao-dev-cdk-cdk32wikis3vector-vectors`, indice `wiki` |
 | Lambda | `Cdk32WikiS3Vector-Api`, `-Ingest`, `-BucketNotifications`, `-AutoDeleteObjects`, `-BucketDeployment` |
-| Log group (1 settimana) | `/Cdk32WikiS3Vector/Api`, `/Cdk32WikiS3Vector/Ingest`, ... uno per ogni Lambda |
+| Log group (1 settimana) | `/Cdk32WikiS3Vector/Api`, `/Cdk32WikiS3Vector/Ingest`, ... uno per ogni Lambda; le Lambda possono solo scriverci, non creare log group (vedi sotto) |
 | Ruoli IAM | `Cdk32WikiS3VectorStack-<Lambda>ServiceRole` |
 | Policy IAM (inline nei ruoli) | `Cdk32WikiS3VectorStack-<Lambda>ServicePolicy` (la Lambda AutoDeleteObjects non ne ha) |
 | Layer Lambda | `Cdk32WikiS3Vector-Libraries`, `Cdk32WikiS3Vector-AwsCli` |
@@ -110,6 +110,8 @@ python upload_folder.py ../../.. --yes                  # senza chiedere conferm
 Lo script confronta l'MD5 di ogni file locale con l'ETag su S3, quindi rilanciarlo carica solo le differenze. Salta le cartelle nascoste e di servizio (`.git`, `node_modules`, `venv`, `cdk.out`, `layer`, `cache`, ...), i file nascosti (`.env`), quelli oltre 1024 KB e quelli che **sembrano contenere credenziali** (chiavi AWS `AKIA...`, `aws_secret_access_key`, chiavi private): la wiki è leggibile da chiunque abbia la chiave API, quindi un file con segreti non deve finirci. Il controllo è una rete di sicurezza, non una garanzia (e può saltare per prudenza file innocui, per esempio template CloudFormation con hash lunghi): prima del primo caricamento conviene sempre guardare l'elenco di `--dry-run`.
 
 **Conferma dei costi**: lo script stampa il costo stimato degli embedding dei file da caricare e, oltre 0,01 $, chiede conferma (`--yes` per non chiederla). Anche la pagina "File" chiede conferma per un file oltre 0,01 $ (circa 180 KB di testo), e "Reindicizza tutto" mostra sempre la stima calcolata sulle parti già indicizzate.
+
+**Log group senza tag dopo il destroy**: al `cdk destroy` CloudFormation chiama le Lambda di supporto (svuotamento dei bucket, notifiche S3, copia del sito) e le loro ultime righe di log (`END`, `REPORT`) arrivano dopo la cancellazione del log group. Con `AWSLambdaBasicExecutionRole` (`logs:CreateLogGroup` su tutto) Lambda lo ricreava da sola, senza tag e senza scadenza, e il deploy successivo falliva perché il gruppo esisteva già. Per questo i ruoli delle Lambda non hanno quella managed policy ma solo `logs:CreateLogStream` e `logs:PutLogEvents` sul proprio log group (test `test_lambdas_cannot_create_log_groups`): le righe in ritardo si perdono.
 
 **Cleanup**: `cdk destroy` cancella tutto, compresi i file e l'indice vettoriale.
 

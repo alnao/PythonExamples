@@ -111,7 +111,7 @@ Le risorse hanno nomi fissi al posto dei suffissi casuali di CDK, comprese quell
 | Profilo di inferenza | `Cdk34BedrockKnowledgeBase-Chat` |
 | Code SQS | `Cdk34BedrockKnowledgeBase-Sync`, `Cdk34BedrockKnowledgeBase-SyncFailed` |
 | Lambda | `Cdk34BedrockKnowledgeBase-Api`, `-Sync`, `-BucketNotifications`, `-AutoDeleteObjects`, `-BucketDeployment` |
-| Log group (1 settimana) | `/Cdk34BedrockKnowledgeBase/Api`, `/Cdk34BedrockKnowledgeBase/Sync`, ... uno per ogni Lambda |
+| Log group (1 settimana) | `/Cdk34BedrockKnowledgeBase/Api`, `/Cdk34BedrockKnowledgeBase/Sync`, ... uno per ogni Lambda; le Lambda possono solo scriverci, non creare log group (vedi sotto) |
 | Ruoli IAM | `Cdk34BedrockKnowledgeBaseStack-<Lambda>ServiceRole`, `Cdk34BedrockKnowledgeBaseStack-KnowledgeBaseServiceRole` |
 | Policy IAM (inline nei ruoli) | `Cdk34BedrockKnowledgeBaseStack-<Lambda>ServicePolicy` |
 | Layer Lambda | `Cdk34BedrockKnowledgeBase-AwsCli` (della copia del sito) |
@@ -120,6 +120,8 @@ Le risorse hanno nomi fissi al posto dei suffissi casuali di CDK, comprese quell
 Restano con un identificativo generato solo le risorse che non hanno un nome scelto dall'utente: la distribuzione CloudFront (il dominio `xxxx.cloudfront.net`), l'API Gateway, la Knowledge Base, la sorgente e il profilo (nei loro ID e ARN). I nomi dei bucket sono unici in tutto il mondo e quelli dei ruoli IAM in tutto l'account: lo stack si può installare una sola volta per account.
 
 Il ruolo della Knowledge Base è assumibile solo da Bedrock per le Knowledge Base dell'account e ha le policy **inline**: la Knowledge Base controlla l'accesso all'indice già quando viene creata, e una policy separata potrebbe arrivare dopo.
+
+**Log group senza tag dopo il destroy**: al `cdk destroy` CloudFormation chiama le Lambda di supporto (svuotamento dei bucket, notifiche S3, copia del sito) e le loro ultime righe di log (`END`, `REPORT`) arrivano dopo la cancellazione del log group. Con `AWSLambdaBasicExecutionRole` (`logs:CreateLogGroup` su tutto) Lambda lo ricreava da sola, senza tag e senza scadenza, e il deploy successivo falliva perché il gruppo esisteva già. Per questo i ruoli delle Lambda non hanno quella managed policy ma solo `logs:CreateLogStream` e `logs:PutLogEvents` sul proprio log group (test `test_lambdas_cannot_create_log_groups`): le righe in ritardo si perdono.
 
 **Cleanup**: `cdk destroy` cancella tutto: la sorgente ha `DataDeletionPolicy=DELETE`, quindi i vettori si cancellano con lei, poi la Knowledge Base, l'indice e i bucket con il loro contenuto. Il bootstrap resta, perché è condiviso con gli altri progetti CDK: quando nella region non ci sono più stack CDK si toglie con `../bootstrap/bootstrap.sh destroy eu-central-1`.
 

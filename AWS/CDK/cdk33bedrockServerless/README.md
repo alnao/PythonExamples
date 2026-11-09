@@ -97,7 +97,7 @@ Le risorse hanno nomi fissi al posto dei suffissi casuali di CDK, comprese quell
 | Bucket S3 | `alnao-dev-cdk-cdk33bedrockserverless-documents`, `alnao-dev-cdk-cdk33bedrockserverless-site` |
 | Vector bucket e indice | `alnao-dev-cdk-cdk33bedrockserverless-vectors`, indice `docs` |
 | Lambda | `Cdk33BedrockServerless-Api`, `-Ingest`, `-BucketNotifications`, `-AutoDeleteObjects`, `-BucketDeployment` |
-| Log group (1 settimana) | `/Cdk33BedrockServerless/Api`, `/Cdk33BedrockServerless/Ingest`, ... uno per ogni Lambda |
+| Log group (1 settimana) | `/Cdk33BedrockServerless/Api`, `/Cdk33BedrockServerless/Ingest`, ... uno per ogni Lambda; le Lambda possono solo scriverci, non creare log group (vedi sotto) |
 | Ruoli IAM | `Cdk33BedrockServerlessStack-<Lambda>ServiceRole` |
 | Policy IAM (inline nei ruoli) | `Cdk33BedrockServerlessStack-<Lambda>ServicePolicy` (la Lambda AutoDeleteObjects non ne ha) |
 | Layer Lambda | `Cdk33BedrockServerless-Libraries`, `Cdk33BedrockServerless-AwsCli` |
@@ -105,6 +105,8 @@ Le risorse hanno nomi fissi al posto dei suffissi casuali di CDK, comprese quell
 | Segreto, HTTP API, OAC | `Cdk33BedrockServerless-ApiKey`, `Cdk33BedrockServerless-HttpApi`, `Cdk33BedrockServerless-Site` |
 
 Restano con un identificativo generato solo le risorse che non hanno un nome scelto dall'utente: l'ID della distribuzione CloudFront (il dominio `xxxx.cloudfront.net`), quello dell'API Gateway e quello dei profili di inferenza (nel loro ARN). I nomi dei bucket sono unici in tutto il mondo e quelli dei ruoli IAM in tutto l'account: lo stack si può installare una sola volta per account.
+
+**Log group senza tag dopo il destroy**: al `cdk destroy` CloudFormation chiama le Lambda di supporto (svuotamento dei bucket, notifiche S3, copia del sito) e le loro ultime righe di log (`END`, `REPORT`) arrivano dopo la cancellazione del log group. Con `AWSLambdaBasicExecutionRole` (`logs:CreateLogGroup` su tutto) Lambda lo ricreava da sola, senza tag e senza scadenza, e il deploy successivo falliva perché il gruppo esisteva già. Per questo i ruoli delle Lambda non hanno quella managed policy ma solo `logs:CreateLogStream` e `logs:PutLogEvents` sul proprio log group (test `test_lambdas_cannot_create_log_groups`): le righe in ritardo si perdono.
 
 **Cleanup**: `cdk destroy` cancella tutto, compresi i bucket con il loro contenuto e l'indice vettoriale. Il bootstrap resta, perché è condiviso con gli altri progetti CDK: quando nella region non ci sono più stack CDK si toglie con `../bootstrap/bootstrap.sh destroy eu-central-1`.
 

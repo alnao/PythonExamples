@@ -1,0 +1,4 @@
+duckdb>=1.2
+pandas
+polars
+pyarrow

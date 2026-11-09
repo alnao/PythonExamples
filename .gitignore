@@ -172,3 +172,10 @@ dmypy.json
 
 # Robot Framework output directory
 **/robotoutput/
+# DataScientist Polars e DuckDB: dati generati dagli script
+DataScientist/Polars/dati/
+DataScientist/DuckDB/dati/
+
+# Simple Pytest e GuiTextual: file salvati dagli esempi
+Simple/Pytest/spese.json
+Simple/GuiTextual/spese.json

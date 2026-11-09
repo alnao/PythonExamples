@@ -8,6 +8,8 @@
 
 :root {
     --page: #f4f6f9;
+    --page-backdrop: #9da89f;   /* fondo dietro le card: grigio scuro tendente al verde */
+    --text-on-backdrop: #2e3830;
     --surface-1: #fcfcfb;
     --surface-2: #ffffff;
     --border: #dfe3e8;
@@ -39,8 +41,9 @@ html {
     font-size: 13px;
 }
 
+/* --page resta il fondo chiaro di card e campi (Bootstrap lo usa come --bs-body-bg) */
 body {
-    background-color: var(--page);
+    background-color: var(--page-backdrop);
     color: var(--text-primary);
     min-height: 100vh;
 }
@@ -133,7 +136,7 @@ body {
 }
 
 .page-subtitle {
-    color: var(--text-muted);
+    color: var(--text-on-backdrop);
     font-size: 0.9rem;
 }
 
@@ -369,6 +372,22 @@ pre.log {
     text-decoration: underline;
 }
 
+/* Nome risorsa: colonna al 22% (tra il 20 e il 25), i nomi lunghi vanno a capo
+ * (.resource-name ha word-break: break-all) e non la allargano */
+#resourcesTable th.col-resource-name {
+    width: 22%;
+}
+
+/* Tag con valori lunghi (es. aws:cloudformation:stack-id): accorciati, il testo intero
+ * e' nel tooltip. Quelli obbligatori non lo sono mai. */
+.tag-badge.tag-long {
+    max-width: 20rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    vertical-align: middle;
+    cursor: help;
+}
+
 #resourcesTable tr.table-danger {
     --bs-table-bg: #f8d7da;
 }
@@ -509,6 +528,10 @@ pre.log {
     border-right: 1px solid var(--series-1);
     pointer-events: none;
     display: none;
+}
+
+#zoomBar {
+    background-color: var(--surface-2);
 }
 
 #zoomCrumbs .breadcrumb-item a {
