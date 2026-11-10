@@ -1,0 +1,27 @@
+# Schema della API "listaNote" (AppSync): note salvate in DynamoDB
+type Nota {
+  id: ID!
+  testo: String!
+  createdAt: AWSDateTime
+}
+
+type Query {
+  getNote: [Nota]
+}
+
+type Mutation {
+  addNota(testo: String!): Nota
+  deleteNota(id: ID!): ID
+}
+
+# Subscription: AppSync avvisa via WebSocket i client collegati a ogni addNota e deleteNota
+type Subscription {
+  onAddNota: Nota @aws_subscribe(mutations: ["addNota"])
+  onDeleteNota: ID @aws_subscribe(mutations: ["deleteNota"])
+}
+
+schema {
+  query: Query
+  mutation: Mutation
+  subscription: Subscription
+}

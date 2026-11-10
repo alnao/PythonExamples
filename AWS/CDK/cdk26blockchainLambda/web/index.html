@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Blockchain cdk26</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/css/bootstrap.min.css">
+  <style>
+    .hash { font-family: monospace; font-size: .8rem; word-break: break-all; }
+    .block-card { border-left: 4px solid var(--bs-primary); }
+  </style>
+</head>
+<body class="bg-light">
+<div class="container py-4">
+  <h1 class="h3 mb-1">⛓️ Blockchain su AWS Lambda</h1>
+  <p class="text-muted mb-4">Esempio cdk26: transazioni in DynamoDB, blocchi con proof of work calcolati da una Lambda.</p>
+
+  <ul class="nav nav-tabs" role="tablist">
+    <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab-tx" type="button">Nuova transazione</button></li>
+    <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-mine" type="button">Mining</button></li>
+    <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-list" type="button" data-load="transactions">Transazioni</button></li>
+    <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-balances" type="button" data-load="balances">Saldi</button></li>
+    <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-chain" type="button" data-load="chain">Catena</button></li>
+  </ul>
+
+  <div class="tab-content bg-white border border-top-0 p-3 mb-3">
+    <div class="tab-pane fade show active" id="tab-tx">
+      <form id="tx-form" class="row g-2" style="max-width: 640px">
+        <div class="col-md-4"><input class="form-control" id="sender" placeholder="Mittente" required maxlength="64" value="Root"></div>
+        <div class="col-md-4"><input class="form-control" id="recipient" placeholder="Destinatario" required maxlength="64"></div>
+        <div class="col-md-2"><input class="form-control" id="amount" type="number" min="0.00000001" step="any" placeholder="Importo" required></div>
+        <div class="col-md-2"><button class="btn btn-primary w-100">Invia</button></div>
+      </form>
+      <p class="small text-muted mt-2">La transazione resta <em>pending</em> finché un mining non la mette in un blocco.</p>
+    </div>
+    <div class="tab-pane fade" id="tab-mine">
+      <button id="mine-btn" class="btn btn-warning">⛏️ Mina un nuovo blocco</button>
+      <div id="mine-result" class="mt-3"></div>
+    </div>
+    <div class="tab-pane fade" id="tab-list">
+      <table class="table table-sm align-middle">
+        <thead><tr><th>Data</th><th>Mittente</th><th>Destinatario</th><th class="text-end">Importo</th><th>Stato</th><th>Blocco</th></tr></thead>
+        <tbody id="tx-rows"></tbody>
+      </table>
+    </div>
+    <div class="tab-pane fade" id="tab-balances">
+      <table class="table table-sm" style="max-width: 480px">
+        <thead><tr><th>Indirizzo</th><th class="text-end">Saldo</th></tr></thead>
+        <tbody id="balance-rows"></tbody>
+      </table>
+      <p class="small text-muted">Calcolati solo dalle transazioni già minate.</p>
+    </div>
+    <div class="tab-pane fade" id="tab-chain">
+      <div id="validation" class="mb-3"></div>
+      <div id="blocks"></div>
+    </div>
+  </div>
+  <div id="message" class="alert d-none"></div>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/js/bootstrap.bundle.min.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

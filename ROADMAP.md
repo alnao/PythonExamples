@@ -49,6 +49,7 @@
 
 
 ## Completed 2026
+- ✅ 10/11 AWS [CDK](./AWS/CDK/) esempi da 21 a 31 ispirati agli esempi CloudFormation: [21 AutoScaling WordPress](./AWS/CDK/cdk21autoScalingWordpress/README.md), [22 CloudWatch alarm](./AWS/CDK/cdk22cloudWatchAlarm/README.md), [23 ECR](./AWS/CDK/cdk23ecr/README.md), [24 ECS](./AWS/CDK/cdk24ecs/README.md), [25 VPC endpoint](./AWS/CDK/cdk25vpcEndpoint/README.md), [26 blockchain Lambda](./AWS/CDK/cdk26blockchainLambda/README.md), [27 EKS](./AWS/CDK/cdk27eks/README.md), [28 CodePipeline CI/CD](./AWS/CDK/cdk28codePipelineCICD/README.md), [29 GraphQL](./AWS/CDK/cdk29GraphQL/README.md), [30 WebSocket](./AWS/CDK/cdk30WebSocket/README.md), [31 Elastic Beanstalk](./AWS/CDK/cdk31ElasticBeanstalk/README.md)
 - ✅ 09/11 Simple [Pytest](./Simple/Pytest/README.md) con test di conto4 ed expense_manager
 - ✅ 09/11 Simple [GuiTextual](./Simple/GuiTextual/README.md) gestore spese con Textual
 - ✅ 09/11 DataScientist [Polars](./DataScientist/Polars/README.md) e [DuckDB](./DataScientist/DuckDB/README.md)

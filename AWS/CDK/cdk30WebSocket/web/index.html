@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Indovina il numero</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/css/bootstrap.min.css">
+  <style>#events { max-height: 260px; overflow-y: auto; font-size: .9rem; }</style>
+</head>
+<body class="bg-light">
+<nav class="navbar bg-dark navbar-dark mb-4">
+  <div class="container">
+    <span class="navbar-brand">🎲 Indovina il numero</span>
+    <a class="btn btn-outline-light btn-sm" href="admin.html">Amministrazione</a>
+  </div>
+</nav>
+<div class="container">
+  <div class="row g-4">
+    <div class="col-lg-6">
+      <div class="card mb-3">
+        <div class="card-body">
+          <h2 class="h5">1. Scegli nickname e numero</h2>
+          <p class="small text-muted">Un numero da 1 a 99 che nessun altro ha scelto. Lo puoi cambiare una volta ogni 24 ore (subito, se qualcuno lo indovina).</p>
+          <form id="join-form" class="row g-2">
+            <div class="col-7"><input class="form-control" id="nickname" placeholder="Nickname (5-30 lettere o cifre)" required pattern="[A-Za-z0-9]{5,30}"></div>
+            <div class="col-3"><input class="form-control" id="number" type="number" min="1" max="99" placeholder="Numero" required></div>
+            <div class="col-2"><button class="btn btn-primary w-100" id="join-btn">Entra</button></div>
+          </form>
+          <div id="join-msg" class="alert d-none mt-2"></div>
+        </div>
+      </div>
+      <div class="card mb-3">
+        <div class="card-body">
+          <h2 class="h5">2. Indovina il numero di un altro giocatore</h2>
+          <p class="small text-muted">5 tentativi al giorno. Indovinato: +1 punto a te, -3 a chi lo aveva. Sbagliato: -1 punto.</p>
+          <form id="guess-form" class="row g-2">
+            <div class="col-8"><input class="form-control" id="guess" type="number" min="1" max="99" placeholder="Numero da provare" required disabled></div>
+            <div class="col-4"><button class="btn btn-warning w-100" id="guess-btn" disabled>Prova</button></div>
+          </form>
+          <div id="guess-msg" class="alert d-none mt-2"></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <h2 class="h5 mb-0">Notizie in tempo reale</h2>
+            <span id="ws-status" class="badge text-bg-secondary">non collegato</span>
+          </div>
+          <ul id="events" class="list-group list-group-flush"></ul>
+          <button class="btn btn-outline-secondary btn-sm mt-2" id="disconnect-btn" disabled>Scollegati</button>
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-6">
+      <div class="card mb-3">
+        <div class="card-body">
+          <div class="d-flex justify-content-between"><h2 class="h5">🏆 Classifica</h2>
+            <button class="btn btn-link btn-sm" onclick="refresh()">aggiorna</button></div>
+          <table class="table table-sm">
+            <thead><tr><th>#</th><th>Giocatore</th><th>Punti</th><th>Stato</th><th></th></tr></thead>
+            <tbody id="scores"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-body">
+          <h2 class="h5">⚔️ Partite</h2>
+          <table class="table table-sm">
+            <thead><tr><th>Quando</th><th>Vincitore</th><th>Perdente</th><th>Numero</th></tr></thead>
+            <tbody id="matches"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="common.js"></script>
+<script src="game.js"></script>
+</body>
+</html>

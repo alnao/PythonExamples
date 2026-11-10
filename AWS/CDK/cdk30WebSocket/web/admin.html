@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Indovina il numero - amministrazione</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/css/bootstrap.min.css">
+</head>
+<body class="bg-light">
+<nav class="navbar bg-dark navbar-dark mb-4">
+  <div class="container">
+    <span class="navbar-brand">🛠️ Amministrazione</span>
+    <a class="btn btn-outline-light btn-sm" href="index.html">Gioco</a>
+  </div>
+</nav>
+<div class="container">
+  <div class="input-group mb-3" style="max-width: 520px">
+    <span class="input-group-text">Chiave</span>
+    <input type="password" id="admin-key" class="form-control" placeholder="X-Admin-Key (output AdminKeyCommand)">
+  </div>
+  <div id="admin-msg" class="alert d-none"></div>
+  <div class="row g-4">
+    <div class="col-lg-5">
+      <div class="card mb-3"><div class="card-body">
+        <h2 class="h6">📣 Messaggio a tutti i giocatori collegati</h2>
+        <form id="broadcast-form" class="input-group">
+          <input class="form-control" id="broadcast-text" maxlength="500" required>
+          <button class="btn btn-primary">Invia</button>
+        </form>
+      </div></div>
+      <div class="card mb-3"><div class="card-body">
+        <h2 class="h6">🔄 Azzera i numeri di tutti</h2>
+        <p class="small text-muted">Tutti restano senza numero e possono sceglierne subito uno nuovo.</p>
+        <button class="btn btn-outline-danger" id="reset-btn">Azzera</button>
+      </div></div>
+      <div class="card"><div class="card-body">
+        <h2 class="h6">⛔ Ban</h2>
+        <form id="ban-form" class="row g-2 mb-2">
+          <div class="col-5"><input class="form-control" id="ban-nickname" placeholder="Nickname" required></div>
+          <div class="col-5"><input class="form-control" id="ban-reason" placeholder="Motivo" maxlength="200"></div>
+          <div class="col-2"><button class="btn btn-danger w-100">Ban</button></div>
+        </form>
+        <table class="table table-sm">
+          <thead><tr><th>Nickname</th><th>Motivo</th><th>Quando</th><th></th></tr></thead>
+          <tbody id="bans"></tbody>
+        </table>
+      </div></div>
+    </div>
+    <div class="col-lg-7">
+      <div class="card mb-3"><div class="card-body">
+        <h2 class="h6">🏆 Giocatori</h2>
+        <table class="table table-sm"><thead><tr><th>#</th><th>Giocatore</th><th>Punti</th><th>Stato</th><th></th></tr></thead>
+          <tbody id="scores"></tbody></table>
+      </div></div>
+      <div class="card mb-3"><div class="card-body">
+        <h2 class="h6">⚔️ Storico delle partite</h2>
+        <table class="table table-sm"><thead><tr><th>Quando</th><th>Vincitore</th><th>Perdente</th><th>Numero</th></tr></thead>
+          <tbody id="matches"></tbody></table>
+      </div></div>
+      <div class="card"><div class="card-body">
+        <h2 class="h6">📜 Eventi di oggi e ieri</h2>
+        <table class="table table-sm"><thead><tr><th>Quando</th><th>Giocatore</th><th>Evento</th></tr></thead>
+          <tbody id="logs"></tbody></table>
+      </div></div>
+    </div>
+  </div>
+</div>
+<script src="common.js"></script>
+<script src="admin.js"></script>
+</body>
+</html>

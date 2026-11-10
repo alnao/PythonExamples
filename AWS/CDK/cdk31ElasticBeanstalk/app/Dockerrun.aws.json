@@ -1,0 +1,12 @@
+{
+  "AWSEBDockerrunVersion": "1",
+  "Image": {
+    "Name": "pathsgames/pathsgames",
+    "Update": "true"
+  },
+  "Ports": [
+    {
+      "ContainerPort": 8042
+    }
+  ]
+}

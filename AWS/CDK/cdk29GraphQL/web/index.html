@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Lista note cdk29</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/css/bootstrap.min.css">
+</head>
+<body class="bg-light">
+<div class="container py-4" style="max-width: 640px">
+  <h1 class="h3 mb-1">📝 Lista note</h1>
+  <p class="text-muted mb-2">Esempio cdk29: AWS AppSync (GraphQL) con DynamoDB. Le note aggiunte o cancellate da un'altra finestra compaiono da sole (subscription).</p>
+  <p class="small mb-3"><span id="realtime" class="badge text-bg-secondary">tempo reale: in collegamento</span></p>
+
+  <form id="form" class="input-group mb-3">
+    <input type="text" id="testo" class="form-control" placeholder="Scrivi una nota..." maxlength="500" required>
+    <button class="btn btn-primary">Aggiungi</button>
+  </form>
+  <ul id="note" class="list-group mb-3"></ul>
+  <div id="message" class="alert d-none"></div>
+</div>
+<script src="app.js"></script>
+</body>
+</html>

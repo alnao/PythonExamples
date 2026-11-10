@@ -1,0 +1,6 @@
+# prova in locale della stessa immagine eseguita da Elastic Beanstalk: docker compose up (fuori dal bundle app/, che contiene solo Dockerrun.aws.json)
+services:
+  web:
+    image: pathsgames/pathsgames
+    ports:
+      - "8042:8042"

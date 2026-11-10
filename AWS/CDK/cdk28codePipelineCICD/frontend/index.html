@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Persone cdk28</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/css/bootstrap.min.css">
+</head>
+<body class="bg-light">
+<div class="container py-4" style="max-width: 720px">
+  <h1 class="h3 mb-1">👥 Persone</h1>
+  <p class="text-muted">Esempio cdk28: frontend su S3 e CloudFront, API Flask su ECS Fargate, pubblicati da CodePipeline a ogni commit.</p>
+  <p id="status" class="small"></p>
+
+  <form id="form" class="row g-2 mb-4">
+    <div class="col-sm-5"><input class="form-control" id="nome" placeholder="Nome" required maxlength="50"></div>
+    <div class="col-sm-5"><input class="form-control" id="cognome" placeholder="Cognome" required maxlength="50"></div>
+    <div class="col-sm-2"><button class="btn btn-primary w-100">Aggiungi</button></div>
+  </form>
+
+  <table class="table table-sm bg-white">
+    <thead><tr><th>Nome</th><th>Cognome</th></tr></thead>
+    <tbody id="rows"></tbody>
+  </table>
+  <p class="small text-muted">L'API tiene l'elenco in memoria: si azzera a ogni nuovo deploy del container.</p>
+</div>
+<script src="app.js"></script>
+</body>
+</html>
