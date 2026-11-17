@@ -48,7 +48,10 @@ $ sls remove
 questo comando rimuove la lambda, i bucket s3, i log e le dipendenze (non l'utenza IAM serverless-admin)
 
 
-
+## Changelog
+| Data | Modifica |
+|------|----------|
+| 2026-11-17 | Aggiunta la sezione Changelog |
 
 
 # &lt; AlNao /&gt;

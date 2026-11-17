@@ -101,7 +101,13 @@
       {"service": "ssm", "resource_type": "session", "name": "aws23user-*"},
       {"service": "ssm", "resource_type": "document", "name": "SSM-SessionManagerRunShell"},
       {"service": "cloudformation", "resource_type": "stack", "name": "aws-sam-cli-managed-default"},
-      {"service": "cloudformation", "resource_type": "stack", "name": "CDKToolkit*"}      
+      {"service": "cloudformation", "resource_type": "stack", "name": "CDKToolkit*"},
+      {"service": "logs", "resource_type": "log-group", "name": "aws-glue/crawlers"},
+      {"service": "logs", "resource_type": "log-group", "name": "aws-glue/jobs/output"},
+      {"service": "logs", "resource_type": "log-group", "name": "aws-glue/jobs/error"},
+      {"service": "logs", "resource_type": "log-group", "name": "aws-glue/jobs/output"},
+      {"service": "logs", "resource_type": "log-group", "name": "aws-glue/jobs/logs-v2"}
+
     ]
   },
   "tag_manager": {

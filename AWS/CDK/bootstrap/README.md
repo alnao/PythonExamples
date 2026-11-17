@@ -69,6 +69,10 @@ cd ../cdk33bedrockServerless && cdk deploy   # ogni progetto deployato va ridepl
 ```
 
 
+## Changelog
+| Data | Modifica |
+|------|----------|
+| 2026-11-17 | Revisione degli esempi CDK: test eseguiti e tag standard verificati su tutte le risorse del template sintetizzato, nessuna modifica al codice |
 
 
 # &lt; AlNao /&gt;

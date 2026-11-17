@@ -36,7 +36,10 @@ Altri comandi specifici:
     - docker run -d -p 5001:80 --name httpd-container httpd
 
 
-
+## Changelog
+| Data | Modifica |
+|------|----------|
+| 2026-11-17 | Aggiunta la sezione Changelog |
 
 
 # &lt; AlNao /&gt;

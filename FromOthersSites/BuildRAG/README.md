@@ -75,9 +75,13 @@ Questo esempio è stato creato con questi prompt
         don't change the RAG pipeline itself - just add a GUI in app.py. RAD website like chatgpt look and feel.  
 
 
-> mi scrivi un bel readme.md di questo progetto indicando che la sorgente è ispirata da "https://www.youtube.com/watch?v=bPNmmDPyGzk" e come posso migliorarlo  
+> mi scrivi un bel readme.md di questo progetto indicando che la sorgente è ispirata da "https://www.youtube.com/watch?v=bPNmmDPyGzk" e come posso migliorarlo
 
 
+## Changelog
+| Data | Modifica |
+|------|----------|
+| 2026-11-17 | Aggiunta la sezione Changelog |
 
 
 # &lt; AlNao /&gt;

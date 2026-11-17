@@ -150,6 +150,10 @@ L'agent può invocare autonomamente i seguenti tool durante l'esecuzione:
 - Questo esempio è ispirato al *nano agent* di [ekolivero](https://github.com/ekolivero/nano-agent#).
 
 
+## Changelog
+| Data | Modifica |
+|------|----------|
+| 2026-11-17 | Aggiunta la sezione Changelog |
 
 
 # &lt; AlNao /&gt;

@@ -33,6 +33,12 @@ sh run-tests.sh
 E vedere la cartella di output `robotoutput` il risultato dei test.
 
 
+## Changelog
+| Data | Modifica |
+|------|----------|
+| 2026-11-17 | Aggiunta la sezione Changelog |
+
+
 # AlNao.it
 Nessun contenuto in questo repository è stato creato con IA o automaticamente, tutto il codice è stato scritto con molta pazienza da Alberto Nao. Se il codice è stato preso da altri siti/progetti è sempre indicata la fonte. Per maggior informazioni visitare il sito [AlNao.it](https://www.alnao.it/).
 

@@ -89,6 +89,11 @@ print(response)
 - [Provider GitHub Copilot](https://docs.litellm.ai/docs/providers/github_copilot)
 
 
+## Changelog
+| Data | Modifica |
+|------|----------|
+| 2026-02-23 | Prima versione dell'esempio LiteLLM |
+| 2026-11-17 | Aggiunta la sezione Changelog |
 
 
 # &lt; AlNao /&gt;

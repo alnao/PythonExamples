@@ -20,6 +20,10 @@ This folder contains the examples code **Graph RAG** from [ALucek Adam Łucek](h
 - Leiden Algorithm - https://en.wikipedia.org/wiki/Leiden_...
 
 
+## Changelog
+| Data | Modifica |
+|------|----------|
+| 2026-11-17 | Aggiunta la sezione Changelog |
 
 
 # &lt; AlNao /&gt;

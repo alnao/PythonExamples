@@ -114,6 +114,11 @@ GPT-5.4 e Gemini 3.1 Pro sono attualmente in anteprima su GitHub Copilot e potre
 - [Piani GitHub Copilot](https://github.com/features/copilot)
 
 
+## Changelog
+| Data | Modifica |
+|------|----------|
+| 2026-03-06 | Prima versione: simple prompt con Copilot |
+| 2026-11-17 | Aggiunta la sezione Changelog |
 
 
 # &lt; AlNao /&gt;

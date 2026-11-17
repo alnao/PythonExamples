@@ -44,8 +44,10 @@ curl http://127.0.0.1:5001/result/<task_id>
 ```
 
 
-
-
+## Changelog
+| Data | Modifica |
+|------|----------|
+| 2026-11-17 | Aggiunta la sezione Changelog |
 
 
 # &lt; AlNao /&gt;

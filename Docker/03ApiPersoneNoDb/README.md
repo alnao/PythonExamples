@@ -107,7 +107,10 @@ $	curl  <publicIp>:5001/persone
 ```
 
 
-
+## Changelog
+| Data | Modifica |
+|------|----------|
+| 2026-11-17 | Aggiunta la sezione Changelog |
 
 
 # &lt; AlNao /&gt;

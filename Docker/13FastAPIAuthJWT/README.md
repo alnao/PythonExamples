@@ -56,7 +56,10 @@ curl "http://127.0.0.1:8000/service" -H "Authorization: Bearer $token"
 ```
 
 
-
+## Changelog
+| Data | Modifica |
+|------|----------|
+| 2026-11-17 | Aggiunta la sezione Changelog |
 
 
 # &lt; AlNao /&gt;

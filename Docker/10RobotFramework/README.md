@@ -169,8 +169,10 @@ sh run-tests.sh
 E vedere la cartella di output `robotoutput` il risultato dei test.
 
 
-
-
+## Changelog
+| Data | Modifica |
+|------|----------|
+| 2026-11-17 | Aggiunta la sezione Changelog |
 
 
 # &lt; AlNao /&gt;

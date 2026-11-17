@@ -74,7 +74,10 @@ Questo *progetto* è stato creato interamente usando l'IA GitHub copilot con i s
 - Limite abstract: `summary_limit` controlla quanti chunk con score migliore vengono sintetizzati nella Prompt Search (default 5).
 
 
-
+## Changelog
+| Data | Modifica |
+|------|----------|
+| 2026-11-17 | Aggiunta la sezione Changelog |
 
 
 # &lt; AlNao /&gt;

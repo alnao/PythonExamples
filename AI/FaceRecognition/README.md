@@ -54,9 +54,10 @@ python main.py
 | `requirements.txt` | Dipendenze del progetto |
 
 
-
-
-
+## Changelog
+| Data | Modifica |
+|------|----------|
+| 2026-11-17 | Aggiunta la sezione Changelog |
 
 
 # &lt; AlNao /&gt;

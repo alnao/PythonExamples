@@ -22,3 +22,10 @@ Build an LLM from Scratch 5: Pretraining on Unlabeled Data](https://www.youtube.
 # Copyright
 - Copyright (c) Sebastian Raschka under Apache License 2.0
 - Qui riportati da AlNao con alcune modifiche e annotazioni!
+
+
+## Changelog
+| Data | Modifica |
+|------|----------|
+| 2026-03-02 | Primi esempi del capitolo 5 del libro Build a Large Language Model |
+| 2026-11-17 | Aggiunta la sezione Changelog |

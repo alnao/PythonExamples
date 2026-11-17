@@ -344,6 +344,10 @@ Comandi per l'esecuzione dell'esempio su Minikube
     - nel file `supercrud-resources.yaml` è presente il componente commentato *non funzionante*
 
 
+## Changelog
+| Data | Modifica |
+|------|----------|
+| 2026-11-17 | Aggiunta la sezione Changelog |
 
 
 # &lt; AlNao /&gt;

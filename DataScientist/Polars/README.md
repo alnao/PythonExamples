@@ -44,6 +44,13 @@ La cartella `dati/` è generata e quindi esclusa da git.
 Vedere anche gli esempi [DuckDB](../DuckDB/), che fanno le stesse analisi in SQL.
 
 
+## Changelog
+| Data | Modifica |
+|------|----------|
+| 2026-11-09 | Prima versione dell'esempio Polars |
+| 2026-11-17 | Aggiunta la sezione Changelog |
+
+
 # &lt; AlNao /&gt;
 Tutti i codici sorgente e le informazioni presenti in questo repository sono frutto di un attento e paziente lavoro di sviluppo da parte di AlNao, che si è impegnato a verificarne la correttezza nella massima misura possibile. Qualora parte del codice o dei contenuti sia stato tratto da fonti esterne, la relativa provenienza viene sempre citata, nel rispetto della trasparenza e della proprietà intellettuale. 
 

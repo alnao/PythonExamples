@@ -75,7 +75,10 @@ python app.py
 *Note: Ensure the required AI CLIs (`claude`, `gemini`, `copilot`) are installed and authenticated in your environment.*
 
 
-
+## Changelog
+| Data | Modifica |
+|------|----------|
+| 2026-11-17 | Aggiunta la sezione Changelog |
 
 
 # &lt; AlNao /&gt;
