@@ -16,7 +16,7 @@ Lo stesso RAG (Retrieval-Augmented Generation) del [cdk33bedrockServerless](../c
 | Uso | Modello | Chiamato da |
 |-----|---------|-------------|
 | Embedding (file e domande) | Titan Text Embeddings V2, `amazon.titan-embed-text-v2:0` | la Knowledge Base |
-| Risposte | Amazon Nova Lite, `eu.amazon.nova-lite-v1:0` | la Lambda Api, con il profilo `Cdk34BedrockKnowledgeBase-Chat` |
+| Risposte | Amazon Nova Lite, `eu.amazon.nova-lite-v1:0` | la Lambda Api, con il profilo `aws-py-cdk34-chat` |
 
 ### Confronto con il cdk33
 
@@ -52,6 +52,7 @@ Knowledge Base ── legge uploads/ ── parti ── Titan (embedding) ─�
 ├── app.py                          # 🚀 app CDK: tag standard, bootstrap alnao-dev-cdk, Francoforte
 ├── cdk34bedrock_knowledge_base/
 │   ├── cdk34bedrock_knowledge_base_stack.py # 🏗️ bucket, S3 Vectors, Knowledge Base, coda, Lambda, API Gateway, CloudFront
+│   ├── naming.py                   # 🏷️ nomi aws-py-cdk34-<servizio> e tag Name di ogni risorsa
 │   └── tags.py                     # 🏷️ tag standard e apply_tags (usata da app.py e dai test)
 ├── lambda/
 │   ├── api.py                      # ⚡ API (router, chiave, caricamenti, documenti, domande, sincronizzazioni)
@@ -67,12 +68,12 @@ Le Lambda non hanno un layer: il boto3 del runtime Python 3.13 ha già i client 
 Dove sono i dati:
 | Dato | Dove |
 |------|------|
-| File originali | bucket `alnao-dev-cdk-cdk34bedrockknowledgebase-documents`, `uploads/<doc_id>/<nome file>` |
+| File originali | bucket `aws-py-cdk34-documents-<account>`, `uploads/<doc_id>/<nome file>` |
 | Stato di ogni file | nella Knowledge Base (`ListKnowledgeBaseDocuments`): `INDEXED`, `FAILED` con il motivo, `IN_PROGRESS`, ...; `NOT_SYNCED` = file caricato e non ancora visto da una sincronizzazione |
-| Parti ed embedding | vector bucket `alnao-dev-cdk-cdk34bedrockknowledgebase-vectors`, indice `docs`, scritti dalla Knowledge Base (`AMAZON_BEDROCK_TEXT` e `AMAZON_BEDROCK_METADATA` non filtrabili, altrimenti superano i 2 KB di metadati filtrabili per vettore) |
-| Chiave API | Secrets Manager, segreto `Cdk34BedrockKnowledgeBase-ApiKey` |
+| Parti ed embedding | vector bucket `aws-py-cdk34-vectors`, indice `aws-py-cdk34-docs`, scritti dalla Knowledge Base (`AMAZON_BEDROCK_TEXT` e `AMAZON_BEDROCK_METADATA` non filtrabili, altrimenti superano i 2 KB di metadati filtrabili per vettore) |
+| Chiave API | Secrets Manager, segreto `aws-py-cdk34-api-key` |
 
-**La coda di sincronizzazione**: per ogni sorgente può girare una sola sincronizzazione alla volta. La Lambda Sync riceve fino a 100 eventi insieme (aspetta al massimo 20 secondi per raccoglierli) e avvia una sincronizzazione: Bedrock confronta il bucket con l'indice, indicizza i file nuovi o cambiati e toglie quelli cancellati. Se ce n'è già una in corso, AWS risponde `ConflictException`, la Lambda fallisce e i messaggi tornano visibili dopo 2 minuti (il *visibility timeout* della coda) per un nuovo tentativo. Dopo 30 tentativi, circa un'ora, i messaggi finiscono nella coda `Cdk34BedrockKnowledgeBase-SyncFailed`: basta il pulsante "Sincronizza ora" della pagina admin per recuperare.
+**La coda di sincronizzazione**: per ogni sorgente può girare una sola sincronizzazione alla volta. La Lambda Sync riceve fino a 100 eventi insieme (aspetta al massimo 20 secondi per raccoglierli) e avvia una sincronizzazione: Bedrock confronta il bucket con l'indice, indicizza i file nuovi o cambiati e toglie quelli cancellati. Se ce n'è già una in corso, AWS risponde `ConflictException`, la Lambda fallisce e i messaggi tornano visibili dopo 2 minuti (il *visibility timeout* della coda) per un nuovo tentativo. Dopo 30 tentativi, circa un'ora, i messaggi finiscono nella coda `aws-py-cdk34-sync-failed`: basta il pulsante "Sincronizza ora" della pagina admin per recuperare.
 
 
 ## 🛠️ Deploy
@@ -97,25 +98,25 @@ Al termine `cdk deploy` stampa:
 - `ApiKeyCommand`: il comando che legge la chiave API da inserire nel campo in alto a destra del sito
 - `DocumentsBucket` e `KnowledgeBaseId`: il bucket dei documenti e l'ID della Knowledge Base (per provarla anche dalla console Bedrock)
 
-**Tag**: tutte le risorse hanno i tag standard del repository (`Project=Development.aws.py-CDK.cdk34bedrockKnowledgeBase`, `ManagedBy=CDK`), anche quelle di supporto create da CDK. Non hanno tag solo i tipi che CloudFormation non permette di taggare: sorgente della Knowledge Base, layer Lambda, policy IAM inline, policy di bucket e code, route e integrazioni di API Gateway, OAC, permessi Lambda. Il test `test_all_resources_tagged` controlla ogni risorsa del template e fallisce se ne compare una nuova senza tag.
+**Tag**: tutte le risorse hanno i tag standard del repository (`Project=Development.aws.py-CDK.cdk34bedrockKnowledgeBase`, `ManagedBy=CDK`), anche quelle di supporto create da CDK. Non hanno tag solo i tipi che CloudFormation non permette di taggare: sorgente della Knowledge Base, layer Lambda, policy IAM inline, policy di bucket e code, route e integrazioni di API Gateway, OAC, permessi Lambda. Il test `test_all_resources_tagged` controlla ogni risorsa del template e fallisce se ne compare una nuova senza tag. Il tag `Name` di ogni risorsa è uguale al suo nome (`aws-py-cdk34-<servizio>`, vedi `naming.py`).
 
-**Costi di Bedrock con i tag**: una chiamata a Bedrock con l'ID del modello produce un costo senza tag, che in Cost Explorer non arriva a nessun `Project`. Le risposte usano quindi il profilo `Cdk34BedrockKnowledgeBase-Chat`, copiato dal profilo cross-region di Nova Lite e con i tag dello stack: la Lambda Api lo passa come `modelId` a Converse. La documentazione AWS garantisce i profili dell'applicazione solo per InvokeModel e Converse: per questo la risposta è scritta da Converse con i brani di `Retrieve`, e non con `RetrieveAndGenerate`. Gli **embedding restano senza tag**, perché li calcola la Knowledge Base con il modello di base; sono la voce più piccola (vedi i costi). Perché il tag compaia in Cost Explorer, `Project` deve essere attivato come *cost allocation tag* nella console Billing (una volta per account).
+**Costi di Bedrock con i tag**: una chiamata a Bedrock con l'ID del modello produce un costo senza tag, che in Cost Explorer non arriva a nessun `Project`. Le risposte usano quindi il profilo `aws-py-cdk34-chat`, copiato dal profilo cross-region di Nova Lite e con i tag dello stack: la Lambda Api lo passa come `modelId` a Converse. La documentazione AWS garantisce i profili dell'applicazione solo per InvokeModel e Converse: per questo la risposta è scritta da Converse con i brani di `Retrieve`, e non con `RetrieveAndGenerate`. Gli **embedding restano senza tag**, perché li calcola la Knowledge Base con il modello di base; sono la voce più piccola (vedi i costi). Perché il tag compaia in Cost Explorer, `Project` deve essere attivato come *cost allocation tag* nella console Billing (una volta per account).
 
-Le risorse hanno nomi fissi al posto dei suffissi casuali di CDK, comprese quelle create internamente da CDK (svuotamento dei bucket al destroy, notifiche S3, copia del sito):
+Le risorse hanno nomi fissi `aws-py-cdk34-<servizio>` (uguali al tag `Name`, dati da `naming.py` come in tutti gli esempi CDK) al posto dei suffissi casuali di CDK, comprese quelle create internamente da CDK (svuotamento dei bucket al destroy, notifiche S3, copia del sito):
 
 | Risorsa | Nome |
 |---------|------|
-| Bucket S3 | `alnao-dev-cdk-cdk34bedrockknowledgebase-documents`, `alnao-dev-cdk-cdk34bedrockknowledgebase-site` |
-| Vector bucket e indice | `alnao-dev-cdk-cdk34bedrockknowledgebase-vectors`, indice `docs` |
-| Knowledge Base e sorgente | `Cdk34BedrockKnowledgeBase`, sorgente `Documents` |
-| Profilo di inferenza | `Cdk34BedrockKnowledgeBase-Chat` |
-| Code SQS | `Cdk34BedrockKnowledgeBase-Sync`, `Cdk34BedrockKnowledgeBase-SyncFailed` |
-| Lambda | `Cdk34BedrockKnowledgeBase-Api`, `-Sync`, `-BucketNotifications`, `-AutoDeleteObjects`, `-BucketDeployment` |
-| Log group (1 settimana) | `/Cdk34BedrockKnowledgeBase/Api`, `/Cdk34BedrockKnowledgeBase/Sync`, ... uno per ogni Lambda; le Lambda possono solo scriverci, non creare log group (vedi sotto) |
-| Ruoli IAM | `Cdk34BedrockKnowledgeBaseStack-<Lambda>ServiceRole`, `Cdk34BedrockKnowledgeBaseStack-KnowledgeBaseServiceRole` |
-| Policy IAM (inline nei ruoli) | `Cdk34BedrockKnowledgeBaseStack-<Lambda>ServicePolicy` |
-| Layer Lambda | `Cdk34BedrockKnowledgeBase-AwsCli` (della copia del sito) |
-| Segreto, HTTP API, OAC | `Cdk34BedrockKnowledgeBase-ApiKey`, `Cdk34BedrockKnowledgeBase-HttpApi`, `Cdk34BedrockKnowledgeBase-Site` |
+| Bucket S3 | `aws-py-cdk34-documents-<account>`, `aws-py-cdk34-site-<account>` |
+| Vector bucket e indice | `aws-py-cdk34-vectors`, indice `aws-py-cdk34-docs` |
+| Knowledge Base e sorgente | `aws-py-cdk34-knowledge-base`, sorgente `aws-py-cdk34-data-source` |
+| Profilo di inferenza | `aws-py-cdk34-chat` |
+| Code SQS | `aws-py-cdk34-sync`, `aws-py-cdk34-sync-failed` |
+| Lambda | `aws-py-cdk34-api`, `aws-py-cdk34-sync`, `aws-py-cdk34-bucket-notifications-handler`, `aws-py-cdk34-s3-auto-delete-objects-handler`, `aws-py-cdk34-cdk-bucket-deployment` (le ultime tre sono le Lambda di supporto di CDK) |
+| Log group (1 settimana) | `/aws/lambda/aws-py-cdk34-api`, `/aws/lambda/aws-py-cdk34-sync`, ... uno per ogni Lambda; le Lambda possono solo scriverci, non creare log group (vedi sotto) |
+| Ruoli IAM | `aws-py-cdk34-<lambda>-service-role-<region>` (i ruoli delle Lambda di supporto `...-role-<region>`), `aws-py-cdk34-knowledge-base-role-<region>` |
+| Policy IAM | `aws-py-cdk34-<lambda>-service-role-default-policy` (permessi della Lambda) e `aws-py-cdk34-<lambda>-logs-policy` (solo il proprio log group) |
+| Layer Lambda | `aws-py-cdk34-site-content-aws-cli-layer` (della copia del sito) |
+| Segreto, HTTP API, OAC | `aws-py-cdk34-api-key`, `aws-py-cdk34-http-api`, `aws-py-cdk34-site` |
 
 Restano con un identificativo generato solo le risorse che non hanno un nome scelto dall'utente: la distribuzione CloudFront (il dominio `xxxx.cloudfront.net`), l'API Gateway, la Knowledge Base, la sorgente e il profilo (nei loro ID e ARN). I nomi dei bucket sono unici in tutto il mondo e quelli dei ruoli IAM in tutto l'account: lo stack si può installare una sola volta per account.
 
@@ -144,7 +145,7 @@ Le API sono sullo stesso dominio del sito, sotto `/api`; tranne `health` e `supp
 
 ```bash
 SITE=https://xxxx.cloudfront.net
-KEY=$(aws secretsmanager get-secret-value --secret-id Cdk34BedrockKnowledgeBase-ApiKey --region eu-central-1 --query SecretString --output text)
+KEY=$(aws secretsmanager get-secret-value --secret-id aws-py-cdk34-api-key --region eu-central-1 --query SecretString --output text)
 
 # 1. POST prefirmato, 2. upload su S3 con i campi ricevuti, 3. stato (NOT_SYNCED -> IN_PROGRESS -> INDEXED)
 curl -s -H "X-API-Key: $KEY" -H "Content-Type: application/json" -d '{"filename": "contratto.txt", "doc_id": "contratto"}' $SITE/api/uploads > upload.json
@@ -194,6 +195,14 @@ Note sui costi:
 - 🏷️ **Embedding con i tag**: verificare se la Knowledge Base accetta un profilo dell'applicazione come modello di embedding
 - 🧪 **Confronto della qualità** tra cdk33 e cdk34 sugli stessi documenti e sulle stesse domande
 - 🔀 **Reranking** dei brani con un modello di rerank di Bedrock prima della risposta
+
+
+## Changelog
+| Data | Modifica |
+|------|----------|
+| 2026-11-17 | Revisione degli esempi CDK: test eseguiti e tag standard verificati su tutte le risorse del template sintetizzato, nessuna modifica al codice |
+| 2026-11-17 | Nomi delle risorse aws-py-cdk34-<servizio> uguali al tag Name (naming.py comune a tutti gli esempi): stack aws-py-cdk34, bucket S3 con l'account alla fine, ruoli e instance profile IAM con la region, anche le risorse create da CDK; test test_all_resources_named; tolto physical_names (nomi e log group delle Lambda di supporto ora da naming.py e tags.py) |
+| 2026-11-17 | Tag Name aws-py-cdk34 anche sullo stack CloudFormation (aspect PhysicalNames di naming.py), test test_stack_tags |
 
 
 # &lt; AlNao /&gt;

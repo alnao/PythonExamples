@@ -22,7 +22,7 @@ L'immagine di prova è l'API Flask del progetto [Docker/03ApiPersoneNoDb](../../
 ## 🔧 Architettura
 
 ```
-docker build ── docker push ──> ECR <account>.dkr.ecr.<region>.amazonaws.com/cdk23ecr-repository
+docker build ── docker push ──> ECR <account>.dkr.ecr.<region>.amazonaws.com/aws-py-cdk23-repository
                                  ├── scansione delle vulnerabilità (a ogni push)
                                  └── regole di ciclo di vita (ogni giorno)
 ```
@@ -31,6 +31,7 @@ docker build ── docker push ──> ECR <account>.dkr.ecr.<region>.amazonaws
 ├── app.py                 # 🚀 app CDK: tag standard, bootstrap alnao-dev-cdk
 ├── cdk23ecr/
 │   ├── cdk23ecr_stack.py  # 🏗️ repository, regole di ciclo di vita, output con i comandi docker
+│   ├── naming.py          # 🏷️ nomi aws-py-cdk23-<servizio> e tag Name di ogni risorsa
 │   └── tags.py            # 🏷️ tag standard e apply_tags (usata da app.py e dai test)
 ├── tests/unit/            # 🧪 test dello stack (sintesi locale, senza AWS)
 └── cdk.json, requirements*.txt
@@ -48,17 +49,16 @@ pip install -r requirements.txt -r requirements-dev.txt
 pytest tests/unit
 
 #../bootstrap/bootstrap.sh create eu-central-1
-cdk deploy                                        # repository cdk23ecr-repository
-cdk deploy --parameters reponame=altro-nome       # nome diverso
+cdk deploy                                        # repository aws-py-cdk23-repository
 ```
 
 Al termine `cdk deploy` stampa `RepositoryUri`, `LoginCommand` e `PushCommand`. Caricamento dell'immagine di prova, dalla cartella principale del repository `PythonExamples`:
 ```bash
 REGION=eu-central-1
 ACCOUNT=$(aws sts get-caller-identity --query Account --output text)
-REPO=$ACCOUNT.dkr.ecr.$REGION.amazonaws.com/cdk23ecr-repository
+REPO=$ACCOUNT.dkr.ecr.$REGION.amazonaws.com/aws-py-cdk23-repository
 aws ecr get-login-password --region $REGION | docker login --username AWS --password-stdin $ACCOUNT.dkr.ecr.$REGION.amazonaws.com
-docker build --platform linux/amd64 -t $REPO:latest Docker/03ApiPersoneNoDb
+docker build --platform linux/amd64 -t $REPO:latest ../../../Docker/03ApiPersoneNoDb
 docker push $REPO:latest
 # prova in locale della stessa immagine
 docker run --rm -d -p 5001:5001 $REPO:latest && curl localhost:5001/persone
@@ -67,13 +67,13 @@ docker run --rm -d -p 5001:5001 $REPO:latest && curl localhost:5001/persone
 Comandi utili:
 ```bash
 aws ecr describe-repositories --query "repositories[].[repositoryName,repositoryUri]" --output table
-aws ecr list-images --repository-name cdk23ecr-repository --query "imageIds[].[imageTag,imageDigest]" --output table
-aws ecr describe-image-scan-findings --repository-name cdk23ecr-repository --image-id imageTag=latest --query "imageScanFindings.findingSeverityCounts"
-aws ecr get-lifecycle-policy-preview --repository-name cdk23ecr-repository     # dopo start-lifecycle-policy-preview
-aws ecr batch-delete-image --repository-name cdk23ecr-repository --image-ids imageTag=latest
+aws ecr list-images --repository-name aws-py-cdk23-repository --query "imageIds[].[imageTag,imageDigest]" --output table
+aws ecr describe-image-scan-findings --repository-name aws-py-cdk23-repository --image-id imageTag=latest --query "imageScanFindings.findingSeverityCounts"
+aws ecr get-lifecycle-policy-preview --repository-name aws-py-cdk23-repository     # dopo start-lifecycle-policy-preview
+aws ecr batch-delete-image --repository-name aws-py-cdk23-repository --image-ids imageTag=latest
 ```
 
-**Tag**: il repository ha i tag standard del repository (`Project=Development.aws.py-CDK.cdk23ecr`, `ManagedBy=CDK`), le immagini non hanno tag AWS propri (il costo dello storage va al repository).
+**Tag**: il repository ha i tag standard del repository (`Project=Development.aws.py-CDK.cdk23ecr`, `ManagedBy=CDK`), le immagini non hanno tag AWS propri (il costo dello storage va al repository). Il tag `Name` di ogni risorsa è uguale al suo nome (`aws-py-cdk23-<servizio>`, vedi `naming.py`).
 
 
 ## 💰 Analisi dei Costi
@@ -106,6 +106,16 @@ docker rmi $REPO:latest     # immagine locale
 - 🔐 **Cifratura KMS** con una chiave dedicata e **tag immutabili** per le immagini di produzione
 - 🔁 **Replica** del repository in un'altra region
 - 🛡️ **Enhanced scanning** con Amazon Inspector (a pagamento) e **pull through cache** da Docker Hub
+
+
+## Changelog
+| Data | Modifica |
+|------|----------|
+| 2026-11-10 | Prima versione dell'esempio, ispirata all'esempio CloudFormation corrispondente |
+| 2026-11-17 | Revisione degli esempi CDK: test eseguiti e tag standard verificati su tutte le risorse del template sintetizzato, nessuna modifica al codice |
+| 2026-11-17 | tags.py: aspect LambdaLogGroups comune a tutti gli esempi (log group dello stack per ogni Lambda); lo stack non ha Lambda, il template non cambia |
+| 2026-11-17 | Nomi delle risorse aws-py-cdk23-<servizio> uguali al tag Name (naming.py comune a tutti gli esempi): stack aws-py-cdk23, bucket S3 con l'account alla fine, ruoli e instance profile IAM con la region, anche le risorse create da CDK; test test_all_resources_named; tolto il parametro reponame (repository aws-py-cdk23-repository) |
+| 2026-11-17 | Tag Name aws-py-cdk23 anche sullo stack CloudFormation (aspect PhysicalNames di naming.py), test test_stack_tags |
 
 
 # &lt; AlNao /&gt;

@@ -4,6 +4,7 @@ import aws_cdk as core
 import aws_cdk.assertions as assertions
 
 from cdk34bedrock_knowledge_base.cdk34bedrock_knowledge_base_stack import Cdk34BedrockKnowledgeBaseStack
+from cdk34bedrock_knowledge_base.naming import check_template
 from cdk34bedrock_knowledge_base.tags import TAGS, apply_tags
 
 TITAN = "arn:aws:bedrock:eu-central-1::foundation-model/amazon.titan-embed-text-v2:0"
@@ -19,10 +20,13 @@ UNTAGGABLE = {
 }
 
 
+STACK_NAME = "aws-py-cdk34"
+
+
 def template():
     app = core.App()
     apply_tags(app)
-    stack = Cdk34BedrockKnowledgeBaseStack(app, "cdk34-kb", env=core.Environment(account="123456789012", region="eu-central-1"))
+    stack = Cdk34BedrockKnowledgeBaseStack(app, STACK_NAME, env=core.Environment(account="123456789012", region="eu-central-1"))
     return assertions.Template.from_stack(stack)
 
 
@@ -42,9 +46,9 @@ def statements(t, logical_prefix):
 def test_vector_index_for_knowledge_base():
     """Testo e metadati di Bedrock non filtrabili: filtrabili supererebbero i 2 KB per vettore."""
     t = template()
-    t.has_resource_properties("AWS::S3Vectors::VectorBucket", {"VectorBucketName": "alnao-dev-cdk-cdk34bedrockknowledgebase-vectors"})
+    t.has_resource_properties("AWS::S3Vectors::VectorBucket", {"VectorBucketName": "aws-py-cdk34-vectors"})
     t.has_resource_properties("AWS::S3Vectors::Index", {
-        "IndexName": "docs", "DataType": "float32", "Dimension": 1024, "DistanceMetric": "cosine",
+        "IndexName": "aws-py-cdk34-docs", "DataType": "float32", "Dimension": 1024, "DistanceMetric": "cosine",
         "MetadataConfiguration": {"NonFilterableMetadataKeys": ["AMAZON_BEDROCK_TEXT", "AMAZON_BEDROCK_METADATA"]},
     })
 
@@ -52,7 +56,7 @@ def test_vector_index_for_knowledge_base():
 def test_knowledge_base_and_data_source():
     t = template()
     t.has_resource_properties("AWS::Bedrock::KnowledgeBase", {
-        "Name": "Cdk34BedrockKnowledgeBase",
+        "Name": "aws-py-cdk34-knowledge-base",
         "KnowledgeBaseConfiguration": {"Type": "VECTOR", "VectorKnowledgeBaseConfiguration": {
             "EmbeddingModelArn": TITAN,
             "EmbeddingModelConfiguration": {"BedrockEmbeddingModelConfiguration": {"Dimensions": 1024, "EmbeddingDataType": "FLOAT32"}},
@@ -71,7 +75,7 @@ def test_knowledge_base_role():
     """Ruolo assumibile solo da Bedrock per le Knowledge Base dell'account, con le policy inline nel ruolo."""
     t = template()
     t.has_resource_properties("AWS::IAM::Role", {
-        "RoleName": "cdk34-kb-KnowledgeBaseServiceRole",
+        "RoleName": "aws-py-cdk34-knowledge-base-role-eu-central-1",
         "AssumeRolePolicyDocument": {"Statement": [assertions.Match.object_like({
             "Principal": {"Service": "bedrock.amazonaws.com"},
             "Condition": {"StringEquals": {"aws:SourceAccount": "123456789012"},
@@ -92,7 +96,7 @@ def test_chat_profile_and_api_permissions():
     """Le risposte passano dal profilo con i tag; l'Api usa la Knowledge Base e solo il modello di chat."""
     t = template()
     t.has_resource_properties("AWS::Bedrock::ApplicationInferenceProfile", {
-        "InferenceProfileName": "Cdk34BedrockKnowledgeBase-Chat",
+        "InferenceProfileName": "aws-py-cdk34-chat",
         "ModelSource": {"CopyFrom": "arn:aws:bedrock:eu-central-1:123456789012:inference-profile/eu.amazon.nova-lite-v1:0"},
     })
     for p in t.find_resources("AWS::Bedrock::ApplicationInferenceProfile").values():
@@ -113,9 +117,9 @@ def test_sync_queue():
     """Eventi S3 di uploads/ in coda SQS, letti a gruppi dalla Lambda Sync; dopo 30 tentativi nella coda degli errori."""
     t = template()
     t.has_resource_properties("AWS::SQS::Queue", {
-        "QueueName": "Cdk34BedrockKnowledgeBase-Sync", "VisibilityTimeout": 120,
+        "QueueName": "aws-py-cdk34-sync", "VisibilityTimeout": 120,
         "RedrivePolicy": assertions.Match.object_like({"maxReceiveCount": 30})})
-    t.has_resource_properties("AWS::SQS::Queue", {"QueueName": "Cdk34BedrockKnowledgeBase-SyncFailed"})
+    t.has_resource_properties("AWS::SQS::Queue", {"QueueName": "aws-py-cdk34-sync-failed"})
     t.has_resource_properties("AWS::Lambda::EventSourceMapping", {
         "BatchSize": 100, "MaximumBatchingWindowInSeconds": 20, "ScalingConfig": {"MaximumConcurrency": 2}})
     notifications = t.find_resources("Custom::S3BucketNotifications")
@@ -144,21 +148,21 @@ def test_api_and_site():
 
 def test_fixed_names():
     t = template()
-    t.has_resource_properties("AWS::S3::Bucket", {"BucketName": "alnao-dev-cdk-cdk34bedrockknowledgebase-documents"})
-    t.has_resource_properties("AWS::S3::Bucket", {"BucketName": "alnao-dev-cdk-cdk34bedrockknowledgebase-site"})
-    for name in ("Api", "Sync", "BucketNotifications", "AutoDeleteObjects", "BucketDeployment"):
-        t.has_resource_properties("AWS::Lambda::Function", {"FunctionName": f"Cdk34BedrockKnowledgeBase-{name}"})
-        t.has_resource_properties("AWS::Logs::LogGroup", {"LogGroupName": f"/Cdk34BedrockKnowledgeBase/{name}"})
-        t.has_resource_properties("AWS::IAM::Role", {"RoleName": f"cdk34-kb-{name}ServiceRole"})
-    t.has_resource_properties("AWS::SecretsManager::Secret", {"Name": "Cdk34BedrockKnowledgeBase-ApiKey"})
+    t.has_resource_properties("AWS::S3::Bucket", {"BucketName": "aws-py-cdk34-documents-123456789012"})
+    t.has_resource_properties("AWS::S3::Bucket", {"BucketName": "aws-py-cdk34-site-123456789012"})
+    names = {f["Properties"]["FunctionName"] for f in t.find_resources("AWS::Lambda::Function").values()}
+    assert names == {"aws-py-cdk34-api", "aws-py-cdk34-sync", "aws-py-cdk34-bucket-notifications-handler",
+                     "aws-py-cdk34-s3-auto-delete-objects-handler", "aws-py-cdk34-cdk-bucket-deployment"}
+    for name in names:
+        t.has_resource_properties("AWS::Logs::LogGroup", {"LogGroupName": f"/aws/lambda/{name}"})
+    for role in t.find_resources("AWS::IAM::Role").values():
+        assert role["Properties"]["RoleName"].startswith("aws-py-cdk34-") and role["Properties"]["RoleName"].endswith("-eu-central-1")
+    t.has_resource_properties("AWS::SecretsManager::Secret", {"Name": "aws-py-cdk34-api-key"})
 
 
 def test_name_lengths():
     """Nomi entro i limiti di AWS: ruoli e Lambda 64 caratteri, bucket 63 (con il nome dello stack di app.py)."""
-    app = core.App()
-    stack = Cdk34BedrockKnowledgeBaseStack(app, "Cdk34BedrockKnowledgeBaseStack",
-                                           env=core.Environment(account="123456789012", region="eu-central-1"))
-    t = assertions.Template.from_stack(stack)
+    t = template()
     for kind, prop, limit in (("AWS::IAM::Role", "RoleName", 64), ("AWS::Lambda::Function", "FunctionName", 64),
                               ("AWS::S3::Bucket", "BucketName", 63), ("AWS::S3Vectors::VectorBucket", "VectorBucketName", 63),
                               ("AWS::SQS::Queue", "QueueName", 80)):
@@ -197,7 +201,22 @@ def test_lambdas_cannot_create_log_groups():
         statements += [s for p in policies.values() if {"Ref": role_id} in p["Properties"]["Roles"]
                        for s in p["Properties"]["PolicyDocument"]["Statement"]]
         assert not [s for s in statements if "logs:CreateLogGroup" in str(s["Action"]) or s["Action"] in ("logs:*", "*")]
-        name = fn["Properties"]["FunctionName"].split("-", 1)[1]
+        log_group = fn["Properties"]["LoggingConfig"]["LogGroup"]["Ref"]  # il proprio log group, e solo quello
         assert {"Effect": "Allow", "Action": ["logs:CreateLogStream", "logs:PutLogEvents"],
-                "Resource": {"Fn::Join": ["", ["arn:", {"Ref": "AWS::Partition"},
-                                                f":logs:eu-central-1:123456789012:log-group:/Cdk34BedrockKnowledgeBase/{name}:*"]]}} in statements
+                "Resource": {"Fn::GetAtt": [log_group, "Arn"]}} in statements
+
+
+def test_all_resources_named():
+    """Ogni risorsa si chiama aws-py-cdk34-<servizio> (bucket S3 con l'account alla fine, ruoli IAM con la
+    region) e ha il tag Name uguale al nome; le risorse senza nome (EC2, EFS, CloudFront, ...) hanno solo il tag Name."""
+    assert check_template(template().to_json(), STACK_NAME) == []
+
+
+def test_stack_tags(monkeypatch):
+    """Lo stack CloudFormation ha i tag standard e Name uguale al suo nome: CDK li passa allo stack al deploy e
+    CloudFormation li copia sulle risorse che non li hanno gia' (il Name scritto sulla risorsa vince)."""
+    stacks, from_stack = [], assertions.Template.from_stack
+    monkeypatch.setattr(assertions.Template, "from_stack",
+                        staticmethod(lambda stack, *args, **kwargs: stacks.append(stack) or from_stack(stack, *args, **kwargs)))
+    template()
+    assert stacks[0].tags.tag_values() == {**TAGS, "Name": STACK_NAME}

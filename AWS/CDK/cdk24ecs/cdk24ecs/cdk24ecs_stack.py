@@ -1,6 +1,8 @@
 """Cluster ECS su istanze EC2 con un servizio dietro un Application Load Balancer.
 
-- VPC nuova con due subnet pubbliche (load balancer, NAT) e due private (istanze del cluster)
+- per default la VPC di default della region e due sue subnet (vedi network.py), modificabili con i parametri:
+  load balancer e istanze del cluster nelle subnet pubbliche, istanze con IP pubblico (niente NAT gateway)
+  ma raggiungibili solo dal load balancer
 - istanze ECS-optimized Amazon Linux 2023 in un Auto Scaling group, collegato al cluster
   come capacity provider (ECS aggiunge e toglie istanze secondo i task da eseguire)
 - servizio con 2 task dell'API Flask di Docker/03ApiPersoneNoDb (porta 5001, rete bridge con porte dinamiche)
@@ -14,6 +16,7 @@ import os
 
 from aws_cdk import (
     CfnOutput,
+    Fn,
     Duration,
     RemovalPolicy,
     Stack,
@@ -28,6 +31,9 @@ from aws_cdk import (
 )
 from constructs import Construct
 
+from .naming import nome_risorsa
+from .network import lookup_subnets, lookup_vpc, subnet_parameter, vpc_parameter
+
 # progetto Docker/03ApiPersoneNoDb del repository PythonExamples
 APP_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "..", "..", "Docker", "03ApiPersoneNoDb")
 CONTAINER_NAME = "api-persone"
@@ -40,14 +46,18 @@ class Cdk24EcsStack(Stack):
     def __init__(self, scope: Construct, construct_id: str, **kwargs) -> None:
         super().__init__(scope, construct_id, **kwargs)
 
-        # VPC: subnet pubbliche per load balancer e NAT, private per le istanze (un solo NAT per risparmiare)
-        vpc = ec2.Vpc(self, "Vpc", ip_addresses=ec2.IpAddresses.cidr("10.184.0.0/16"), max_azs=2, nat_gateways=1,
-                      subnet_configuration=[
-                          ec2.SubnetConfiguration(name="Public", subnet_type=ec2.SubnetType.PUBLIC, cidr_mask=24),
-                          ec2.SubnetConfiguration(name="Private", subnet_type=ec2.SubnetType.PRIVATE_WITH_EGRESS, cidr_mask=24),
-                      ])
+        # VPC e subnet: per default quelle di default della region (vedi network.py)
+        default_vpc = lookup_vpc(self)
+        default_subnets = lookup_subnets(default_vpc, 2)
+        vpc_id = vpc_parameter(self, default_vpc)
+        subnet_1 = subnet_parameter(self, "subnetid1", default_subnets[0], "subnet pubblica 1 (load balancer e istanze)")
+        subnet_2 = subnet_parameter(self, "subnetid2", default_subnets[1], "subnet pubblica 2, in un'altra zona")
+        vpc = ec2.Vpc.from_vpc_attributes(self, "Vpc", vpc_id=vpc_id,
+                                          availability_zones=[Fn.select(0, Fn.get_azs()), Fn.select(1, Fn.get_azs())],
+                                          public_subnet_ids=[subnet_1, subnet_2])
+        public = ec2.SubnetSelection(subnet_type=ec2.SubnetType.PUBLIC)
 
-        cluster = ecs.Cluster(self, "Cluster", vpc=vpc, cluster_name=self.stack_name)
+        cluster = ecs.Cluster(self, "Cluster", vpc=vpc, cluster_name=nome_risorsa(self, "cluster"))
 
         # Istanze del cluster: l'agente ECS gira sull'AMI ECS-optimized, Session Manager al posto di SSH
         role = iam.Role(self, "EcsInstanceRole", assumed_by=iam.ServicePrincipal("ec2.amazonaws.com"),
@@ -61,11 +71,12 @@ class Cdk24EcsStack(Stack):
             user_data=ec2.UserData.for_linux(),  # CDK aggiunge ECS_CLUSTER=<cluster> in /etc/ecs/ecs.config
             role=role,
             security_group=ec2.SecurityGroup(self, "EcsHostSecurityGroup", vpc=vpc, description="Istanze del cluster ECS"),
+            associate_public_ip_address=True,  # immagini e agente ECS da Internet senza NAT gateway
             require_imdsv2=True,
             http_put_response_hop_limit=2,  # i container in rete bridge raggiungono i metadati dell'istanza
         )
         asg = autoscaling.AutoScalingGroup(self, "EcsHosts", vpc=vpc, launch_template=launch_template,
-            vpc_subnets=ec2.SubnetSelection(subnet_type=ec2.SubnetType.PRIVATE_WITH_EGRESS),
+            vpc_subnets=public,
             min_capacity=1, max_capacity=2)
         capacity_provider = ecs.AsgCapacityProvider(self, "CapacityProvider", auto_scaling_group=asg,
             enable_managed_scaling=True, target_capacity_percent=100, enable_managed_draining=True,
@@ -81,16 +92,16 @@ class Cdk24EcsStack(Stack):
         else:
             image = ecs.ContainerImage.from_asset(APP_DIR, platform=ecr_assets.Platform.LINUX_AMD64)
 
-        log_group = logs.LogGroup(self, "LogGroup", log_group_name=f"/ecs/{self.stack_name}",
+        log_group = logs.LogGroup(self, "LogGroup", log_group_name=f"/ecs/{nome_risorsa(self, 'api-persone')}",
                                   retention=logs.RetentionDays.ONE_WEEK, removal_policy=RemovalPolicy.DESTROY)
-        task_definition = ecs.Ec2TaskDefinition(self, "TaskDefinition", family=f"{self.stack_name}-api-persone",
+        task_definition = ecs.Ec2TaskDefinition(self, "TaskDefinition", family=nome_risorsa(self, "api-persone"),
                                                 network_mode=ecs.NetworkMode.BRIDGE)
         task_definition.add_container(CONTAINER_NAME, image=image, cpu=256, memory_reservation_mib=256,
             port_mappings=[ecs.PortMapping(container_port=CONTAINER_PORT, host_port=0)],  # porta dell'host scelta da ECS
             logging=ecs.LogDriver.aws_logs(stream_prefix="api", log_group=log_group))
 
         service = ecs.Ec2Service(self, "Service", cluster=cluster, task_definition=task_definition,
-            service_name="api-persone", desired_count=DESIRED_TASKS,
+            service_name=nome_risorsa(self, "api-persone"), desired_count=DESIRED_TASKS,
             capacity_provider_strategies=[ecs.CapacityProviderStrategy(
                 capacity_provider=capacity_provider.capacity_provider_name, weight=1)],
             placement_strategies=[ecs.PlacementStrategy.spread_across(ecs.BuiltInAttributes.AVAILABILITY_ZONE),
@@ -99,7 +110,7 @@ class Cdk24EcsStack(Stack):
             min_healthy_percent=50, propagate_tags=ecs.PropagatedTagSource.SERVICE)
 
         # Load balancer pubblico: /persone e /test al servizio, il resto 404
-        alb = elbv2.ApplicationLoadBalancer(self, "LoadBalancer", vpc=vpc, internet_facing=True)
+        alb = elbv2.ApplicationLoadBalancer(self, "LoadBalancer", vpc=vpc, vpc_subnets=public, internet_facing=True)
         listener = alb.add_listener("HttpListener", port=80, open=True,
             default_action=elbv2.ListenerAction.fixed_response(404, content_type="text/plain",
                 message_body="Esempio cdk24ecs: usare /persone"))

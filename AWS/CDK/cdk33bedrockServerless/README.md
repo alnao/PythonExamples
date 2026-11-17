@@ -38,6 +38,7 @@ browser ── POST prefirmato ── bucket documenti uploads/<doc_id>/<file>
 ├── app.py                          # 🚀 app CDK: tag standard e stack a Francoforte
 ├── cdk33bedrock_serverless/
 │   ├── cdk33bedrock_serverless_stack.py # 🏗️ bucket, S3 Vectors, profili Bedrock, Lambda, API Gateway, CloudFront, segreto
+│   ├── naming.py                   # 🏷️ nomi aws-py-cdk33-<servizio> e tag Name di ogni risorsa
 │   └── tags.py                     # 🏷️ tag standard e apply_tags (usata da app.py e dai test)
 ├── lambda/
 │   ├── api.py                      # ⚡ API (router, chiave, domande, documenti, reindex)
@@ -53,10 +54,10 @@ browser ── POST prefirmato ── bucket documenti uploads/<doc_id>/<file>
 Dove sono i dati:
 | Dato | Dove |
 |------|------|
-| File originali | bucket `alnao-dev-cdk-cdk33bedrockserverless-documents`, `uploads/<doc_id>/<nome file>` |
+| File originali | bucket `aws-py-cdk33-documents-<account>`, `uploads/<doc_id>/<nome file>` |
 | Stato dell'indicizzazione | stesso bucket, `status/<doc_id>.json` (`uploading`, `processing`, `ready`, `error`, numero di parti) |
-| Parti ed embedding | vector bucket `alnao-dev-cdk-cdk33bedrockserverless-vectors`, indice `docs`: un vettore per parte con chiave `<doc_id>#00000` e metadati `doc_id`, `filename`, `chunk`, `text` (`text` non filtrabile) |
-| Chiave API | Secrets Manager, segreto `Cdk33BedrockServerless-ApiKey` |
+| Parti ed embedding | vector bucket `aws-py-cdk33-vectors`, indice `aws-py-cdk33-docs`: un vettore per parte con chiave `<doc_id>#00000` e metadati `doc_id`, `filename`, `chunk`, `text` (`text` non filtrabile) |
+| Chiave API | Secrets Manager, segreto `aws-py-cdk33-api-key` |
 
 Non c'è nessun indice locale da salvare: se serve ricalcolare tutto (per esempio dopo aver cambiato il modello di embedding), il pulsante "Ricostruisci indice" della pagina admin riscrive ogni file su se stesso e l'evento S3 lo fa reindicizzare.
 
@@ -90,19 +91,19 @@ Tutte le risorse hanno i tag standard del repository (`Project=Development.aws.p
 
 **Costi di Bedrock con i tag**: una chiamata a Bedrock con l'ID del modello (`eu.amazon.nova-lite-v1:0`) produce un costo senza tag, che in Cost Explorer non arriva a nessun `Project`, ed è la voce principale di questo esempio. Per questo lo stack crea tre *application inference profile* con i tag dello stack, uno per uso (`Embedding` copiato da Titan, `Chat` e `Image` copiati dal profilo cross-region di Nova Lite), e le Lambda ricevono i loro ARN in `EMBEDDING_MODEL`, `CHAT_MODEL` e `IMAGE_MODEL`: Converse e InvokeModel accettano l'ARN come `modelId`. I profili non costano nulla; nel CUR si vede anche la divisione tra embedding, domande e immagini. Perché il tag compaia in Cost Explorer `Project` deve essere attivato come *cost allocation tag* nella console Billing (una volta per account).
 
-Le risorse hanno nomi fissi al posto dei suffissi casuali di CDK, comprese quelle create internamente da CDK (svuotamento dei bucket al destroy, notifiche S3, copia del sito):
+Le risorse hanno nomi fissi `aws-py-cdk33-<servizio>` (uguali al tag `Name`, dati da `naming.py` come in tutti gli esempi CDK) al posto dei suffissi casuali di CDK, comprese quelle create internamente da CDK (svuotamento dei bucket al destroy, notifiche S3, copia del sito):
 
 | Risorsa | Nome |
 |---------|------|
-| Bucket S3 | `alnao-dev-cdk-cdk33bedrockserverless-documents`, `alnao-dev-cdk-cdk33bedrockserverless-site` |
-| Vector bucket e indice | `alnao-dev-cdk-cdk33bedrockserverless-vectors`, indice `docs` |
-| Lambda | `Cdk33BedrockServerless-Api`, `-Ingest`, `-BucketNotifications`, `-AutoDeleteObjects`, `-BucketDeployment` |
-| Log group (1 settimana) | `/Cdk33BedrockServerless/Api`, `/Cdk33BedrockServerless/Ingest`, ... uno per ogni Lambda; le Lambda possono solo scriverci, non creare log group (vedi sotto) |
-| Ruoli IAM | `Cdk33BedrockServerlessStack-<Lambda>ServiceRole` |
-| Policy IAM (inline nei ruoli) | `Cdk33BedrockServerlessStack-<Lambda>ServicePolicy` (la Lambda AutoDeleteObjects non ne ha) |
-| Layer Lambda | `Cdk33BedrockServerless-Libraries`, `Cdk33BedrockServerless-AwsCli` |
-| Profili di inferenza Bedrock | `Cdk33BedrockServerless-Embedding`, `Cdk33BedrockServerless-Chat`, `Cdk33BedrockServerless-Image` |
-| Segreto, HTTP API, OAC | `Cdk33BedrockServerless-ApiKey`, `Cdk33BedrockServerless-HttpApi`, `Cdk33BedrockServerless-Site` |
+| Bucket S3 | `aws-py-cdk33-documents-<account>`, `aws-py-cdk33-site-<account>` |
+| Vector bucket e indice | `aws-py-cdk33-vectors`, indice `aws-py-cdk33-docs` |
+| Lambda | `aws-py-cdk33-api`, `aws-py-cdk33-ingest`, `aws-py-cdk33-bucket-notifications-handler`, `aws-py-cdk33-s3-auto-delete-objects-handler`, `aws-py-cdk33-cdk-bucket-deployment` (le ultime tre sono le Lambda di supporto di CDK) |
+| Log group (1 settimana) | `/aws/lambda/aws-py-cdk33-api`, `/aws/lambda/aws-py-cdk33-ingest`, ... uno per ogni Lambda; le Lambda possono solo scriverci, non creare log group (vedi sotto) |
+| Ruoli IAM | `aws-py-cdk33-<lambda>-service-role-<region>` (i ruoli delle Lambda di supporto `...-role-<region>`) |
+| Policy IAM | `aws-py-cdk33-<lambda>-service-role-default-policy` (permessi della Lambda) e `aws-py-cdk33-<lambda>-logs-policy` (solo il proprio log group) |
+| Layer Lambda | `aws-py-cdk33-libraries`, `aws-py-cdk33-site-content-aws-cli-layer` |
+| Profili di inferenza Bedrock | `aws-py-cdk33-embedding`, `aws-py-cdk33-chat`, `aws-py-cdk33-image` |
+| Segreto, HTTP API, OAC | `aws-py-cdk33-api-key`, `aws-py-cdk33-http-api`, `aws-py-cdk33-site` |
 
 Restano con un identificativo generato solo le risorse che non hanno un nome scelto dall'utente: l'ID della distribuzione CloudFront (il dominio `xxxx.cloudfront.net`), quello dell'API Gateway e quello dei profili di inferenza (nel loro ARN). I nomi dei bucket sono unici in tutto il mondo e quelli dei ruoli IAM in tutto l'account: lo stack si può installare una sola volta per account.
 
@@ -185,6 +186,12 @@ Note sui costi:
 - 📊 **Allarme sui costi** di Bedrock con AWS Budgets
 
 
+## Changelog
+| Data | Modifica |
+|------|----------|
+| 2026-11-17 | Revisione degli esempi CDK: test eseguiti e tag standard verificati su tutte le risorse del template sintetizzato, nessuna modifica al codice |
+| 2026-11-17 | Nomi delle risorse aws-py-cdk33-<servizio> uguali al tag Name (naming.py comune a tutti gli esempi): stack aws-py-cdk33, bucket S3 con l'account alla fine, ruoli e instance profile IAM con la region, anche le risorse create da CDK; test test_all_resources_named; tolto physical_names (nomi e log group delle Lambda di supporto ora da naming.py e tags.py) |
+| 2026-11-17 | Tag Name aws-py-cdk33 anche sullo stack CloudFormation (aspect PhysicalNames di naming.py), test test_stack_tags |
 
 
 # &lt; AlNao /&gt;

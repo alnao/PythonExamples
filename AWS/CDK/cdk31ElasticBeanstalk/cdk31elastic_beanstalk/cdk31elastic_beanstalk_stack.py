@@ -2,7 +2,8 @@
 
 - source bundle: la cartella app/ con Dockerrun.aws.json (immagine e porta del container), caricata da CDK
   nel bucket del bootstrap come asset e registrata come versione dell'applicazione
-- ambiente LoadBalanced con Application Load Balancer, da 1 a 2 istanze t3.micro nella VPC di default
+- ambiente LoadBalanced con Application Load Balancer, da 1 a 2 istanze t3.micro; per default nella VPC di
+  default della region e in due sue subnet (vedi network.py), modificabili con i parametri
 - nginx sulle istanze inoltra la porta 80 alla porta del container; controllo di salute su HEALTH_PATH
 - health reporting enhanced, log delle istanze in CloudWatch (7 giorni, cancellati con l'ambiente)
 
@@ -15,6 +16,7 @@ import os
 
 from aws_cdk import (
     CfnOutput,
+    Fn,
     CfnParameter,
     Stack,
     aws_elasticbeanstalk as eb,
@@ -22,6 +24,10 @@ from aws_cdk import (
     aws_s3_assets as s3_assets,
 )
 from constructs import Construct
+
+from .naming import nome_risorsa
+
+from .network import lookup_subnets, lookup_vpc, subnet_parameter, vpc_parameter
 
 APP_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "app")
 HEALTH_PATH = "/api/echo/status"  # pagina di stato dell'immagine pathsgames/pathsgames
@@ -38,12 +44,19 @@ class Cdk31ElasticBeanstalkStack(Stack):
 
     def __init__(self, scope: Construct, construct_id: str, **kwargs) -> None:
         super().__init__(scope, construct_id, **kwargs)
-        prefix = self.stack_name
 
         solution_stack = CfnParameter(self, "solutionstack", type="String",
             description="piattaforma, es. '64bit Amazon Linux 2023 v4.x.y running Docker' (vedi README)").value_as_string
         instance_type = CfnParameter(self, "instancetype", type="String", default="t3.micro",
                                      allowed_values=INSTANCE_TYPES, description="tipo delle istanze").value_as_string
+
+        # VPC e subnet di istanze e load balancer: per default quelle di default della region (vedi network.py)
+        default_vpc = lookup_vpc(self)
+        default_subnets = lookup_subnets(default_vpc, 2)
+        vpc_id = vpc_parameter(self, default_vpc)
+        subnets = Fn.join(",", [
+            subnet_parameter(self, "subnetid1", default_subnets[0], "subnet pubblica 1 (istanze e load balancer)"),
+            subnet_parameter(self, "subnetid2", default_subnets[1], "subnet pubblica 2, in un'altra zona")])
 
         # Ruolo delle istanze (web tier, Docker, Session Manager) e ruolo di servizio di Elastic Beanstalk
         instance_role = iam.Role(self, "InstanceRole", assumed_by=iam.ServicePrincipal("ec2.amazonaws.com"),
@@ -55,7 +68,7 @@ class Cdk31ElasticBeanstalkStack(Stack):
                 "service-role/AWSElasticBeanstalkEnhancedHealth",
                 "AWSElasticBeanstalkManagedUpdatesCustomerRolePolicy")])
 
-        application = eb.CfnApplication(self, "Application", application_name=f"{prefix}-app",
+        application = eb.CfnApplication(self, "Application", application_name=nome_risorsa(self, "app"),
             description="Esempio cdk31: un container Docker su Elastic Beanstalk",
             # al massimo 10 versioni registrate; i bundle restano nel bucket del bootstrap (condiviso)
             resource_lifecycle_config=eb.CfnApplication.ApplicationResourceLifecycleConfigProperty(
@@ -74,9 +87,14 @@ class Cdk31ElasticBeanstalkStack(Stack):
             return eb.CfnEnvironment.OptionSettingProperty(namespace=namespace, option_name=name, value=value)
 
         environment = eb.CfnEnvironment(self, "Environment", application_name=application.ref,
-            environment_name=f"{prefix}-env", solution_stack_name=solution_stack, version_label=version.ref,
+            environment_name=nome_risorsa(self, "env"), solution_stack_name=solution_stack, version_label=version.ref,
             option_settings=[
                 option("aws:elasticbeanstalk:environment", "EnvironmentType", "LoadBalanced"),
+                option("aws:ec2:vpc", "VPCId", vpc_id),
+                option("aws:ec2:vpc", "Subnets", subnets),
+                option("aws:ec2:vpc", "ELBSubnets", subnets),
+                option("aws:ec2:vpc", "ELBScheme", "public"),
+                option("aws:ec2:vpc", "AssociatePublicIpAddress", "true"),  # subnet pubbliche senza NAT gateway
                 option("aws:elasticbeanstalk:environment", "LoadBalancerType", "application"),
                 option("aws:elasticbeanstalk:environment", "ServiceRole", service_role.role_arn),
                 option("aws:autoscaling:launchconfiguration", "IamInstanceProfile", instance_profile.instance_profile_name),

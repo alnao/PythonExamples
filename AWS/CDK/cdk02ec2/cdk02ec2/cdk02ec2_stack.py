@@ -1,80 +1,67 @@
+"""Istanza EC2 Amazon Linux 2023 in una subnet pubblica, gestita con Session Manager.
+
+- istanza t3.micro (parametrica) con IP pubblico, disco gp3 cifrato, IMDSv2 obbligatorio
+- nessuna porta aperta in ingresso e nessuna key pair: si entra con Session Manager
+- l'interfaccia di rete e il disco li crea EC2 all'avvio: i tag arrivano da un launch template collegato
+  all'istanza (TagSpecifications per instance, volume e network-interface, aggiunte da tags.py)
+
+L'istanza usa la risorsa L1 CfnInstance: il costrutto L2 ec2.Instance non accetta un launch template e,
+con la VPC importata da parametri, vorrebbe conoscere la zona della subnet.
+"""
+
 from aws_cdk import (
-    Stack,CfnParameter,
-    aws_ec2 as ec2,
     CfnOutput,
-    CfnTag,
+    CfnParameter,
+    Stack,
+    aws_ec2 as ec2,
+    aws_iam as iam,
 )
 from constructs import Construct
 
+from .network import lookup_subnets, lookup_vpc, subnet_parameter, vpc_parameter
+
+INSTANCE_TYPES = ["t3.nano", "t3.micro", "t3.small", "t3.medium"]
+
+
 class Cdk02Ec2Stack(Stack):
+
     def __init__(self, scope: Construct, construct_id: str, **kwargs) -> None:
         super().__init__(scope, construct_id, **kwargs)
 
-        self.vpc_id = CfnParameter(self, "vpc_id", type="String", default="vpc_id").value_as_string
-        self.key_pair_name = CfnParameter(self, "key_pair_name", type="String", default="").value_as_string
-        self.public_subnet_id = CfnParameter(self, "public_subnet_id", type="String", default="public_subnet_id").value_as_string
+        # VPC e subnet: per default quelle di default della region (vedi network.py)
+        default_vpc = lookup_vpc(self)
+        vpc_id = vpc_parameter(self, default_vpc)
+        subnet_id = subnet_parameter(self, "subnetid", lookup_subnets(default_vpc, 1)[0],
+                                     "subnet pubblica (con rotta verso l'Internet gateway)")
+        instance_type = CfnParameter(self, "instancetype", type="String", default="t3.micro",
+                                     allowed_values=INSTANCE_TYPES, description="tipo dell'istanza").value_as_string
 
-        # The code that defines your stack goes here
-        # Create Basic VPC
-        #        vpc = ec2.Vpc(
-        #            self,
-        #            "MyVpc",
-        #            max_azs=2,
-        #            subnet_configuration=[
-        #                ec2.SubnetConfiguration(
-        #                    name="public-subnet-1",
-        #                    subnet_type=ec2.SubnetType.PUBLIC,
-        #                    cidr_mask=24,
-        #                )
-        #            ],
-        #        )
-#see https://docs.aws.amazon.com/cdk/api/v2/python/aws_cdk.aws_ec2/Vpc.html
-#see from_vpc_attributes method
-        vpc = ec2.Vpc.from_vpc_attributes(self, "VPC",
-            availability_zones=["eu-west-1b"],
-            # This imports the default VPC but you can also
-            # specify a 'vpcName' or 'tags'.
-            vpc_id=self.vpc_id,
-            # is_default=False, # TypeError: from_vpc_attributes() got an unexpected keyword argument 'is_default'
-            public_subnet_ids =[self.public_subnet_id]
-        )
+        # Security group senza regole in ingresso: Session Manager usa solo connessioni in uscita
+        security_group = ec2.CfnSecurityGroup(self, "SecurityGroup", vpc_id=vpc_id,
+            group_description="Istanza cdk02: nessuna porta in ingresso (Session Manager)",
+            security_group_egress=[ec2.CfnSecurityGroup.EgressProperty(ip_protocol="-1", cidr_ip="0.0.0.0/0")])
 
-        # Create Security Group
-        sec_group = ec2.SecurityGroup(
-            self, "CdkSecurityGroup", vpc=vpc, allow_all_outbound=True
-        )
-        # Create Security Group Ingress Rule
-        sec_group.add_ingress_rule(
-            ec2.Peer.any_ipv4(), ec2.Port.tcp(22), "allow SSH access"
-        )
+        role = iam.Role(self, "InstanceRole", assumed_by=iam.ServicePrincipal("ec2.amazonaws.com"),
+                        managed_policies=[iam.ManagedPolicy.from_aws_managed_policy_name("AmazonSSMManagedInstanceCore")])
+        profile = iam.CfnInstanceProfile(self, "InstanceProfile", roles=[role.role_name])
 
-        # Create Key Pair
-        # https://docs.aws.amazon.com/cdk/api/v2/python/aws_cdk.aws_ec2/CfnKeyPair.html
-        #cfn_key_pair = ec2.CfnKeyPair(
-        #    self,
-        #    "MyCfnKeyPair",
-        #    key_name="cdk-ec2-key-pair",
-        #    tags=[CfnTag(key="key", value="value")],
-        #)
-        #see https://docs.aws.amazon.com/cdk/api/v2/python/aws_cdk.aws_ec2/KeyPair.html
-        #cfn_key_pair = ec2.KeyPair.from_key_pair_attributes(self, "KeyPair",
-        #    key_pair_name=self.key_pair_name,
-        #    type=ec2.KeyPairType.RSA
-        #)
+        # Launch template usato solo per i tag di disco e interfaccia di rete creati all'avvio
+        launch_template = ec2.LaunchTemplate(self, "InstanceTemplate")
 
-        # Create EC2 instance
-        # https://docs.aws.amazon.com/cdk/api/v2/python/aws_cdk.aws_ec2/README.html
-        # https://docs.aws.amazon.com/linux/al2023/ug/what-is-amazon-linux.html
-        instance = ec2.Instance(
-            self,
-            "MyInstance",
-            instance_type=ec2.InstanceType("t2.micro"),
-            machine_image=ec2.MachineImage.latest_amazon_linux2023(),
-            vpc=vpc,
-            security_group=sec_group,
-            associate_public_ip_address=True,
-            key_name=self.key_pair_name # cfn_key_pair.key_name,
-        )
+        self.instance = ec2.CfnInstance(self, "Instance",
+            image_id=ec2.MachineImage.latest_amazon_linux2023().get_image(self).image_id,
+            instance_type=instance_type,
+            iam_instance_profile=profile.ref,
+            launch_template=ec2.CfnInstance.LaunchTemplateSpecificationProperty(
+                launch_template_id=launch_template.launch_template_id,
+                version=launch_template.latest_version_number),
+            network_interfaces=[ec2.CfnInstance.NetworkInterfaceProperty(
+                device_index="0", subnet_id=subnet_id, group_set=[security_group.attr_group_id],
+                associate_public_ip_address=True, delete_on_termination=True)],
+            block_device_mappings=[ec2.CfnInstance.BlockDeviceMappingProperty(device_name="/dev/xvda",
+                ebs=ec2.CfnInstance.EbsProperty(volume_size=8, volume_type="gp3", encrypted=True, delete_on_termination=True))],
+            metadata_options=ec2.CfnInstance.MetadataOptionsProperty(http_tokens="required", http_endpoint="enabled"))
 
-        # Output Instance ID
-        CfnOutput(self, "InstanceId", value=instance.instance_id)
+        CfnOutput(self, "InstanceId", value=self.instance.ref)
+        CfnOutput(self, "PublicIp", value=self.instance.attr_public_ip)
+        CfnOutput(self, "SessionCommand", value=f"aws ssm start-session --target {self.instance.ref} --region {self.region}")

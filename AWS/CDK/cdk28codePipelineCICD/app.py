@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+import os
+
 import aws_cdk as cdk
 
 from cdk28code_pipeline_cicd.cdk28code_pipeline_cicd_stack import Cdk28CodePipelineCicdStack
@@ -18,9 +20,10 @@ SYNTHESIZER = cdk.DefaultStackSynthesizer(
     bootstrap_stack_version_ssm_parameter="/cdk-bootstrap/alnao/dev/version",
 )
 
-Cdk28CodePipelineCicdStack(app, "Cdk28CodePipelineCicdStack",
+Cdk28CodePipelineCicdStack(app, "aws-py-cdk28",
     synthesizer=SYNTHESIZER,
-    # stack senza env: account e region sono quelli del profilo AWS usato da cdk deploy
+    # account e region del profilo AWS usato da cdk deploy: servono a CDK per leggere la VPC di default
+    env=cdk.Environment(account=os.getenv("CDK_DEFAULT_ACCOUNT"), region=os.getenv("CDK_DEFAULT_REGION")),
     )
 
 app.synth()

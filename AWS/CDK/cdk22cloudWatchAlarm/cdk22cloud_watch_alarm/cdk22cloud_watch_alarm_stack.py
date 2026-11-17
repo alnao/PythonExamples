@@ -23,6 +23,8 @@ from aws_cdk import (
 )
 from constructs import Construct
 
+from .naming import nome_risorsa
+
 # lo stack di base e' quello del progetto cdk21autoScalingWordpress, nella cartella accanto
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "cdk21autoScalingWordpress"))
 from cdk21auto_scaling_wordpress.cdk21auto_scaling_wordpress_stack import Cdk21AutoScalingWordpressStack  # noqa: E402
@@ -38,7 +40,7 @@ class Cdk22CloudWatchAlarmStack(Cdk21AutoScalingWordpressStack):
         prefix = self.stack_name
 
         # Topic SNS delle notifiche, email facoltativa da confermare con il link che arriva
-        topic = sns.Topic(self, "AlarmTopic", topic_name=f"{prefix}-Alarms", display_name="Allarmi WordPress cdk22")
+        topic = sns.Topic(self, "AlarmTopic", topic_name=nome_risorsa(self, "Alarms"), display_name="Allarmi WordPress cdk22")
         email = self.node.try_get_context("alarm_email")
         if email:
             topic.add_subscription(subscriptions.EmailSubscription(email))
@@ -59,14 +61,14 @@ class Cdk22CloudWatchAlarmStack(Cdk21AutoScalingWordpressStack):
                                                    estimated_instance_warmup=Duration.minutes(5))
         scale_down.add_adjustment(adjustment=-1, upper_bound=0)
 
-        self.cpu_high = cloudwatch.Alarm(self, "CpuAlarmHigh", alarm_name=f"{prefix}-CpuHigh", metric=cpu,
+        self.cpu_high = cloudwatch.Alarm(self, "CpuAlarmHigh", alarm_name=nome_risorsa(self, "CpuHigh"), metric=cpu,
             threshold=CPU_HIGH, evaluation_periods=2,
             comparison_operator=cloudwatch.ComparisonOperator.GREATER_THAN_THRESHOLD,
             alarm_description=f"Scale-up se la CPU media supera il {CPU_HIGH}% per 10 minuti")
         self.cpu_high.add_alarm_action(cw_actions.AutoScalingAction(scale_up), notify)
         self.cpu_high.add_ok_action(notify)
 
-        self.cpu_low = cloudwatch.Alarm(self, "CpuAlarmLow", alarm_name=f"{prefix}-CpuLow", metric=cpu,
+        self.cpu_low = cloudwatch.Alarm(self, "CpuAlarmLow", alarm_name=nome_risorsa(self, "CpuLow"), metric=cpu,
             threshold=CPU_LOW, evaluation_periods=2,
             comparison_operator=cloudwatch.ComparisonOperator.LESS_THAN_THRESHOLD,
             alarm_description=f"Scale-down se la CPU media resta sotto il {CPU_LOW}% per 10 minuti")
@@ -75,7 +77,7 @@ class Cdk22CloudWatchAlarmStack(Cdk21AutoScalingWordpressStack):
         # Salute del sito: almeno un server malato per 3 minuti di fila
         unhealthy = self.target_group.metrics.unhealthy_host_count(period=Duration.minutes(1),
                                                                     statistic=cloudwatch.Stats.MAXIMUM)
-        self.unhealthy_alarm = cloudwatch.Alarm(self, "UnhealthyHostsAlarm", alarm_name=f"{prefix}-UnhealthyHosts",
+        self.unhealthy_alarm = cloudwatch.Alarm(self, "UnhealthyHostsAlarm", alarm_name=nome_risorsa(self, "UnhealthyHosts"),
             metric=unhealthy, threshold=1, evaluation_periods=3,
             comparison_operator=cloudwatch.ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD,
             treat_missing_data=cloudwatch.TreatMissingData.NOT_BREACHING,
@@ -86,7 +88,7 @@ class Cdk22CloudWatchAlarmStack(Cdk21AutoScalingWordpressStack):
         # Errori 5xx generati dal load balancer (nessun server sano, timeout, ...)
         errors = self.alb.metrics.http_code_elb(elbv2.HttpCodeElb.ELB_5XX_COUNT, period=Duration.minutes(5),
                                                 statistic=cloudwatch.Stats.SUM)
-        self.errors_alarm = cloudwatch.Alarm(self, "LoadBalancer5xxAlarm", alarm_name=f"{prefix}-LoadBalancer5xx",
+        self.errors_alarm = cloudwatch.Alarm(self, "LoadBalancer5xxAlarm", alarm_name=nome_risorsa(self, "LoadBalancer5xx"),
             metric=errors, threshold=10, evaluation_periods=1,
             comparison_operator=cloudwatch.ComparisonOperator.GREATER_THAN_THRESHOLD,
             treat_missing_data=cloudwatch.TreatMissingData.NOT_BREACHING,
@@ -97,7 +99,7 @@ class Cdk22CloudWatchAlarmStack(Cdk21AutoScalingWordpressStack):
         in_service = cloudwatch.Metric(namespace="AWS/AutoScaling", metric_name="GroupInServiceInstances",
                                        dimensions_map={"AutoScalingGroupName": self.asg.auto_scaling_group_name},
                                        statistic=cloudwatch.Stats.AVERAGE, period=Duration.minutes(1))
-        dashboard = cloudwatch.Dashboard(self, "Dashboard", dashboard_name=f"{prefix}-WordPress",
+        dashboard = cloudwatch.Dashboard(self, "Dashboard", dashboard_name=nome_risorsa(self, "wordpress"),
                                          default_interval=Duration.hours(3))
         dashboard.add_widgets(
             cloudwatch.AlarmStatusWidget(title="Allarmi", width=24, height=3,
@@ -118,4 +120,4 @@ class Cdk22CloudWatchAlarmStack(Cdk21AutoScalingWordpressStack):
         CfnOutput(self, "CpuAlarmHighName", value=self.cpu_high.alarm_name)
         CfnOutput(self, "DashboardUrl",
                   value=f"https://{self.region}.console.aws.amazon.com/cloudwatch/home?region={self.region}"
-                        f"#dashboards/dashboard/{prefix}-WordPress")
+                        f"#dashboards/dashboard/{nome_risorsa(self, 'wordpress')}")

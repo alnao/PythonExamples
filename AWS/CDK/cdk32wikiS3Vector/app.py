@@ -20,7 +20,7 @@ SYNTHESIZER = cdk.DefaultStackSynthesizer(
     bootstrap_stack_version_ssm_parameter="/cdk-bootstrap/alnao/dev/version",
 )
 
-Cdk32WikiS3VectorStack(app, "Cdk32WikiS3VectorStack",
+Cdk32WikiS3VectorStack(app, "aws-py-cdk32",
     synthesizer=SYNTHESIZER,
     # cartella con boto3 per le Lambda creata da build_layer.sh
     layer_dir=app.node.try_get_context("layer_dir") or "layer",

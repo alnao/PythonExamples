@@ -18,7 +18,7 @@ SYNTHESIZER = cdk.DefaultStackSynthesizer(
     bootstrap_stack_version_ssm_parameter="/cdk-bootstrap/alnao/dev/version",
 )
 
-Cdk30WebSocketStack(app, "Cdk30WebSocketStack",
+Cdk30WebSocketStack(app, "aws-py-cdk30",
     synthesizer=SYNTHESIZER,
     # stack senza env: account e region sono quelli del profilo AWS usato da cdk deploy
     )

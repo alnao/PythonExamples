@@ -18,7 +18,7 @@ SYNTHESIZER = cdk.DefaultStackSynthesizer(
     bootstrap_stack_version_ssm_parameter="/cdk-bootstrap/alnao/dev/version",
 )
 
-Cdk25VpcEndpointStack(app, "Cdk25VpcEndpointStack",
+Cdk25VpcEndpointStack(app, "aws-py-cdk25",
     synthesizer=SYNTHESIZER,
     # stack senza env: account e region sono quelli del profilo AWS usato da cdk deploy
     )

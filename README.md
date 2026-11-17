@@ -37,7 +37,7 @@ Attività in corso e le prossime evoluzioni sono descritte nel file [ROADMAP](./
 | AI | [`📁`](./AI/Qwen/) Qwen | esempio basato su qwen e docker, basato sul video [1 Minute MUCH SMARTER Chat Bot](https://www.youtube.com/watch?v=YWUvD6qe56g) |
 | AI | [`📁`](./AI/RAG/) RAG | mini-progetto di RAG che importa delle annotazioni, salvandole in un database vettoriale e poi modulo di ricerca, ispirato al video [Come implemento l'AI in Typescript](https://www.youtube.com/watch?v=xDOUTqlnJuY) <br /> in futuro sarà evoluto per integratsi con il sistema [AlNao J-Annotazioni](https://github.com/alnao/JavaSpringBootExample) *coming soon* |
 | <img src="https://img.shields.io/badge/AWS-FF9900?logo=AmazonAWS&logoColor=white"  height="32"  /> | [`📁`](./AWS/Bedrock/) Bedrock | un sistema RAG (Retrieval-Augmented Generation) su EC2 con Amazon Bedrock (Converse API), ChromaDB e S3: carica documenti, testi e immagini, li indicizza e risponde alle domande in italiano citando le fonti, con backup dell'indice su S3, chiave API e tabella dei costi |
-| <img src="https://img.shields.io/badge/AWS-FF9900?logo=AmazonAWS&logoColor=white"  height="32" /> | [`📁`](./AWS/CDK/) CDK | Esempi per la creazione di risorse tramite la libreria CDK. Gli esempi coprono i principali servizi come bucket S3, Ec2, CloudFront, Lambda, Step function, Api gateway, Dynamo, Glue, SQS, SNS, EFS, ASG e ALB, poi WordPress su Auto Scaling con RDS ed EFS, allarmi CloudWatch, ECR, ECS su EC2, VPC con endpoint e Client VPN, una blockchain su Lambda, EKS, una pipeline CI/CD con CodePipeline e Fargate, GraphQL con AppSync, un gioco con API Gateway WebSocket, Elastic Beanstalk e i RAG con Bedrock e S3 Vectors.<br/>Per ogni progettino c'è un file README dedicato. <br />Il bootstrap dell'account, con nomi e tag del repository, è in [`AWS/CDK/bootstrap`](./AWS/CDK/bootstrap/).
+| <img src="https://img.shields.io/badge/AWS-FF9900?logo=AmazonAWS&logoColor=white"  height="32" /> | [`📁`](./AWS/CDK/) CDK | Esempi per la creazione di risorse tramite la libreria CDK. Gli esempi coprono i principali servizi come bucket S3, Ec2, CloudFront, Lambda, Step function, Api gateway, Dynamo, Lambda authorizer JWT, RDS e Aurora, Glue, SQS, SNS, Elastic IP, EFS, ASG e ALB, un'applicazione serverless di utility sui file S3 (zip, Excel, CSV verso Aurora Serverless con la Data API), poi WordPress su Auto Scaling con RDS ed EFS, allarmi CloudWatch, ECR, ECS su EC2, VPC con endpoint e Client VPN, una blockchain su Lambda, EKS, una pipeline CI/CD con CodePipeline e Fargate, GraphQL con AppSync, un gioco con API Gateway WebSocket, Elastic Beanstalk e i RAG con Bedrock e S3 Vectors.<br/>Per ogni progettino c'è un file README dedicato. <br />Il bootstrap dell'account, con nomi e tag del repository, è in [`AWS/CDK/bootstrap`](./AWS/CDK/bootstrap/).
 | <img src="https://img.shields.io/badge/AWS-FF9900?logo=AmazonAWS&logoColor=white"  height="32" /> | [`📁`](./AWS/Glue/) Glue | Semplici esempi creato manualmente che elabora un file csv con una struttura ben definita. <br/> Esempi per importare in database RDS SqlServer il contenuto di un file CSV (funziona anche con file di grandi dimensioni a differenze di una lambda che andrebbe in errore per timeout) |
 | <img src="https://img.shields.io/badge/AWS-FF9900?logo=AmazonAWS&logoColor=white"  height="32" /> | [`📁`](./AWS/Lambda/) Lambda | Semplici esempi di funzioni AWS-Lambda scritte in python con, per maggiori dettagli vedere il README nella cartella e il [sito ufficiale di serverless](https://www.serverless.com/) |
 | <img src="https://img.shields.io/badge/AWS-FF9900?logo=AmazonAWS&logoColor=white"  height="32" /> | [`📁`](./AWS/Manager/)  Manager | **AlNao AWS Manager**: *Applicazione web* Flask e Bootstrap che riunisce in un'unica interfaccia i tool di Managers: Home con il riepilogo di costi e risorse attive, Cost Explorer, Panoramic, Tag Manager, Manager di 26 servizi AWS, CloudWatch e le risorse gestite da Terraform e CloudFormation, con profilo e region (anche tutte insieme) e conferma di ogni modifica. Vedere il [README](./AWS/Manager/README.md) |
@@ -441,6 +441,18 @@ Attività in corso e le prossime evoluzioni sono descritte nel file [ROADMAP](./
   - [Flask](https://www.youtube.com/watch?v=pXMwAD9zMeg)
   - [Django](https://www.youtube.com/watch?v=EEiqGjCNLRs)
 
+
+## Changelog
+| Data | Modifica |
+|------|----------|
+| 2026-01-11 | Esempio FromOthersSites/ISSLivePosition |
+| 2026-02-23 | Esempi AI/LLama e LiteLLM |
+| 2026-03-02 | AI/BuildLargeLanguageModel: primi esempi del capitolo 5 |
+| 2026-03-06 | AI/Copilot: esempio simple prompt |
+| 2026-11-09 | Docker/16SQLAlchemyPostgres, DataScientist Polars e DuckDB, Simple GuiTextual e Pytest |
+| 2026-11-10 | AWS CDK: esempi da 21 a 31 ispirati agli esempi CloudFormation |
+| 2026-11-17 | AWS CDK: esempi 01-10, 13, 15, 16, 18 e 20 riscritti nello stile dei progetti recenti, cdk12 completato (porting dell'Esempio12 CloudFormation), README e test del cdk14; sezione Changelog in tutti i README |
+| 2026-11-17 | AWS CDK: nomi uniformi in tutti gli esempi, stack `aws-py-cdkXX` e risorse `aws-py-cdkXX-<servizio>` uguali al tag `Name` (bucket con l'account, ruoli IAM con la region) |
 
 
 # &lt; AlNao /&gt;

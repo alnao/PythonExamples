@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+import os
+
 import aws_cdk as cdk
 
 from cdk31elastic_beanstalk.cdk31elastic_beanstalk_stack import Cdk31ElasticBeanstalkStack
@@ -18,9 +20,10 @@ SYNTHESIZER = cdk.DefaultStackSynthesizer(
     bootstrap_stack_version_ssm_parameter="/cdk-bootstrap/alnao/dev/version",
 )
 
-Cdk31ElasticBeanstalkStack(app, "Cdk31ElasticBeanstalkStack",
+Cdk31ElasticBeanstalkStack(app, "aws-py-cdk31",
     synthesizer=SYNTHESIZER,
-    # stack senza env: account e region sono quelli del profilo AWS usato da cdk deploy
+    # account e region del profilo AWS usato da cdk deploy: servono a CDK per leggere la VPC di default
+    env=cdk.Environment(account=os.getenv("CDK_DEFAULT_ACCOUNT"), region=os.getenv("CDK_DEFAULT_REGION")),
     )
 
 app.synth()

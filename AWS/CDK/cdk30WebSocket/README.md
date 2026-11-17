@@ -53,6 +53,7 @@ EventBridge rate(1 day) ── Lambda Cleanup ── toglie i giocatori inattivi
 ├── app.py                          # 🚀 app CDK: tag standard, bootstrap alnao-dev-cdk
 ├── cdk30web_socket/
 │   ├── cdk30web_socket_stack.py    # 🏗️ tabelle, segreto, Lambda, WebSocket API, HTTP API, regola, sito
+│   ├── naming.py                   # 🏷️ nomi aws-py-cdk30-<servizio> e tag Name di ogni risorsa
 │   └── tags.py                     # 🏷️ tag standard e apply_tags (usata da app.py e dai test)
 ├── lambda/
 │   ├── game.py                     # 🎲 regole del gioco (tabelle e invio dei messaggi passati dall'esterno)
@@ -94,7 +95,7 @@ Al termine `cdk deploy` stampa `SiteUrl` (la prima distribuzione CloudFront impi
 
 Prova da riga di comando (`wscat` si installa con `npm install -g wscat`):
 ```bash
-out() { aws cloudformation describe-stacks --stack-name Cdk30WebSocketStack --query "Stacks[0].Outputs[?OutputKey=='$1'].OutputValue" --output text; }
+out() { aws cloudformation describe-stacks --stack-name aws-py-cdk30 --query "Stacks[0].Outputs[?OutputKey=='$1'].OutputValue" --output text; }
 API=$(out HttpApiUrl); WS=$(out WebSocketUrl)
 curl -s -X POST $API/set-number -H "Content-Type: application/json" -d '{"nickname": "Alberto", "number": 42}'
 curl -s -X POST $API/set-number -H "Content-Type: application/json" -d '{"nickname": "Andrea1", "number": 13}'
@@ -103,21 +104,21 @@ curl -s -X POST $API/guess-number -H "Content-Type: application/json" -d '{"atta
 curl -s $API/scores
 curl -s $API/matches
 
-KEY=$(aws secretsmanager get-secret-value --secret-id Cdk30WebSocketStack-AdminKey --query SecretString --output text)
+KEY=$(aws secretsmanager get-secret-value --secret-id aws-py-cdk30-admin-key --query SecretString --output text)
 curl -s -X POST $API/admin/broadcast -H "X-Admin-Key: $KEY" -H "Content-Type: application/json" -d '{"text": "Benvenuti!"}'
 ```
 
 Comandi utili:
 ```bash
-aws dynamodb scan --table-name Cdk30WebSocketStack-Players --query "Items[].[nickname.S,score.N,connectionId.S]" --output table
-aws logs tail /aws/lambda/Cdk30WebSocketStack-Api --follow
-aws logs tail /aws/lambda/Cdk30WebSocketStack-WebSocket --follow
-aws lambda invoke --function-name Cdk30WebSocketStack-Cleanup /dev/stdout   # pulizia manuale
+aws dynamodb scan --table-name aws-py-cdk30-players --query "Items[].[nickname.S,score.N,connectionId.S]" --output table
+aws logs tail /aws/lambda/aws-py-cdk30-api --follow
+aws logs tail /aws/lambda/aws-py-cdk30-web-socket --follow
+aws lambda invoke --function-name aws-py-cdk30-cleanup /dev/stdout   # pulizia manuale
 ```
 
 Cosa succede se un giocatore chiude il browser senza scollegarsi: API Gateway chiude la connessione e chiama `$disconnect`, che toglie il `connectionId`; il giocatore resta nel gioco con numero e punti, ma non riceve più notizie finché non rientra. Se una notifica trova una connessione già chiusa (`GoneException`), la Lambda toglie il `connectionId` da sola. API Gateway chiude comunque le connessioni inattive dopo 10 minuti e tutte dopo 2 ore: la pagina manda un ping ogni 5 minuti.
 
-**Tag**: tutte le risorse hanno i tag standard del repository (`Project=Development.aws.py-CDK.cdk30WebSocket`, `ManagedBy=CDK`), comprese le Lambda di supporto di CDK (copia del sito, svuotamento del bucket). Non hanno tag solo i tipi che CloudFormation non permette di taggare: route e integrazioni di API Gateway, OAC, layer Lambda, permessi Lambda, policy IAM inline, policy del bucket.
+**Tag**: tutte le risorse hanno i tag standard del repository (`Project=Development.aws.py-CDK.cdk30WebSocket`, `ManagedBy=CDK`), comprese le Lambda di supporto di CDK (copia del sito, svuotamento del bucket). Non hanno tag solo i tipi che CloudFormation non permette di taggare: route e integrazioni di API Gateway, OAC, layer Lambda, permessi Lambda, policy IAM inline, policy del bucket. Il tag `Name` di ogni risorsa è uguale al suo nome (`aws-py-cdk30-<servizio>`, vedi `naming.py`).
 
 
 ## 💰 Analisi dei Costi
@@ -147,7 +148,7 @@ cdk destroy
 aws resourcegroupstaggingapi get-resources --tag-filters Key=Project,Values=Development.aws.py-CDK.cdk30WebSocket --query "ResourceTagMappingList[].ResourceARN" --output text
 ```
 - tabelle (con giocatori e partite), segreto, Lambda, log group, API, regola, distribuzione CloudFront e bucket (svuotato da CDK) si cancellano con lo stack
-- la Lambda di CDK che svuota il bucket scrive in un log group creato da Lambda, senza tag e non cancellato dallo stack: `aws logs describe-log-groups --log-group-name-prefix /aws/lambda/Cdk30WebSocketStack` e `aws logs delete-log-group --log-group-name <nome>`
+- la Lambda di CDK che svuota il bucket scrive in un log group creato da Lambda, senza tag e non cancellato dallo stack: `aws logs describe-log-groups --log-group-name-prefix /aws/lambda/aws-py-cdk30` e `aws logs delete-log-group --log-group-name <nome>`
 - il bootstrap resta (condiviso con gli altri progetti CDK): `../bootstrap/bootstrap.sh destroy <region>` quando nella region non ci sono più stack CDK
 
 
@@ -156,6 +157,16 @@ aws resourcegroupstaggingapi get-resources --tag-filters Key=Project,Values=Deve
 - 📇 **Indice sui numeri** e **tabella delle connessioni** per evitare gli `scan` con molti giocatori
 - ⏰ **Regole a tempo** dell'idea originale: giocatore eliminato se non sceglie un numero entro un minuto, o se non lo cambia ogni 3 ore (EventBridge Scheduler)
 - 🔁 Versione con le **subscription di AppSync** al posto di API Gateway WebSocket, per confrontare costi e complessità
+
+
+## Changelog
+| Data | Modifica |
+|------|----------|
+| 2026-11-10 | Prima versione dell'esempio, ispirata all'esempio CloudFormation corrispondente |
+| 2026-11-17 | Revisione degli esempi CDK: test eseguiti e tag standard verificati su tutte le risorse del template sintetizzato, nessuna modifica al codice |
+| 2026-11-17 | Log group dello stack (tag standard, 7 giorni, cancellato al destroy) anche per le Lambda di supporto di CDK, che prima creavano da sole log group senza tag (es. /aws/lambda/<stack>-CustomS3AutoDeleteObjectsCustom-...); i ruoli delle Lambda scrivono solo nel proprio log group (senza AWSLambdaBasicExecutionRole), test dedicato |
+| 2026-11-17 | Nomi delle risorse aws-py-cdk30-<servizio> uguali al tag Name (naming.py comune a tutti gli esempi): stack aws-py-cdk30, bucket S3 con l'account alla fine, ruoli e instance profile IAM con la region, anche le risorse create da CDK; test test_all_resources_named |
+| 2026-11-17 | Tag Name aws-py-cdk30 anche sullo stack CloudFormation (aspect PhysicalNames di naming.py), test test_stack_tags |
 
 
 # &lt; AlNao /&gt;

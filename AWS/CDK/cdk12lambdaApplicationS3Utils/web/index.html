@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="it">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>cdk12 - Lambda Application S3 Utils</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+    <!-- config.js e' scritto da CDK al deploy con l'URL delle API (window.API_ENDPOINT_CONFIG) -->
+    <script src="config.js"></script>
+</head>
+<body class="bg-light">
+<div class="container py-4">
+    <h1 class="h3">cdk12 - Lambda Application S3 Utils</h1>
+    <p class="text-muted small">API: <code id="apiEndpoint"></code></p>
+
+    <div class="row g-4">
+        <div class="col-lg-6">
+            <div class="card h-100"><div class="card-body">
+                <h2 class="h5">1. Carica uno zip</h2>
+                <p class="small text-muted">Il file va in INPUT/, viene estratto in DEZIPPED/, gli Excel diventano CSV e i CSV finiscono nel database.</p>
+                <input type="file" id="zipFile" accept=".zip" class="form-control mb-2">
+                <button class="btn btn-primary" onclick="uploadZip()">Carica</button>
+                <div id="uploadResult" class="mt-2 small"></div>
+            </div></div>
+        </div>
+        <div class="col-lg-6">
+            <div class="card h-100"><div class="card-body">
+                <h2 class="h5">2. File Excel estratti <button class="btn btn-sm btn-outline-secondary" onclick="loadExcel()">aggiorna</button></h2>
+                <ul id="excelList" class="list-group list-group-flush small"></ul>
+            </div></div>
+        </div>
+        <div class="col-12">
+            <div class="card"><div class="card-body">
+                <h2 class="h5">3. Log dei caricamenti (DynamoDB) <button class="btn btn-sm btn-outline-secondary" onclick="loadLogs()">aggiorna</button></h2>
+                <div class="table-responsive"><table class="table table-sm small" id="logTable"></table></div>
+            </div></div>
+        </div>
+        <div class="col-12">
+            <div class="card"><div class="card-body">
+                <h2 class="h5">4. Tabella del database <button class="btn btn-sm btn-outline-secondary" onclick="loadRds()">aggiorna</button></h2>
+                <p class="small text-muted">Il database va in pausa dopo 5 minuti senza uso: la prima lettura puo' rispondere "in ripresa", riprovare dopo qualche secondo.</p>
+                <input type="search" id="rdsFilter" class="form-control form-control-sm mb-2" placeholder="filtra le righe" oninput="renderRds()">
+                <div class="table-responsive" style="max-height: 400px"><table class="table table-sm table-striped small" id="rdsTable"></table></div>
+            </div></div>
+        </div>
+        <div class="col-lg-6">
+            <div class="card h-100"><div class="card-body">
+                <h2 class="h5">5. File nuovi (scansione notturna) <button class="btn btn-sm btn-outline-secondary" onclick="loadNewFiles()">aggiorna</button></h2>
+                <ul id="newFiles" class="list-group list-group-flush small"></ul>
+            </div></div>
+        </div>
+        <div class="col-lg-6">
+            <div class="card h-100"><div class="card-body">
+                <h2 class="h5">6. Cerca un file per nome</h2>
+                <div class="input-group mb-2">
+                    <input type="text" id="findName" class="form-control" placeholder="nome del file, es. persone.csv">
+                    <button class="btn btn-outline-primary" onclick="findFile()">Cerca</button>
+                </div>
+                <ul id="findResult" class="list-group list-group-flush small"></ul>
+            </div></div>
+        </div>
+    </div>
+</div>
+<script>
+    // endpoint: parametro "api" nell'URL (per provare la pagina in locale), altrimenti config.js
+    const API = (new URLSearchParams(location.search).get('api') || window.API_ENDPOINT_CONFIG || '').replace(/\/+$/, '');
+    document.getElementById('apiEndpoint').textContent = API || 'non configurato';
+
+    async function api(path) {
+        const response = await fetch(API + path);
+        const body = await response.json();
+        if (!response.ok) throw new Error(body.error || body.errore || body.message || response.status);
+        return body;
+    }
+    function text(value) { return value === null || value === undefined ? '' : String(value); }
+    function listItems(id, items, render) {
+        const list = document.getElementById(id);
+        list.replaceChildren(...(items.length ? items : [null]).map(item => {
+            const li = document.createElement('li');
+            li.className = 'list-group-item';
+            if (item === null) li.textContent = 'nessun elemento'; else render(li, item);
+            return li;
+        }));
+    }
+    function fillTable(id, rows) {
+        const table = document.getElementById(id);
+        const columns = [...new Set(rows.flatMap(r => Object.keys(r)))];
+        const head = '<thead><tr>' + columns.map(c => '<th></th>').join('') + '</tr></thead>';
+        table.innerHTML = head + '<tbody>' + rows.map(r => '<tr>' + columns.map(() => '<td></td>').join('') + '</tr>').join('') + '</tbody>';
+        table.querySelectorAll('th').forEach((th, i) => th.textContent = columns[i]);
+        table.querySelectorAll('tbody tr').forEach((tr, r) => tr.querySelectorAll('td').forEach((td, i) => td.textContent = text(rows[r][columns[i]])));
+    }
+
+    async function uploadZip() {
+        const file = document.getElementById('zipFile').files[0];
+        const result = document.getElementById('uploadResult');
+        if (!file) { result.textContent = 'scegliere un file .zip'; return; }
+        try {
+            const { upload_url, key } = await api('/upload-zip?file_name=' + encodeURIComponent(file.name));
+            const put = await fetch(upload_url, { method: 'PUT', body: file });
+            if (!put.ok) throw new Error('upload su S3: ' + put.status);
+            result.textContent = 'caricato in ' + key + ': tra qualche secondo i file compaiono negli elenchi';
+        } catch (e) { result.textContent = 'errore: ' + e.message; }
+    }
+    async function loadExcel() {
+        listItems('excelList', await api('/list-excel-files'), (li, f) => {
+            const link = document.createElement('a');
+            link.href = '#'; link.textContent = f.name + ' (' + f.size + ' byte)';
+            link.onclick = async (ev) => { ev.preventDefault(); location.href = (await api('/download-excel-file?file_key=' + encodeURIComponent(f.key))).download_url; };
+            li.append(link);
+        });
+    }
+    async function loadLogs() {
+        fillTable('logTable', (await api('/read-dynamodb-data')).map(l => ({
+            data: l.data_caricamento, file: l.nome_file, esito: l.esito_caricamento, righe: l.righe,
+            'colonne ignorate': (l.colonne_ignorate || []).join(', ') })));
+    }
+    let rdsRows = [];
+    async function loadRds() {
+        try { rdsRows = await api('/read-rds-data'); renderRds(); }
+        catch (e) { document.getElementById('rdsTable').innerHTML = ''; document.getElementById('rdsTable').insertAdjacentText('beforeend', 'errore: ' + e.message); }
+    }
+    function renderRds() {
+        const filter = document.getElementById('rdsFilter').value.toLowerCase();
+        fillTable('rdsTable', rdsRows.filter(r => Object.values(r).some(v => text(v).toLowerCase().includes(filter))));
+    }
+    async function loadNewFiles() {
+        listItems('newFiles', await api('/list-new-files'), (li, f) => li.textContent = f.path + '/' + f.nomeFile + ' (' + f.dimensione + ' byte)');
+    }
+    async function findFile() {
+        const name = document.getElementById('findName').value.trim();
+        if (!name) return;
+        listItems('findResult', await api('/find-file?nomeFile=' + encodeURIComponent(name)), (li, f) => li.textContent = (f.path || '(radice)') + ' - nuovo: ' + f.nuovo);
+    }
+    if (API) { loadExcel(); loadLogs(); loadNewFiles(); }
+</script>
+</body>
+</html>

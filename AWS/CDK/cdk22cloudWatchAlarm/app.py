@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+import os
+
 import aws_cdk as cdk
 
 from cdk22cloud_watch_alarm.cdk22cloud_watch_alarm_stack import Cdk22CloudWatchAlarmStack
@@ -18,9 +20,10 @@ SYNTHESIZER = cdk.DefaultStackSynthesizer(
     bootstrap_stack_version_ssm_parameter="/cdk-bootstrap/alnao/dev/version",
 )
 
-Cdk22CloudWatchAlarmStack(app, "Cdk22CloudWatchAlarmStack",
+Cdk22CloudWatchAlarmStack(app, "aws-py-cdk22",
     synthesizer=SYNTHESIZER,
-    # stack senza env: account e region sono quelli del profilo AWS usato da cdk deploy
+    # account e region del profilo AWS usato da cdk deploy: servono a CDK per leggere la VPC di default
+    env=cdk.Environment(account=os.getenv("CDK_DEFAULT_ACCOUNT"), region=os.getenv("CDK_DEFAULT_REGION")),
     )
 
 app.synth()

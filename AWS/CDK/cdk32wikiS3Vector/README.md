@@ -15,7 +15,7 @@ Cosa mostra l'esempio di S3 Vectors:
 - **aggiornamento guidato dagli eventi S3**: un file caricato viene indicizzato, un file cancellato sparisce dall'indice, senza altri comandi
 - **sincronizzazione incrementale** di una cartella: si caricano solo i file nuovi o modificati
 
-Tutto a Francoforte (`eu-central-1`), con i tag standard del repository e i nomi fissi delle risorse.
+Tutto a Francoforte (`eu-central-1`), con i tag standard del repository e i nomi fissi `aws-py-cdk32-<servizio>` delle risorse.
 
 
 ## 🔧 Architettura
@@ -32,6 +32,7 @@ pagina "File" o upload_folder.py ── bucket dei file  files/<percorso>
 ├── app.py                              # 🚀 app CDK: tag standard, bootstrap alnao-dev-cdk, Francoforte
 ├── cdk32wiki_s3_vector/
 │   ├── cdk32wiki_s3_vector_stack.py    # 🏗️ bucket, S3 Vectors, profilo Bedrock, Lambda, API Gateway, CloudFront, segreto
+│   ├── naming.py                       # 🏷️ nomi aws-py-cdk32-<servizio> e tag Name di ogni risorsa
 │   └── tags.py                         # 🏷️ tag standard e apply_tags (usata da app.py e dai test)
 ├── lambda/
 │   ├── wiki.py                         # 🧩 parti per righe, embedding, vettori, filtri
@@ -47,11 +48,11 @@ pagina "File" o upload_folder.py ── bucket dei file  files/<percorso>
 Dove sono i dati:
 | Dato | Dove |
 |------|------|
-| File | bucket `alnao-dev-cdk-cdk32wikis3vector-files`, `files/<percorso>` |
+| File | bucket `aws-py-cdk32-files-<account>`, `files/<percorso>` |
 | Stato dell'indicizzazione | stesso bucket, `status/<percorso>.json` (`uploading`, `processing`, `ready`, `error`, righe, parti) |
-| Vettori | vector bucket `alnao-dev-cdk-cdk32wikis3vector-vectors`, indice `wiki`: un vettore per parte con chiave `<hash del percorso>#00000` |
+| Vettori | vector bucket `aws-py-cdk32-vectors`, indice `aws-py-cdk32-wiki`: un vettore per parte con chiave `<hash del percorso>#00000` |
 | Metadati di ogni vettore | filtrabili: `path`, `folder` (primo livello), `extension`, `line_start`, `line_end`; non filtrabile: `text` |
-| Chiave API | Secrets Manager, segreto `Cdk32WikiS3Vector-ApiKey` |
+| Chiave API | Secrets Manager, segreto `aws-py-cdk32-api-key` |
 
 Come vengono preparati i file:
 - solo file di testo: `.md .txt .py .js .ts .java .html .css .json .yaml .yml .toml .ini .cfg .sh .bat .sql .xml .csv .tf .robot .example`, più `Dockerfile`, `Makefile`, `README`, `LICENSE`; al massimo 1024 KB
@@ -60,24 +61,24 @@ Come vengono preparati i file:
 - i risultati della ricerca sono raggruppati per file (al massimo 3 passaggi per file), dal più simile
 
 
-Le risorse hanno nomi fissi al posto dei suffissi casuali di CDK, comprese quelle create internamente da CDK (svuotamento dei bucket al destroy, notifiche S3, copia del sito), e i tag standard del repository (`Name=aws-py-CDK.cdk32wikiS3Vector`, `Project=Development.aws.py-CDK.cdk32wikiS3Vector`, `ManagedBy=CDK`):
+Le risorse hanno nomi fissi `aws-py-cdk32-<servizio>` (uguali al tag `Name`, dati da `naming.py` come in tutti gli esempi CDK) al posto dei suffissi casuali di CDK, comprese quelle create internamente da CDK (svuotamento dei bucket al destroy, notifiche S3, copia del sito), e i tag standard del repository (`Project=Development.aws.py-CDK.cdk32wikiS3Vector`, `ManagedBy=CDK`, `Name` uguale al nome):
 
 | Risorsa | Nome |
 |---------|------|
-| Stack CloudFormation | `Cdk32WikiS3VectorStack` |
-| Bucket S3 | `alnao-dev-cdk-cdk32wikis3vector-files`, `alnao-dev-cdk-cdk32wikis3vector-site` |
-| Vector bucket e indice | `alnao-dev-cdk-cdk32wikis3vector-vectors`, indice `wiki` |
-| Lambda | `Cdk32WikiS3Vector-Api`, `-Ingest`, `-BucketNotifications`, `-AutoDeleteObjects`, `-BucketDeployment` |
-| Log group (1 settimana) | `/Cdk32WikiS3Vector/Api`, `/Cdk32WikiS3Vector/Ingest`, ... uno per ogni Lambda; le Lambda possono solo scriverci, non creare log group (vedi sotto) |
-| Ruoli IAM | `Cdk32WikiS3VectorStack-<Lambda>ServiceRole` |
-| Policy IAM (inline nei ruoli) | `Cdk32WikiS3VectorStack-<Lambda>ServicePolicy` (la Lambda AutoDeleteObjects non ne ha) |
-| Layer Lambda | `Cdk32WikiS3Vector-Libraries`, `Cdk32WikiS3Vector-AwsCli` |
-| Segreto, HTTP API, OAC | `Cdk32WikiS3Vector-ApiKey`, `Cdk32WikiS3Vector-HttpApi`, `Cdk32WikiS3Vector-Site` |
-| Profilo di inferenza Bedrock | `Cdk32WikiS3Vector-Embedding` |
+| Stack CloudFormation | `aws-py-cdk32` |
+| Bucket S3 | `aws-py-cdk32-files-<account>`, `aws-py-cdk32-site-<account>` |
+| Vector bucket e indice | `aws-py-cdk32-vectors`, indice `aws-py-cdk32-wiki` |
+| Lambda | `aws-py-cdk32-api`, `aws-py-cdk32-ingest`, `aws-py-cdk32-bucket-notifications-handler`, `aws-py-cdk32-s3-auto-delete-objects-handler`, `aws-py-cdk32-cdk-bucket-deployment` (le ultime tre sono le Lambda di supporto di CDK) |
+| Log group (1 settimana) | `/aws/lambda/aws-py-cdk32-api`, `/aws/lambda/aws-py-cdk32-ingest`, ... uno per ogni Lambda; le Lambda possono solo scriverci, non creare log group (vedi sotto) |
+| Ruoli IAM | `aws-py-cdk32-<lambda>-service-role-<region>` (i ruoli delle Lambda di supporto `...-role-<region>`) |
+| Policy IAM | `aws-py-cdk32-<lambda>-service-role-default-policy` (permessi della Lambda) e `aws-py-cdk32-<lambda>-logs-policy` (solo il proprio log group) |
+| Layer Lambda | `aws-py-cdk32-libraries`, `aws-py-cdk32-site-content-aws-cli-layer` |
+| Segreto, HTTP API, OAC | `aws-py-cdk32-api-key`, `aws-py-cdk32-http-api`, `aws-py-cdk32-site` |
+| Profilo di inferenza Bedrock | `aws-py-cdk32-embedding` |
 
 Non hanno tag solo i tipi che CloudFormation non permette di taggare (layer Lambda, policy IAM inline, route e integrazioni di API Gateway, OAC, permessi Lambda, policy dei bucket); il test `test_all_resources_tagged` controlla ogni risorsa del template e fallisce se ne compare una nuova senza tag.
 
-**Costi di Bedrock con i tag**: una chiamata a Titan con l'ID del modello produce un costo senza tag, che in Cost Explorer non arriva a nessun `Project`. Per questo lo stack crea un *application inference profile* `Cdk32WikiS3Vector-Embedding` copiato da Titan, con i tag dello stack, e le Lambda ricevono il suo ARN in `EMBEDDING_MODEL` (InvokeModel lo accetta come `modelId`). Il profilo non costa nulla. Perché il tag compaia in Cost Explorer `Project` deve essere attivato come *cost allocation tag* nella console Billing (una volta per account).
+**Costi di Bedrock con i tag**: una chiamata a Titan con l'ID del modello produce un costo senza tag, che in Cost Explorer non arriva a nessun `Project`. Per questo lo stack crea un *application inference profile* `aws-py-cdk32-embedding` copiato da Titan, con i tag dello stack, e le Lambda ricevono il suo ARN in `EMBEDDING_MODEL` (InvokeModel lo accetta come `modelId`). Il profilo non costa nulla. Perché il tag compaia in Cost Explorer `Project` deve essere attivato come *cost allocation tag* nella console Billing (una volta per account).
 
 Restano con un identificativo generato da AWS solo la distribuzione CloudFront (il dominio `xxxx.cloudfront.net`), l'ID dell'API Gateway e quello del profilo di inferenza (nel suo ARN). I nomi dei bucket sono unici in tutto il mondo e quelli dei ruoli IAM in tutto l'account: lo stack si può installare una sola volta per account.
 
@@ -159,6 +160,14 @@ Il costo fisso è quasi tutto il segreto della chiave API: le ricerche, senza mo
 - 🔄 **Sincronizzazione automatica** dal repository: `upload_folder.py` lanciato da una GitHub Action a ogni push
 - 🔗 **Link ai file** su GitHub con il numero di riga
 - ⚖️ **Confronto** con Bedrock Knowledge Base su S3 Vectors: stessi file, chunking ed embedding gestiti da AWS (il RAG gestito è nel [cdk34bedrockKnowledgeBase](../cdk34bedrockKnowledgeBase/), con la modalità "Solo i brani" simile a questa wiki)
+
+
+## Changelog
+| Data | Modifica |
+|------|----------|
+| 2026-11-17 | Revisione degli esempi CDK: test eseguiti e tag standard verificati su tutte le risorse del template sintetizzato, nessuna modifica al codice |
+| 2026-11-17 | Nomi delle risorse aws-py-cdk32-<servizio> uguali al tag Name (naming.py comune a tutti gli esempi): stack aws-py-cdk32, bucket S3 con l'account alla fine, ruoli e instance profile IAM con la region, anche le risorse create da CDK; test test_all_resources_named; tolto physical_names (nomi e log group delle Lambda di supporto ora da naming.py e tags.py), script upload_folder.py con il nuovo nome dello stack |
+| 2026-11-17 | Tag Name aws-py-cdk32 anche sullo stack CloudFormation (aspect PhysicalNames di naming.py), test test_stack_tags |
 
 
 # &lt; AlNao /&gt;

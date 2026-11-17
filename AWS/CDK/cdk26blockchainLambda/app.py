@@ -18,7 +18,7 @@ SYNTHESIZER = cdk.DefaultStackSynthesizer(
     bootstrap_stack_version_ssm_parameter="/cdk-bootstrap/alnao/dev/version",
 )
 
-Cdk26BlockchainLambdaStack(app, "Cdk26BlockchainLambdaStack",
+Cdk26BlockchainLambdaStack(app, "aws-py-cdk26",
     synthesizer=SYNTHESIZER,
     # stack senza env: account e region sono quelli del profilo AWS usato da cdk deploy
     )

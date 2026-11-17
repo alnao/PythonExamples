@@ -29,7 +29,7 @@ import boto3
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "lambda"))
 from wiki import MAX_FILE_KB, is_supported  # noqa: E402  (stesse regole della Lambda Ingest)
 
-STACK_NAME = "Cdk32WikiS3VectorStack"
+STACK_NAME = "aws-py-cdk32"
 # stima del costo degli embedding: Titan Text Embeddings V2 in eu-central-1, IVA esclusa (verificato sul
 # conto di ottobre 2026: 1,35 milioni di token addebitati 0,27 $); oltre COST_CONFIRM_USD si chiede conferma
 TITAN_USD_PER_MTOKEN = 0.20

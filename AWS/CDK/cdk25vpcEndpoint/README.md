@@ -29,17 +29,18 @@ VPC 10.184.0.0/16 (2 zone)
 ├── subnet pubbliche 10.184.0.0/24, 10.184.1.0/24 ── Internet gateway
 ├── subnet private   10.184.2.0/24, 10.184.3.0/24 ── nessuna uscita su Internet
 ├── endpoint gateway S3 e DynamoDB (rotte in tutte le tabelle di routing)
-└── flow log (REJECT) ── CloudWatch Logs /vpc/<stack>/flow-logs
+└── flow log (REJECT) ── CloudWatch Logs /vpc/aws-py-cdk25/flow-logs
 
 PC ── OpenVPN (TCP 443) ── Client VPN endpoint, client 10.185.0.0/22 ──┬── associazione subnet privata 1
                                                                         └── associazione subnet privata 2
-      split tunnel: solo 10.184.0.0/16 passa nella VPN; DNS 10.184.0.2; log /vpn/<stack>/connections
+      split tunnel: solo 10.184.0.0/16 passa nella VPN; DNS 10.184.0.2; log /vpn/aws-py-cdk25/connections
 ```
 
 ```
 ├── app.py                          # 🚀 app CDK: tag standard, bootstrap alnao-dev-cdk
 ├── cdk25vpc_endpoint/
 │   ├── cdk25vpc_endpoint_stack.py  # 🏗️ VPC, endpoint gateway, flow log, Client VPN facoltativo
+│   ├── naming.py                   # 🏷️ nomi aws-py-cdk25-<servizio> e tag Name di ogni risorsa
 │   └── tags.py                     # 🏷️ tag standard e apply_tags (usata da app.py e dai test)
 ├── tests/unit/                     # 🧪 test dello stack (sintesi locale, senza AWS)
 └── cdk.json, requirements*.txt
@@ -67,9 +68,10 @@ git clone https://github.com/OpenVPN/easy-rsa.git && cd easy-rsa/easyrsa3
 ./easyrsa --san=DNS:server build-server-full server nopass
 ./easyrsa build-client-full client1.domain.tld nopass
 REGION=eu-central-1
-TAGS="Key=Name,Value=aws-py-CDK.cdk25vpcEndpoint Key=Environment,Value=dev Key=Project,Value=Development.aws.py-CDK.cdk25vpcEndpoint Key=Owner,Value=AlNao Key=CostCenter,Value=dev Key=ManagedBy,Value=Sh"
-SERVER=$(aws acm import-certificate --certificate fileb://pki/issued/server.crt --private-key fileb://pki/private/server.key --certificate-chain fileb://pki/ca.crt --tags $TAGS --region $REGION --query CertificateArn --output text)
-CLIENT=$(aws acm import-certificate --certificate fileb://pki/issued/client1.domain.tld.crt --private-key fileb://pki/private/client1.domain.tld.key --certificate-chain fileb://pki/ca.crt --tags $TAGS --region $REGION --query CertificateArn --output text)
+# tag standard, con Name uguale al nome della risorsa (convenzione aws-py-cdk25-<servizio>)
+TAGS="Key=Environment,Value=dev Key=Project,Value=Development.aws.py-CDK.cdk25vpcEndpoint Key=Owner,Value=AlNao Key=CostCenter,Value=dev Key=ManagedBy,Value=Sh"
+SERVER=$(aws acm import-certificate --certificate fileb://pki/issued/server.crt --private-key fileb://pki/private/server.key --certificate-chain fileb://pki/ca.crt --tags $TAGS Key=Name,Value=aws-py-cdk25-server-certificate --region $REGION --query CertificateArn --output text)
+CLIENT=$(aws acm import-certificate --certificate fileb://pki/issued/client1.domain.tld.crt --private-key fileb://pki/private/client1.domain.tld.key --certificate-chain fileb://pki/ca.crt --tags $TAGS Key=Name,Value=aws-py-cdk25-client-certificate --region $REGION --query CertificateArn --output text)
 cd -
 cdk deploy -c server_certificate_arn=$SERVER -c client_certificate_arn=$CLIENT
 ```
@@ -88,10 +90,10 @@ aws ec2 describe-vpcs --filters Name=tag:Project,Values=Development.aws.py-CDK.c
 aws ec2 describe-vpc-endpoints --filters Name=vpc-id,Values=vpc-xxx --query "VpcEndpoints[].[ServiceName,VpcEndpointType,State]" --output table
 aws ec2 describe-client-vpn-endpoints --query "ClientVpnEndpoints[].[ClientVpnEndpointId,Status.Code,DnsName]" --output table
 aws ec2 describe-client-vpn-connections --client-vpn-endpoint-id cvpn-endpoint-xxx
-aws logs tail /vpc/Cdk25VpcEndpointStack/flow-logs --since 10m
+aws logs tail /vpc/aws-py-cdk25/flow-logs --since 10m
 ```
 
-**Tag**: tutte le risorse hanno i tag standard del repository (`Project=Development.aws.py-CDK.cdk25vpcEndpoint`, `ManagedBy=CDK`); il Client VPN endpoint li riceve in `TagSpecifications`, perché CloudFormation non accetta `Tags` su quella risorsa. Non hanno tag solo i tipi che CloudFormation non permette di taggare: rotte, associazioni delle subnet, attacco dell'Internet gateway, endpoint gateway, associazioni e regole del Client VPN, policy IAM inline. I certificati importati con il comando sopra hanno i tag con `ManagedBy=Sh`.
+**Tag**: tutte le risorse hanno i tag standard del repository (`Project=Development.aws.py-CDK.cdk25vpcEndpoint`, `ManagedBy=CDK`); il Client VPN endpoint li riceve in `TagSpecifications`, perché CloudFormation non accetta `Tags` su quella risorsa. Non hanno tag solo i tipi che CloudFormation non permette di taggare: rotte, associazioni delle subnet, attacco dell'Internet gateway, endpoint gateway, associazioni e regole del Client VPN, policy IAM inline. I certificati importati con il comando sopra hanno i tag con `ManagedBy=Sh`. Il tag `Name` di ogni risorsa è uguale al suo nome (`aws-py-cdk25-<servizio>`, vedi `naming.py`).
 
 
 ## 💰 Analisi dei Costi
@@ -130,6 +132,16 @@ aws acm delete-certificate --certificate-arn $CLIENT --region $REGION
 - 🔌 **Endpoint interface** (Secrets Manager, ECR, CloudWatch Logs) per usare le subnet isolate con ECS o Lambda senza NAT
 - 🔀 **Transit Gateway** o **VPC peering** con una seconda VPC
 - 🧭 **Site-to-Site VPN** verso una rete aziendale e **Route 53 Resolver** per il DNS ibrido
+
+
+## Changelog
+| Data | Modifica |
+|------|----------|
+| 2026-11-10 | Prima versione dell'esempio, ispirata all'esempio CloudFormation corrispondente |
+| 2026-11-17 | Revisione degli esempi CDK: test eseguiti e tag standard verificati su tutte le risorse del template sintetizzato, nessuna modifica al codice |
+| 2026-11-17 | Log group dello stack (tag standard, 7 giorni, cancellato al destroy) anche per le Lambda di supporto di CDK, che prima creavano da sole log group senza tag (es. /aws/lambda/<stack>-CustomS3AutoDeleteObjectsCustom-...); i ruoli delle Lambda scrivono solo nel proprio log group (senza AWSLambdaBasicExecutionRole), test dedicato |
+| 2026-11-17 | Nomi delle risorse aws-py-cdk25-<servizio> uguali al tag Name (naming.py comune a tutti gli esempi): stack aws-py-cdk25, bucket S3 con l'account alla fine, ruoli e instance profile IAM con la region, anche le risorse create da CDK; test test_all_resources_named |
+| 2026-11-17 | Tag Name aws-py-cdk25 anche sullo stack CloudFormation (aspect PhysicalNames di naming.py), test test_stack_tags |
 
 
 # &lt; AlNao /&gt;

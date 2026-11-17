@@ -7,7 +7,8 @@ A ogni commit sul branch la pipeline:
 3. Deploy: aggiorna il servizio ECS Fargate con la nuova immagine e copia il frontend nel bucket del sito
 
 Infrastruttura:
-- VPC con sole subnet pubbliche (nessun NAT): i task Fargate hanno un IP pubblico per scaricare l'immagine
+- per default la VPC di default della region e due sue subnet pubbliche (vedi network.py), modificabili con i
+  parametri; nessun NAT: i task Fargate hanno un IP pubblico per scaricare l'immagine
 - servizio Fargate dietro un Application Load Balancer; al primo deploy l'immagine e' costruita da CDK,
   poi la sostituisce la pipeline
 - CloudFront davanti a tutto: / dal bucket S3 privato, /persone e /test dal load balancer (stesso dominio, niente CORS)
@@ -20,6 +21,7 @@ import os
 
 from aws_cdk import (
     CfnOutput,
+    Fn,
     Duration,
     RemovalPolicy,
     SecretValue,
@@ -38,6 +40,10 @@ from aws_cdk import (
     aws_s3 as s3,
 )
 from constructs import Construct
+
+from .naming import nome_risorsa
+
+from .network import lookup_subnets, lookup_vpc, subnet_parameter, vpc_parameter
 
 # progetto Docker/03ApiPersoneNoDb del repository PythonExamples (prima immagine, prima della pipeline)
 APP_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "..", "..", "Docker", "03ApiPersoneNoDb")
@@ -91,17 +97,23 @@ class Cdk28CodePipelineCicdStack(Stack):
         cfg = {k: self.node.try_get_context(k) or v for k, v in DEFAULTS.items()}
 
         # ---- infrastruttura del backend ----
-        vpc = ec2.Vpc(self, "Vpc", ip_addresses=ec2.IpAddresses.cidr("10.186.0.0/16"), max_azs=2, nat_gateways=0,
-                      subnet_configuration=[ec2.SubnetConfiguration(name="Public", subnet_type=ec2.SubnetType.PUBLIC,
-                                                                    cidr_mask=24)])
+        # VPC e subnet: per default quelle di default della region (vedi network.py)
+        default_vpc = lookup_vpc(self)
+        default_subnets = lookup_subnets(default_vpc, 2)
+        vpc_id = vpc_parameter(self, default_vpc)
+        subnet_1 = subnet_parameter(self, "subnetid1", default_subnets[0], "subnet pubblica 1 (load balancer e task)")
+        subnet_2 = subnet_parameter(self, "subnetid2", default_subnets[1], "subnet pubblica 2, in un'altra zona")
+        vpc = ec2.Vpc.from_vpc_attributes(self, "Vpc", vpc_id=vpc_id,
+                                          availability_zones=[Fn.select(0, Fn.get_azs()), Fn.select(1, Fn.get_azs())],
+                                          public_subnet_ids=[subnet_1, subnet_2])
         repository = ecr.Repository(self, "BackendRepository", image_scan_on_push=True,
             removal_policy=RemovalPolicy.DESTROY, empty_on_delete=True,
             lifecycle_rules=[ecr.LifecycleRule(max_image_count=10, description="al massimo 10 immagini")])
 
-        cluster = ecs.Cluster(self, "Cluster", vpc=vpc, cluster_name=prefix)
-        log_group = logs.LogGroup(self, "BackendLogs", log_group_name=f"/ecs/{prefix}-backend",
+        cluster = ecs.Cluster(self, "Cluster", vpc=vpc, cluster_name=nome_risorsa(self, "cluster"))
+        log_group = logs.LogGroup(self, "BackendLogs", log_group_name=f"/ecs/{nome_risorsa(self, 'backend')}",
                                   retention=logs.RetentionDays.ONE_WEEK, removal_policy=RemovalPolicy.DESTROY)
-        task_definition = ecs.FargateTaskDefinition(self, "BackendTask", family=f"{prefix}-backend",
+        task_definition = ecs.FargateTaskDefinition(self, "BackendTask", family=nome_risorsa(self, "backend"),
                                                     cpu=256, memory_limit_mib=512,
                                                     runtime_platform=ecs.RuntimePlatform(
                                                         cpu_architecture=ecs.CpuArchitecture.X86_64,
@@ -113,7 +125,7 @@ class Cdk28CodePipelineCicdStack(Stack):
         repository.grant_pull(task_definition.obtain_execution_role())  # le immagini della pipeline
 
         service = ecs.FargateService(self, "BackendService", cluster=cluster, task_definition=task_definition,
-            service_name="backend", desired_count=1, assign_public_ip=True,
+            service_name=nome_risorsa(self, "backend"), desired_count=1, assign_public_ip=True,
             vpc_subnets=ec2.SubnetSelection(subnet_type=ec2.SubnetType.PUBLIC),
             circuit_breaker=ecs.DeploymentCircuitBreaker(rollback=True),
             min_healthy_percent=100, max_healthy_percent=200, propagate_tags=ecs.PropagatedTagSource.SERVICE)
@@ -154,9 +166,9 @@ class Cdk28CodePipelineCicdStack(Stack):
                 trigger=actions.GitHubTrigger.POLL)
 
         def build_project(name: str, spec: dict, env: dict, privileged: bool = False) -> codebuild.PipelineProject:
-            logs_group = logs.LogGroup(self, f"{name}BuildLogs", log_group_name=f"/aws/codebuild/{prefix}-{name}",
+            logs_group = logs.LogGroup(self, f"{name}BuildLogs", log_group_name=f"/aws/codebuild/{nome_risorsa(self, name)}",
                                        retention=logs.RetentionDays.ONE_WEEK, removal_policy=RemovalPolicy.DESTROY)
-            return codebuild.PipelineProject(self, f"{name}Build", project_name=f"{prefix}-{name}",
+            return codebuild.PipelineProject(self, f"{name}Build", project_name=nome_risorsa(self, name),
                 build_spec=codebuild.BuildSpec.from_object(spec),
                 environment=codebuild.BuildEnvironment(build_image=codebuild.LinuxBuildImage.STANDARD_7_0,
                                                        compute_type=codebuild.ComputeType.SMALL, privileged=privileged),
@@ -175,7 +187,7 @@ class Cdk28CodePipelineCicdStack(Stack):
         artifacts = s3.Bucket(self, "ArtifactBucket", block_public_access=s3.BlockPublicAccess.BLOCK_ALL,
                               enforce_ssl=True, removal_policy=RemovalPolicy.DESTROY, auto_delete_objects=True,
                               lifecycle_rules=[s3.LifecycleRule(expiration=Duration.days(30))])
-        pipeline = codepipeline.Pipeline(self, "Pipeline", pipeline_name=f"{prefix}-pipeline",
+        pipeline = codepipeline.Pipeline(self, "Pipeline", pipeline_name=nome_risorsa(self, "pipeline"),
             pipeline_type=codepipeline.PipelineType.V2, artifact_bucket=artifacts, restart_execution_on_update=True,
             stages=[
                 codepipeline.StageProps(stage_name="Source", actions=[source]),

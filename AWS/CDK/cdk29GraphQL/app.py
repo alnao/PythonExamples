@@ -18,7 +18,7 @@ SYNTHESIZER = cdk.DefaultStackSynthesizer(
     bootstrap_stack_version_ssm_parameter="/cdk-bootstrap/alnao/dev/version",
 )
 
-Cdk29GraphQlStack(app, "Cdk29GraphQlStack",
+Cdk29GraphQlStack(app, "aws-py-cdk29",
     synthesizer=SYNTHESIZER,
     # stack senza env: account e region sono quelli del profilo AWS usato da cdk deploy
     )

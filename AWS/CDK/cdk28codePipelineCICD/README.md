@@ -11,7 +11,7 @@ Una pipeline **AWS CodePipeline** che a ogni commit su GitHub costruisce l'immag
 - **🚀 Deploy su Fargate**: l'azione ECS registra una nuova revisione della task definition con l'immagine del commit e aggiorna il servizio, con *circuit breaker* che torna indietro se i task non partono
 - **🌐 Un solo dominio CloudFront**: `/` dal bucket S3 privato, `/persone*` e `/test` dal load balancer, quindi il frontend chiama le API senza CORS
 - **🔑 Sorgente GitHub** con il token personale in Secrets Manager (secret `github/codepipeline/token`, come l'esempio CloudFormation) oppure con una connessione **AWS CodeConnections** (`-c connection_arn=...`)
-- **💸 Senza NAT**: VPC con sole subnet pubbliche, il task Fargate ha un IP pubblico
+- **💸 Senza NAT**: VPC di default della region e due sue subnet pubbliche (modificabili con i parametri), il task Fargate ha un IP pubblico; la prima versione creava una VPC nuova `10.186.0.0/16`
 
 Al primo `cdk deploy` il servizio parte con un'immagine costruita da CDK dalla cartella locale (così lo stack è subito funzionante); appena creata, la pipeline parte da sola e la sostituisce con quella costruita da GitHub.
 
@@ -44,7 +44,8 @@ browser ── CloudFront ──┬── /, /index.html, /app.js ── bucket 
 ```
 ├── app.py                                # 🚀 app CDK: tag standard, bootstrap alnao-dev-cdk
 ├── cdk28code_pipeline_cicd/
-│   ├── cdk28code_pipeline_cicd_stack.py  # 🏗️ VPC, ECR, ECS Fargate, ALB, CloudFront, CodeBuild, CodePipeline
+│   ├── cdk28code_pipeline_cicd_stack.py  # 🏗️ VPC di default, ECR, ECS Fargate, ALB, CloudFront, CodeBuild, CodePipeline
+│   ├── naming.py                         # 🏷️ nomi aws-py-cdk28-<servizio> e tag Name di ogni risorsa
 │   └── tags.py                           # 🏷️ tag standard e apply_tags (usata da app.py e dai test)
 ├── frontend/                             # 🌐 index.html e app.js, pubblicati dalla pipeline
 ├── tests/unit/                           # 🧪 test dello stack (sintesi locale, senza AWS)
@@ -60,7 +61,7 @@ Prerequisiti: Python 3.12+, Node.js e AWS CDK v2 (`npm install -g aws-cdk`), cre
    - token personale *classic* di GitHub (scope `repo`; per un repository pubblico basta `public_repo`) in Secrets Manager, come lo script `create_github_secret.sh` dell'esempio CloudFormation:
      ```bash
      REGION=eu-central-1
-     TAGS="Key=Name,Value=aws-py-CDK.cdk28codePipelineCICD Key=Environment,Value=dev Key=Project,Value=Development.aws.py-CDK.cdk28codePipelineCICD Key=Owner,Value=AlNao Key=CostCenter,Value=dev Key=ManagedBy,Value=Sh"
+     TAGS="Key=Name,Value=aws-py-cdk28-github-token Key=Environment,Value=dev Key=Project,Value=Development.aws.py-CDK.cdk28codePipelineCICD Key=Owner,Value=AlNao Key=CostCenter,Value=dev Key=ManagedBy,Value=Sh"
      read -s -p "GitHub token: " GITHUB_TOKEN; echo
      aws secretsmanager create-secret --name github/codepipeline/token --secret-string "$GITHUB_TOKEN" --tags $TAGS --region $REGION
      ```
@@ -83,25 +84,27 @@ Al termine `cdk deploy` stampa `SiteUrl`, `BackendUrl`, `RepositoryUri` e `Pipel
 
 Prova:
 ```bash
-SITE=$(aws cloudformation describe-stacks --stack-name Cdk28CodePipelineCicdStack --query "Stacks[0].Outputs[?OutputKey=='SiteUrl'].OutputValue" --output text)
+SITE=$(aws cloudformation describe-stacks --stack-name aws-py-cdk28 --query "Stacks[0].Outputs[?OutputKey=='SiteUrl'].OutputValue" --output text)
 curl $SITE/test
 curl $SITE/persone
 curl -X POST $SITE/persone -H "Content-Type: application/json" -d '{"nome": "Andrea", "cognome": "Nao"}'
 ```
 
+**VPC e subnet**: per default lo stack usa la **VPC di default** della region e le sue subnet: CDK le legge al `cdk synth`/`cdk deploy` (chiamate di sola lettura con le credenziali del deploy) e le salva in `cdk.context.json`, che non va su git. I valori sono i default dei parametri `vpcid`, `subnetid1` e `subnetid2`, che si possono cambiare al deploy (`cdk deploy --parameters vpcid=vpc-xxx --parameters ...`, tutti i parametri della rete insieme); con `cdk deploy -c vpc_id=vpc-xxx` i default vengono presi da un'altra VPC. Se la region non ha più la VPC di default si ricrea con `aws ec2 create-default-vpc`.
+
 Comandi utili:
 ```bash
-PIPELINE=Cdk28CodePipelineCicdStack-pipeline
+PIPELINE=aws-py-cdk28-pipeline
 aws codepipeline start-pipeline-execution --name $PIPELINE           # esecuzione manuale
 aws codepipeline get-pipeline-state --name $PIPELINE --query "stageStates[].[stageName,latestExecution.status]" --output table
 aws codepipeline list-pipeline-executions --pipeline-name $PIPELINE --max-items 5
-aws logs tail /aws/codebuild/Cdk28CodePipelineCicdStack-backend --since 1h
-aws ecs describe-services --cluster Cdk28CodePipelineCicdStack --services backend --query "services[0].[taskDefinition,runningCount,deployments[0].rolloutState]"
+aws logs tail /aws/codebuild/aws-py-cdk28-backend --since 1h
+aws ecs describe-services --cluster aws-py-cdk28-cluster --services aws-py-cdk28-backend --query "services[0].[taskDefinition,runningCount,deployments[0].rolloutState]"
 ```
 
 Nota: un nuovo `cdk deploy` riporta il servizio all'immagine costruita da CDK (la task definition dello stack); la pipeline successiva rimette quella del commit. Per evitarlo si può rilanciare la pipeline subito dopo il deploy.
 
-**Tag**: tutte le risorse dello stack hanno i tag standard del repository (`Project=Development.aws.py-CDK.cdk28codePipelineCICD`, `ManagedBy=CDK`); il servizio propaga i tag ai task. Non hanno tag solo i tipi che CloudFormation non permette di taggare: rotte, associazioni delle subnet, attacco dell'Internet gateway, regole dei security group, listener, OAC, policy IAM inline, policy dei bucket. Il secret del token è creato con il comando sopra (`ManagedBy=Sh`); le revisioni della task definition registrate dalla pipeline non hanno tag.
+**Tag**: tutte le risorse dello stack hanno i tag standard del repository (`Project=Development.aws.py-CDK.cdk28codePipelineCICD`, `ManagedBy=CDK`); il servizio propaga i tag ai task. Non hanno tag solo i tipi che CloudFormation non permette di taggare: regole dei security group, listener, OAC, policy IAM inline, policy dei bucket. Il secret del token è creato con il comando sopra (`ManagedBy=Sh`); le revisioni della task definition registrate dalla pipeline non hanno tag. Il tag `Name` di ogni risorsa è uguale al suo nome (`aws-py-cdk28-<servizio>`, vedi `naming.py`).
 
 
 ## 💰 Analisi dei Costi
@@ -129,7 +132,7 @@ Il costo fisso è quasi tutto load balancer, IP pubblici e Fargate: la pipeline 
 ```bash
 cdk destroy
 # revisioni della task definition registrate dalla pipeline (restano INACTIVE)
-aws ecs list-task-definitions --family-prefix Cdk28CodePipelineCicdStack-backend --query taskDefinitionArns --output text
+aws ecs list-task-definitions --family-prefix aws-py-cdk28-backend --query taskDefinitionArns --output text
 aws ecs deregister-task-definition --task-definition <arn>   # solo quelle ancora ACTIVE
 aws ecs delete-task-definitions --task-definitions <arn>
 # token GitHub, se creato solo per questo esempio
@@ -138,7 +141,7 @@ aws resourcegroupstaggingapi get-resources --tag-filters Key=Project,Values=Deve
 ```
 - repository ECR (con le immagini), bucket del sito e degli artefatti (svuotati da CDK), log group, pipeline e progetti CodeBuild si cancellano con lo stack
 - l'immagine iniziale costruita da CDK resta nel repository ECR del bootstrap `alnao-dev-cdk`, condiviso con gli altri progetti
-- le Lambda di supporto di CDK (svuotamento dei bucket, regole del security group di default) scrivono in log group creati da Lambda, senza tag e non cancellati dallo stack: `aws logs describe-log-groups --log-group-name-prefix /aws/lambda/Cdk28CodePipelineCicdStack` e `aws logs delete-log-group --log-group-name <nome>`
+- le Lambda di supporto di CDK (svuotamento dei bucket, regole del security group di default) scrivono in log group creati da Lambda, senza tag e non cancellati dallo stack: `aws logs describe-log-groups --log-group-name-prefix /aws/lambda/aws-py-cdk28` e `aws logs delete-log-group --log-group-name <nome>`
 - il bootstrap resta (condiviso con gli altri progetti CDK): `../bootstrap/bootstrap.sh destroy <region>` quando nella region non ci sono più stack CDK
 
 
@@ -147,6 +150,17 @@ aws resourcegroupstaggingapi get-resources --tag-filters Key=Project,Values=Deve
 - 🧪 **Fase di test** (pytest o Robot Framework) prima del deploy e **approvazione manuale** per un ambiente di produzione
 - 🔵🟢 **Deploy blue/green** con CodeDeploy al posto del rolling update di ECS
 - 🔒 **Load balancer raggiungibile solo da CloudFront** (prefix list `com.amazonaws.global.cloudfront.origin-facing`) e **dominio personalizzato** con ACM e Route 53
+
+
+## Changelog
+| Data | Modifica |
+|------|----------|
+| 2026-11-10 | Prima versione dell'esempio, ispirata all'esempio CloudFormation corrispondente |
+| 2026-11-17 | Revisione degli esempi CDK: test eseguiti e tag standard verificati su tutte le risorse del template sintetizzato, nessuna modifica al codice |
+| 2026-11-17 | VPC e subnet per default quelle di default della region (lette da CDK al synth, salvate in cdk.context.json ignorato da git), sempre modificabili con i parametri o con -c vpc_id=... (prima lo stack creava una VPC nuova) |
+| 2026-11-17 | Log group dello stack (tag standard, 7 giorni, cancellato al destroy) anche per le Lambda di supporto di CDK, che prima creavano da sole log group senza tag (es. /aws/lambda/<stack>-CustomS3AutoDeleteObjectsCustom-...); i ruoli delle Lambda scrivono solo nel proprio log group (senza AWSLambdaBasicExecutionRole), test dedicato |
+| 2026-11-17 | Nomi delle risorse aws-py-cdk28-<servizio> uguali al tag Name (naming.py comune a tutti gli esempi): stack aws-py-cdk28, bucket S3 con l'account alla fine, ruoli e instance profile IAM con la region, anche le risorse create da CDK; test test_all_resources_named |
+| 2026-11-17 | Tag Name aws-py-cdk28 anche sullo stack CloudFormation (aspect PhysicalNames di naming.py), test test_stack_tags |
 
 
 # &lt; AlNao /&gt;

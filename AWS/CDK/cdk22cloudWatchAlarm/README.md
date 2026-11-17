@@ -13,10 +13,10 @@ Allarmi **Amazon CloudWatch** sull'infrastruttura WordPress del [cdk21autoScalin
 
 | Allarme | Metrica | Condizione | Azione |
 |---------|---------|------------|--------|
-| `<stack>-CpuHigh` | `AWS/EC2 CPUUtilization` media dell'ASG, 5 minuti | > 84 per 2 periodi | +1 server, notifica (anche al ritorno OK) |
-| `<stack>-CpuLow` | come sopra | < 42 per 2 periodi | -1 server |
-| `<stack>-UnhealthyHosts` | `UnHealthyHostCount` massimo del target group, 1 minuto | ≥ 1 per 3 periodi | notifica (anche al ritorno OK) |
-| `<stack>-LoadBalancer5xx` | `HTTPCode_ELB_5XX_Count` somma, 5 minuti | > 10 | notifica |
+| `aws-py-cdk22-cpu-high` | `AWS/EC2 CPUUtilization` media dell'ASG, 5 minuti | > 84 per 2 periodi | +1 server, notifica (anche al ritorno OK) |
+| `aws-py-cdk22-cpu-low` | come sopra | < 42 per 2 periodi | -1 server |
+| `aws-py-cdk22-unhealthy-hosts` | `UnHealthyHostCount` massimo del target group, 1 minuto | ≥ 1 per 3 periodi | notifica (anche al ritorno OK) |
+| `aws-py-cdk22-load-balancer5xx` | `HTTPCode_ELB_5XX_Count` somma, 5 minuti | > 10 | notifica |
 
 Con un solo server e poco traffico l'allarme `CpuLow` resta quasi sempre in stato `ALARM`: è normale, l'Auto Scaling group non scende sotto il minimo di 1 server.
 
@@ -29,13 +29,14 @@ CloudWatch ── CpuHigh ──┬── policy step scaling +1 ── Auto Sca
            ├── CpuLow ───── policy step scaling -1 ── Auto Scaling group
            ├── UnhealthyHosts ── topic SNS
            └── LoadBalancer5xx ── topic SNS
-Dashboard <stack>-WordPress: stato degli allarmi, CPU, server in servizio, richieste, errori
+Dashboard aws-py-cdk22-wordpress: stato degli allarmi, CPU, server in servizio, richieste, errori
 ```
 
 ```
 ├── app.py                               # 🚀 app CDK: tag standard, bootstrap alnao-dev-cdk
 ├── cdk22cloud_watch_alarm/
 │   ├── cdk22cloud_watch_alarm_stack.py  # 🏗️ estende lo stack del cdk21: allarmi, scaling, SNS, dashboard
+│   ├── naming.py                        # 🏷️ nomi aws-py-cdk22-<servizio> e tag Name di ogni risorsa
 │   └── tags.py                          # 🏷️ tag standard del cdk22 (anche sulle risorse ereditate dal cdk21)
 ├── tests/unit/                          # 🧪 test dello stack (sintesi locale, senza AWS)
 └── cdk.json, requirements*.txt
@@ -45,7 +46,7 @@ Lo stack importa il codice dalla cartella `../cdk21autoScalingWordpress`: i due 
 
 ## 🛠️ Deploy
 
-Prerequisiti: gli stessi del cdk21 (la VPC di default della region o l'unica presente, meglio se con subnet private e NAT).
+Prerequisiti: gli stessi del cdk21 (per default la VPC di default della region, oppure una VPC con subnet private e NAT passata con i parametri).
 
 ```bash
 cd PythonExamples/AWS/CDK/cdk22cloudWatchAlarm/
@@ -55,37 +56,12 @@ pip install -r requirements.txt -r requirements-dev.txt
 # test locali: sintesi dello stack, nessuna chiamata AWS
 pytest tests/unit
 
-# VPC e subnet recuperate con la CLI (comandi di sola lettura) e salvate come variabili d'ambiente
-export AWS_REGION=eu-central-1               # usata anche da cdk deploy per scegliere la region
-# VPC: quella di default, altrimenti l'unica presente nella region
-export VPC_ID=$(aws ec2 describe-vpcs --region $AWS_REGION --filters Name=isDefault,Values=true --query "Vpcs[0].VpcId" --output text)
-if [ "$VPC_ID" = "None" ]; then
-  VPCS=($(aws ec2 describe-vpcs --region $AWS_REGION --query "Vpcs[].VpcId" --output text))
-  if [ ${#VPCS[@]} -eq 1 ]; then export VPC_ID=${VPCS[0]}; else echo "nessuna VPC di default e ${#VPCS[@]} VPC nella region: impostare VPC_ID a mano"; fi
-fi
-# subnet pubbliche: la loro tabella di routing ha una rotta verso l'Internet gateway (igw-...);
-# nella VPC di default le subnet usano la tabella principale, quindi si prendono quelle con IP pubblico all'avvio, ordinate per zona
-PUBLIC=($(aws ec2 describe-route-tables --region $AWS_REGION --filters "Name=vpc-id,Values=$VPC_ID" "Name=route.gateway-id,Values=igw-*" --query "RouteTables[].Associations[].SubnetId" --output text))
-if [ ${#PUBLIC[@]} -lt 2 ]; then
-  PUBLIC=($(aws ec2 describe-subnets --region $AWS_REGION --filters "Name=vpc-id,Values=$VPC_ID" "Name=map-public-ip-on-launch,Values=true" --query "sort_by(Subnets,&AvailabilityZone)[].SubnetId" --output text))
-fi
-# subnet private con uscita su Internet: la loro tabella di routing ha una rotta verso un NAT gateway (nat-...);
-# se non ci sono (VPC di default) i server vanno nelle subnet pubbliche, con un IP pubblico
-PRIVATE=($(aws ec2 describe-route-tables --region $AWS_REGION --filters "Name=vpc-id,Values=$VPC_ID" "Name=route.nat-gateway-id,Values=nat-*" --query "RouteTables[].Associations[].SubnetId" --output text))
-if [ ${#PRIVATE[@]} -lt 2 ]; then PRIVATE=("${PUBLIC[@]}"); echo "nessuna subnet privata con NAT: uso le subnet pubbliche"; fi
-export PUBLIC_SUBNET_1=${PUBLIC[0]} PUBLIC_SUBNET_2=${PUBLIC[1]} PRIVATE_SUBNET_1=${PRIVATE[0]} PRIVATE_SUBNET_2=${PRIVATE[1]}
-# controllo prima del deploy: quattro subnet, le due di ogni coppia in zone diverse
-echo "VPC $VPC_ID - pubbliche $PUBLIC_SUBNET_1 $PUBLIC_SUBNET_2 - private $PRIVATE_SUBNET_1 $PRIVATE_SUBNET_2"
-aws ec2 describe-subnets --region $AWS_REGION --subnet-ids $PUBLIC_SUBNET_1 $PUBLIC_SUBNET_2 $PRIVATE_SUBNET_1 $PRIVATE_SUBNET_2 \
-  --query "Subnets[].[SubnetId,AvailabilityZone,CidrBlock,MapPublicIpOnLaunch]" --output table
-
+export AWS_REGION=eu-central-1
 #../bootstrap/bootstrap.sh create $AWS_REGION
-cdk deploy -c alarm_email=nome@example.com \
-  --parameters vpcid=$VPC_ID \
-  --parameters publicsubnetids1=$PUBLIC_SUBNET_1 --parameters publicsubnetids2=$PUBLIC_SUBNET_2 \
-  --parameters privatesubnetid1=$PRIVATE_SUBNET_1 --parameters privatesubnetid2=$PRIVATE_SUBNET_2
+cdk deploy -c alarm_email=nome@example.com
 ```
-Lo script prende la **VPC di default** della region o, se non c'è, l'**unica VPC** presente (con più VPC e nessuna di default va impostato a mano `export VPC_ID=vpc-xxx`). Le subnet pubbliche sono quelle con una rotta verso l'Internet gateway o, nella VPC di default, quelle con IP pubblico all'avvio; le private quelle con una rotta verso un NAT gateway. Se la VPC ha più di due subnet per tipo vengono prese le prime due: controllare la tabella stampata, ed eventualmente impostare a mano una variabile (es. `export PRIVATE_SUBNET_2=subnet-xxx`).
+
+**VPC e subnet**: per default lo stack usa la **VPC di default** della region e le sue subnet: CDK le legge al `cdk synth`/`cdk deploy` (chiamate di sola lettura con le credenziali del deploy) e le salva in `cdk.context.json`, che non va su git. I valori sono i default dei parametri del cdk21: `vpcid`, `publicsubnetids1`, `publicsubnetids2`, `privatesubnetid1`, `privatesubnetid2` e `instancespublicip` (vedi il [README del cdk21](../cdk21autoScalingWordpress/README.md)), che si possono cambiare al deploy (`cdk deploy --parameters vpcid=vpc-xxx --parameters ...`, tutti i parametri della rete insieme); con `cdk deploy -c vpc_id=vpc-xxx` i default vengono presi da un'altra VPC. Se la region non ha più la VPC di default si ricrea con `aws ec2 create-default-vpc`.
 
 **Con la VPC di default** non ci sono subnet private né NAT: i server, il database e i mount target EFS vanno nelle stesse subnet pubbliche del load balancer. I server ricevono un IP pubblico (escono su Internet senza NAT, ma costano 0,005 $/ora in più ciascuno) e restano raggiungibili solo dal load balancer, perché il loro security group accetta la porta 80 solo da lì; il database non è pubblico (`PubliclyAccessible=false`) e accetta solo i server. Per un ambiente vero conviene una VPC con subnet private e NAT.
 
@@ -97,7 +73,7 @@ Se il deploy fallisce sull'Auto Scaling group con `Received 1 FAILURE signal(s) 
 
 **Provare gli allarmi**: lo stato di un allarme si può forzare a mano; l'azione parte subito e l'allarme torna allo stato reale alla valutazione successiva (entro 5 minuti).
 ```bash
-STACK=Cdk22CloudWatchAlarmStack
+STACK=aws-py-cdk22
 aws cloudwatch describe-alarms --alarm-name-prefix $STACK --query "MetricAlarms[].[AlarmName,StateValue]" --output table
 aws cloudwatch set-alarm-state --alarm-name $STACK-CpuHigh --state-value ALARM --state-reason "Prova scale-up"
 aws autoscaling describe-scaling-activities --auto-scaling-group-name <AutoScalingGroupName> --max-items 3
@@ -114,7 +90,7 @@ aws cloudwatch get-metric-statistics --namespace AWS/EC2 --metric-name CPUUtiliz
   --start-time $(date -u -d '-1 hour' +%FT%TZ) --end-time $(date -u +%FT%TZ) --period 300 --statistics Average
 ```
 
-**Tag**: tutte le risorse hanno i tag standard del cdk22 (`Project=Development.aws.py-CDK.cdk22cloudWatchAlarm`, `ManagedBy=CDK`), anche quelle ereditate dal cdk21. Non hanno tag solo i tipi che CloudFormation non permette di taggare: policy di scaling, dashboard, iscrizioni SNS, regole dei security group, mount target EFS, listener, instance profile, policy IAM inline.
+**Tag**: tutte le risorse hanno i tag standard del cdk22 (`Project=Development.aws.py-CDK.cdk22cloudWatchAlarm`, `ManagedBy=CDK`), anche quelle ereditate dal cdk21. Non hanno tag solo i tipi che CloudFormation non permette di taggare: policy di scaling, dashboard, iscrizioni SNS, regole dei security group, mount target EFS, listener, instance profile, policy IAM inline. Il tag `Name` di ogni risorsa è uguale al suo nome (`aws-py-cdk22-<servizio>`, vedi `naming.py`).
 
 
 ## 💰 Analisi dei Costi
@@ -146,6 +122,17 @@ aws resourcegroupstaggingapi get-resources --tag-filters Key=Project,Values=Deve
 - 🎯 **Target tracking** (`scale_on_cpu_utilization`) al posto delle due soglie fisse, da confrontare con lo step scaling
 - 🧪 **Allarme composito** (CPU alta e server malati insieme) e **anomaly detection** sulle richieste
 - 📨 **Chatbot** o Lambda iscritta al topic per mandare le notifiche su Slack o Teams
+
+
+## Changelog
+| Data | Modifica |
+|------|----------|
+| 2026-11-10 | Prima versione dell'esempio, ispirata all'esempio CloudFormation corrispondente |
+| 2026-11-17 | Revisione degli esempi CDK: test eseguiti e tag standard verificati su tutte le risorse del template sintetizzato, nessuna modifica al codice |
+| 2026-11-17 | VPC e subnet per default quelle di default della region (lette da CDK al synth, salvate in cdk.context.json ignorato da git), sempre modificabili con i parametri o con -c vpc_id=... |
+| 2026-11-17 | tags.py: aspect LambdaLogGroups comune a tutti gli esempi (log group dello stack per ogni Lambda); lo stack non ha Lambda, il template non cambia |
+| 2026-11-17 | Nomi delle risorse aws-py-cdk22-<servizio> uguali al tag Name (naming.py comune a tutti gli esempi): stack aws-py-cdk22, bucket S3 con l'account alla fine, ruoli e instance profile IAM con la region, anche le risorse create da CDK; test test_all_resources_named; corretto l'output DashboardUrl, che avrebbe puntato al vecchio nome della dashboard |
+| 2026-11-17 | Tag Name aws-py-cdk22 anche sullo stack CloudFormation (aspect PhysicalNames di naming.py), test test_stack_tags |
 
 
 # &lt; AlNao /&gt;

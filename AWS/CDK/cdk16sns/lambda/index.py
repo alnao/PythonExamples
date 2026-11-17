@@ -1,17 +1,12 @@
+"""Lambda iscritta al topic SNS: scrive nel log ogni messaggio ricevuto (con oggetto e attributi)."""
+
 import json
-#import logging
-#import os
-#logger = logging.getLogger()
-#logger.setLevel(logging.INFO)
+
 
 def handler(event, context):
-    print("Received event: " + json.dumps(event))
-    
-    for record in event['Records']:
-        message = record['Sns']['Message']
-        print(f"Received message: {message}")
-    
-    return {
-        'statusCode': 200,
-        'body': json.dumps('Message logged successfully')
-    }
+    messages = []
+    for record in event.get("Records", []):
+        sns = record["Sns"]
+        messages.append({"messageId": sns.get("MessageId"), "subject": sns.get("Subject"), "message": sns["Message"]})
+        print(f"messaggio ricevuto: {json.dumps(messages[-1])}")
+    return {"ricevuti": len(messages), "messaggi": messages}

@@ -5,6 +5,7 @@ import aws_cdk as core
 import aws_cdk.assertions as assertions
 
 from cdk21auto_scaling_wordpress.cdk21auto_scaling_wordpress_stack import Cdk21AutoScalingWordpressStack
+from cdk21auto_scaling_wordpress.naming import check_template
 from cdk21auto_scaling_wordpress.tags import TAGS, apply_tags
 
 # Tipi che CloudFormation non permette di taggare (le Custom:: sono risorse di CDK, non di AWS)
@@ -16,12 +17,15 @@ UNTAGGABLE = {
 
 # feature flag di cdk.json, come li passa la CLI a cdk synth/deploy
 CDK_CONTEXT = json.loads((Path(__file__).parents[2] / "cdk.json").read_text())["context"]
+STACK_NAME = "aws-py-cdk21"
+# account e region finti: il lookup della VPC di default nei test restituisce una VPC finta
+ENV = core.Environment(account="111111111111", region="eu-central-1")
 
 
 def template():
     app = core.App(context=CDK_CONTEXT)
     apply_tags(app)
-    stack = Cdk21AutoScalingWordpressStack(app, "cdk21")
+    stack = Cdk21AutoScalingWordpressStack(app, STACK_NAME, env=ENV)
     return assertions.Template.from_stack(stack)
 
 
@@ -52,7 +56,8 @@ def test_instances_tagged_at_launch():
     specs = {s["ResourceType"]: s["Tags"] for s in lt["Properties"]["LaunchTemplateData"]["TagSpecifications"]}
     assert {"instance", "volume"} <= set(specs)
     asg = next(iter(t.find_resources("AWS::AutoScaling::AutoScalingGroup").values()))
-    assert all(tag["PropagateAtLaunch"] for tag in asg["Properties"]["Tags"])
+    # tutti i tag passano alle istanze tranne Name: le istanze hanno il loro (dal launch template)
+    assert all(tag["PropagateAtLaunch"] == (tag["Key"] != "Name") for tag in asg["Properties"]["Tags"])
 
 
 def test_parameters():
@@ -117,6 +122,42 @@ def test_launch_template_tags_instances_volumes_and_network_interfaces():
     for lt in template().find_resources("AWS::EC2::LaunchTemplate").values():
         specs = {s["ResourceType"]: {t["Key"]: t["Value"] for t in s["Tags"]}
                  for s in lt["Properties"]["LaunchTemplateData"]["TagSpecifications"]}
-        assert specs == {"instance": TAGS, "volume": TAGS, "network-interface": TAGS}
+        assert set(specs) == {"instance", "volume", "network-interface"}
+        for tags in specs.values():  # tag standard e Name delle risorse lanciate (aws-py-cdkXX-<servizio>)
+            assert tags == {**TAGS, "Name": specs["instance"]["Name"]} and tags["Name"].startswith(STACK_NAME + "-")
         top = {t["Key"]: t["Value"] for t in lt["Properties"]["TagSpecifications"][0]["Tags"]}
         assert top == {**top, **TAGS}  # il launch template stesso
+
+
+def test_default_vpc_and_subnets():
+    """Per default la VPC di default della region: le stesse due subnet pubbliche per load balancer e istanze."""
+    params = template().to_json()["Parameters"]
+    assert params["vpcid"]["Default"] == "vpc-12345"
+    for name, default in (("publicsubnetids1", "s-12345"), ("publicsubnetids2", "s-67890"),
+                          ("privatesubnetid1", "s-12345"), ("privatesubnetid2", "s-67890")):
+        assert params[name]["Default"] == default
+    assert params["instancespublicip"]["Default"] == "true"
+
+
+def test_instances_public_ip_from_parameter():
+    """Senza NAT (VPC di default) le istanze hanno un IP pubblico; con subnet private si mette instancespublicip=false."""
+    t = template()
+    lt = next(iter(t.find_resources("AWS::EC2::LaunchTemplate").values()))["Properties"]["LaunchTemplateData"]
+    assert lt["NetworkInterfaces"][0]["AssociatePublicIpAddress"] == {"Fn::If": ["InstancesPublicIp", True, False]}
+    t.has_condition("InstancesPublicIp", {"Fn::Equals": [{"Ref": "instancespublicip"}, "true"]})
+
+
+def test_all_resources_named():
+    """Ogni risorsa si chiama aws-py-cdk21-<servizio> (bucket S3 con l'account alla fine, ruoli IAM con la
+    region) e ha il tag Name uguale al nome; le risorse senza nome (EC2, EFS, CloudFront, ...) hanno solo il tag Name."""
+    assert check_template(template().to_json(), STACK_NAME) == []
+
+
+def test_stack_tags(monkeypatch):
+    """Lo stack CloudFormation ha i tag standard e Name uguale al suo nome: CDK li passa allo stack al deploy e
+    CloudFormation li copia sulle risorse che non li hanno gia' (il Name scritto sulla risorsa vince)."""
+    stacks, from_stack = [], assertions.Template.from_stack
+    monkeypatch.setattr(assertions.Template, "from_stack",
+                        staticmethod(lambda stack, *args, **kwargs: stacks.append(stack) or from_stack(stack, *args, **kwargs)))
+    template()
+    assert stacks[0].tags.tag_values() == {**TAGS, "Name": STACK_NAME}

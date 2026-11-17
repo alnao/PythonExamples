@@ -1,4 +1,4 @@
-"""Repository Amazon ECR per le immagini Docker degli esempi.
+"""Repository Amazon ECR per le immagini Docker degli esempi (nome aws-py-cdk23-repository, naming.py).
 
 - scansione delle vulnerabilita' a ogni push
 - regole di ciclo di vita: le immagini senza tag spariscono dopo 1 giorno, si tengono le ultime 10
@@ -9,7 +9,6 @@ L'immagine di prova e' quella del progetto Docker/03ApiPersoneNoDb del repositor
 
 from aws_cdk import (
     CfnOutput,
-    CfnParameter,
     Duration,
     RemovalPolicy,
     Stack,
@@ -23,12 +22,7 @@ class Cdk23EcrStack(Stack):
     def __init__(self, scope: Construct, construct_id: str, **kwargs) -> None:
         super().__init__(scope, construct_id, **kwargs)
 
-        repo_name = CfnParameter(self, "reponame", type="String", default="cdk23ecr-repository",
-                                 allowed_pattern="[a-z0-9]+(?:[._-][a-z0-9]+)*",
-                                 description="nome del repository ECR (minuscole, numeri, . _ -)").value_as_string
-
         self.repository = ecr.Repository(self, "Repository",
-            repository_name=repo_name,
             image_scan_on_push=True,
             image_tag_mutability=ecr.TagMutability.MUTABLE,  # il tag latest viene sovrascritto a ogni push
             encryption=ecr.RepositoryEncryption.AES_256,  # default di ECR: CDK non lo scrive nel template

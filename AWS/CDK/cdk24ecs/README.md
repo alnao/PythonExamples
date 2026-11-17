@@ -6,7 +6,7 @@
 
 Un cluster **Amazon ECS** con istanze EC2 che esegue un'immagine Docker dietro un **Application Load Balancer**. Versione CDK in Python dell'esempio CloudFormation [Esempio24ecs](https://github.com/alnao/AwsCloudFormationExamples/tree/master/Esempio24ecs), che usava i template annidati di *ecs-refarch-cloudformation* per VPC, security group e load balancer.
 
-- **🌐 VPC nuova** `10.184.0.0/16` con due subnet pubbliche (load balancer, NAT) e due private (istanze), un solo NAT gateway per contenere i costi
+- **🌐 VPC di default** della region e due sue subnet (modificabili con i parametri): load balancer e istanze nelle subnet pubbliche, istanze con IP pubblico ma raggiungibili solo dal load balancer, **nessun NAT gateway** (la prima versione creava una VPC `10.184.0.0/16` con un NAT da circa 38 $ al mese)
 - **🖥️ Istanze ECS-optimized** Amazon Linux 2023 (`t3.micro`) in un Auto Scaling group collegato al cluster come **capacity provider**: ECS aggiunge e toglie istanze (da 1 a 2) secondo i task da eseguire, e prima di spegnerne una sposta i task (*managed draining*)
 - **🐳 Servizio con 2 task** dell'API Flask [Docker/03ApiPersoneNoDb](../../../Docker/03ApiPersoneNoDb/) (porta 5001), rete *bridge* con porte dell'host dinamiche: più task sulla stessa istanza
 - **🔀 Load balancer**: `/persone` e `/test` vanno al servizio, ogni altro percorso riceve un 404 fisso; controllo di salute su `/test`
@@ -16,12 +16,12 @@ Un cluster **Amazon ECS** con istanze EC2 che esegue un'immagine Docker dietro u
 Differenze rispetto al template CloudFormation:
 | | CloudFormation (Esempio24) | CDK (cdk24) |
 |---|---|---|
-| VPC, security group, ALB | template annidati di *ecs-refarch-cloudformation* | costrutti CDK, regole dei security group calcolate da CDK |
+| VPC, security group, ALB | template annidati di *ecs-refarch-cloudformation* (VPC nuova con NAT) | VPC di default senza NAT, regole dei security group calcolate da CDK |
 | Istanze | Auto Scaling group a dimensione fissa con `cfn-signal` | capacity provider con *managed scaling* e *managed draining* |
 | Porta del container | 80 (andava cambiata in `app.py` e nel `Dockerfile`) | 5001 come nel progetto Docker, porta dell'host dinamica |
 | Immagine | caricata a mano nel repository dell'esempio 23 | costruita da CDK, oppure da un repository esistente |
 | Ruolo del servizio | ruolo IAM `ecs-service-...` con policy inline | ruolo collegato al servizio ECS (creato da AWS) |
-| Log | log group con 365 giorni | log group `/ecs/<stack>` con 7 giorni |
+| Log | log group con 365 giorni | log group `/ecs/aws-py-cdk24-api-persone` con 7 giorni |
 
 
 ## 🔧 Architettura
@@ -30,16 +30,17 @@ Differenze rispetto al template CloudFormation:
 Internet ── ALB (subnet pubbliche) ──┬── /persone, /persone/*, /test ── target group (porte dinamiche)
                                      └── altri percorsi: 404 fisso                │
                                                                                   ▼
-Cluster ECS ── capacity provider ── Auto Scaling group (subnet private, 1-2 × t3.micro)
+Cluster ECS ── capacity provider ── Auto Scaling group (subnet pubbliche, IP pubblico, 1-2 × t3.micro)
                                          └── servizio api-persone: 2 task bridge, container 5001 → porta host 32768-65535
-Istanze ── NAT gateway ── Internet (immagine da ECR, agente ECS)
-Task ── log group /ecs/<stack> (7 giorni)
+Istanze ── IP pubblico ── Internet (immagine da ECR, agente ECS); in ingresso solo il load balancer
+Task ── log group /ecs/aws-py-cdk24-api-persone (7 giorni)
 ```
 
 ```
 ├── app.py                 # 🚀 app CDK: tag standard, bootstrap alnao-dev-cdk
 ├── cdk24ecs/
-│   ├── cdk24ecs_stack.py  # 🏗️ VPC, cluster, capacity provider, task definition, servizio, ALB
+│   ├── cdk24ecs_stack.py  # 🏗️ VPC di default, cluster, capacity provider, task definition, servizio, ALB
+│   ├── naming.py          # 🏷️ nomi aws-py-cdk24-<servizio> e tag Name di ogni risorsa
 │   └── tags.py            # 🏷️ tag standard e apply_tags (usata da app.py e dai test)
 ├── tests/unit/            # 🧪 test dello stack (sintesi locale, senza AWS)
 └── cdk.json, requirements*.txt
@@ -58,13 +59,16 @@ pytest tests/unit
 
 #../bootstrap/bootstrap.sh create eu-central-1
 cdk deploy                                        # immagine costruita da Docker/03ApiPersoneNoDb
-cdk deploy -c ecr_repository=cdk23ecr-repository  # immagine :latest caricata nel repository del cdk23
+cdk deploy -c ecr_repository=aws-py-cdk23-repository  # immagine :latest caricata nel repository del cdk23
 ```
+
+**VPC e subnet**: per default lo stack usa la **VPC di default** della region e le sue subnet: CDK le legge al `cdk synth`/`cdk deploy` (chiamate di sola lettura con le credenziali del deploy) e le salva in `cdk.context.json`, che non va su git. I valori sono i default dei parametri `vpcid`, `subnetid1` e `subnetid2`, che si possono cambiare al deploy (`cdk deploy --parameters vpcid=vpc-xxx --parameters ...`, tutti i parametri della rete insieme); con `cdk deploy -c vpc_id=vpc-xxx` i default vengono presi da un'altra VPC. Se la region non ha più la VPC di default si ricrea con `aws ec2 create-default-vpc`.
+
 Il deploy dura circa 10 minuti. Al termine `cdk deploy` stampa `ServiceUrl`, `ClusterName`, `ServiceName` e `LogGroupName`.
 
 Prova del servizio:
 ```bash
-URL=$(aws cloudformation describe-stacks --stack-name Cdk24EcsStack --query "Stacks[0].Outputs[?OutputKey=='ServiceUrl'].OutputValue" --output text)
+URL=$(aws cloudformation describe-stacks --stack-name aws-py-cdk24 --query "Stacks[0].Outputs[?OutputKey=='ServiceUrl'].OutputValue" --output text)
 curl $URL
 curl -X POST $URL -H "Content-Type: application/json" -d '{"cognome": "Nao", "nome": "Andrea"}'
 curl $URL      # la persona aggiunta compare solo se la richiesta arriva allo stesso task: ogni task ha la sua lista in memoria
@@ -72,17 +76,17 @@ curl $URL      # la persona aggiunta compare solo se la richiesta arriva allo st
 
 Comandi utili:
 ```bash
-CLUSTER=Cdk24EcsStack
+CLUSTER=aws-py-cdk24-cluster
 aws ecs list-services --cluster $CLUSTER
 aws ecs describe-services --cluster $CLUSTER --services api-persone --query "services[0].[status,runningCount,desiredCount,deployments[0].rolloutState]"
 aws ecs list-tasks --cluster $CLUSTER
 aws ecs list-container-instances --cluster $CLUSTER
-aws ecs describe-capacity-providers --query "capacityProviders[?contains(name,'Cdk24')].[name,autoScalingGroupProvider.managedScaling]"
+aws ecs describe-capacity-providers --query "capacityProviders[?contains(name,'cdk24')].[name,autoScalingGroupProvider.managedScaling]"
 aws ecs update-service --cluster $CLUSTER --service api-persone --desired-count 3   # il capacity provider aggiunge un'istanza se serve
-aws logs tail /ecs/Cdk24EcsStack --follow
+aws logs tail /ecs/aws-py-cdk24-api-persone --follow
 ```
 
-**Tag**: tutte le risorse hanno i tag standard del repository (`Project=Development.aws.py-CDK.cdk24ecs`, `ManagedBy=CDK`); il servizio propaga i tag ai task (`PropagateTags=SERVICE`), l'Auto Scaling group alle istanze. Non hanno tag solo i tipi che CloudFormation non permette di taggare: rotte, associazioni delle subnet, attacco dell'Internet gateway, associazione cluster-capacity provider, listener e regole, instance profile, policy IAM inline, regole dei security group.
+**Tag**: tutte le risorse hanno i tag standard del repository (`Project=Development.aws.py-CDK.cdk24ecs`, `ManagedBy=CDK`); il servizio propaga i tag ai task (`PropagateTags=SERVICE`), l'Auto Scaling group alle istanze. Non hanno tag solo i tipi che CloudFormation non permette di taggare: associazione cluster-capacity provider, listener e regole, instance profile, policy IAM inline, regole dei security group. Il tag `Name` di ogni risorsa è uguale al suo nome (`aws-py-cdk24-<servizio>`, vedi `naming.py`).
 
 
 ## 💰 Analisi dei Costi
@@ -91,16 +95,15 @@ Prezzi indicativi di Francoforte (`eu-central-1`) a novembre 2026, IVA esclusa: 
 
 | Voce | Calcolo | Al mese (30 gg) |
 |------|---------|-----------------|
-| NAT gateway | 0,052 $/ora + 0,052 $/GB elaborato | ~38 $ |
 | Application Load Balancer | 0,027 $/ora + LCU (traffico minimo) | ~20 $ |
-| IP pubblici | 3 × 0,005 $/ora (2 del load balancer, 1 del NAT) | ~11 $ |
+| IP pubblici | 3-4 × 0,005 $/ora (2 del load balancer, 1-2 delle istanze) | 11-14 $ |
 | EC2 `t3.micro` | 1-2 istanze × 0,012 $/ora | 9-18 $ |
 | EBS | 30 GB gp3 per istanza (default dell'AMI ECS) × 0,095 $/GB | 3-6 $ |
 | ECR (repository del bootstrap) | ~400 MB × 0,10 $/GB | 0,04 $ |
 | CloudWatch Logs | pochi MB, 7 giorni | < 0,10 $ |
-| **Totale** | | **~80-90 $** |
+| **Totale** | | **~45-60 $** |
 
-ECS con istanze EC2 non ha un costo proprio: si pagano le istanze. Il NAT è la voce più grande: per una prova breve va bene, per tenere lo stack acceso conviene mettere le istanze nelle subnet pubbliche senza NAT, oppure passare a Fargate (vedi il cdk28).
+ECS con istanze EC2 non ha un costo proprio: si pagano le istanze. Senza NAT gateway (circa 38 $ al mese nella prima versione) la voce più grande è il load balancer; in alternativa si può passare a Fargate (vedi il cdk28).
 
 
 ## 🧹 Pulizia
@@ -108,11 +111,11 @@ ECS con istanze EC2 non ha un costo proprio: si pagano le istanze. Il NAT è la 
 ```bash
 cdk destroy
 # le revisioni della task definition restano INACTIVE dopo il destroy
-aws ecs list-task-definitions --family-prefix Cdk24EcsStack-api-persone --status INACTIVE --query taskDefinitionArns --output text
+aws ecs list-task-definitions --family-prefix aws-py-cdk24-api-persone --status INACTIVE --query taskDefinitionArns --output text
 aws ecs delete-task-definitions --task-definitions <arn>
 aws resourcegroupstaggingapi get-resources --tag-filters Key=Project,Values=Development.aws.py-CDK.cdk24ecs --query "ResourceTagMappingList[].ResourceARN" --output text
 ```
-- servizio, task, istanze, NAT, load balancer e log group si cancellano con lo stack
+- servizio, task, istanze, load balancer e log group si cancellano con lo stack; la VPC di default resta
 - l'immagine costruita da CDK resta nel repository ECR del bootstrap `alnao-dev-cdk`, condiviso con gli altri progetti: si cancella con il bootstrap (`../bootstrap/bootstrap.sh destroy <region>`) o a mano con `aws ecr batch-delete-image --repository-name alnao-dev-cdk --image-ids imageTag=<hash>`
 - con `-c ecr_repository=...` l'immagine resta nel repository del cdk23, che va pulito con il suo stack
 
@@ -121,6 +124,17 @@ aws resourcegroupstaggingapi get-resources --tag-filters Key=Project,Values=Deve
 - 📈 **Auto scaling dei task** (`service.auto_scale_task_count`) sulla CPU o sulle richieste del load balancer
 - 🧩 **Rete awsvpc** con un security group per task e **Service Connect** per far parlare più servizi
 - 🔒 **HTTPS** sul load balancer con un certificato ACM
+
+
+## Changelog
+| Data | Modifica |
+|------|----------|
+| 2026-11-10 | Prima versione dell'esempio, ispirata all'esempio CloudFormation corrispondente |
+| 2026-11-17 | Revisione degli esempi CDK: test eseguiti e tag standard verificati su tutte le risorse del template sintetizzato, nessuna modifica al codice |
+| 2026-11-17 | VPC e subnet per default quelle di default della region (lette da CDK al synth, salvate in cdk.context.json ignorato da git), sempre modificabili con i parametri o con -c vpc_id=... (prima lo stack creava una VPC nuova) |
+| 2026-11-17 | tags.py: aspect LambdaLogGroups comune a tutti gli esempi (log group dello stack per ogni Lambda); lo stack non ha Lambda, il template non cambia |
+| 2026-11-17 | Nomi delle risorse aws-py-cdk24-<servizio> uguali al tag Name (naming.py comune a tutti gli esempi): stack aws-py-cdk24, bucket S3 con l'account alla fine, ruoli e instance profile IAM con la region, anche le risorse create da CDK; test test_all_resources_named; capacity provider cp-aws-py-cdk24-capacity-provider (AWS non accetta nomi che iniziano con aws) |
+| 2026-11-17 | Tag Name aws-py-cdk24 anche sullo stack CloudFormation (aspect PhysicalNames di naming.py), test test_stack_tags |
 
 
 # &lt; AlNao /&gt;

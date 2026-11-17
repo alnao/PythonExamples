@@ -1,6 +1,10 @@
 """WordPress su un Auto Scaling group dietro un Application Load Balancer.
 
-Le istanze sono in subnet private e condividono:
+Per default usa la VPC di default della region (vedi network.py): load balancer, istanze, database ed EFS nelle sue
+subnet pubbliche, istanze con IP pubblico (per scaricare pacchetti e WordPress senza NAT gateway) ma raggiungibili
+solo dal load balancer. Con i parametri si possono indicare subnet private con NAT e instancespublicip=false.
+
+Le istanze condividono:
 - il codice di WordPress (e i file caricati) su un file system EFS montato in /mnt/efs
 - il database su RDS MySQL, con la password generata in Secrets Manager
 
@@ -10,6 +14,7 @@ Lo stack e' la base anche del cdk22cloudWatchAlarm, che lo estende con gli allar
 
 from aws_cdk import (
     CfnOutput,
+    CfnCondition,
     CfnParameter,
     Duration,
     Fn,
@@ -24,6 +29,8 @@ from aws_cdk import (
 )
 from constructs import Construct
 
+from .network import lookup_subnets, lookup_vpc, subnet_parameter, vpc_parameter
+
 INSTANCE_TYPES = ["t3.nano", "t3.micro", "t3.small", "t3.medium", "t3.large"]
 
 # script eseguito come root al primo avvio di ogni istanza (log in /var/log/cloud-init-output.log)
@@ -36,7 +43,7 @@ trap 'echo "ERRORE cdk21: comando fallito alla riga $LINENO: $BASH_COMMAND" | te
 retry() {
   for i in $(seq 1 30); do
     "$@" && return 0
-    echo "tentativo $i fallito: $*"
+    echo "tentativo $i fallito: $*" >&2
     sleep 10
   done
   return 1
@@ -60,7 +67,8 @@ AZ=$(curl -s -H "X-aws-ec2-metadata-token: $TOKEN" http://169.254.169.254/latest
     echo "$(date) WordPress non presente: lo installo da $INSTANCE_ID" >> /mnt/efs/install.log
     curl -sSL --retry 5 --retry-delay 10 https://wordpress.org/latest.tar.gz | tar xz -C /mnt/efs
     set +x  # la password non deve finire nel log
-    export SECRET_JSON=$(aws secretsmanager get-secret-value --secret-id ${DbSecretArn} --region ${Region} --query SecretString --output text)
+    SECRET_JSON=$(retry aws secretsmanager get-secret-value --secret-id ${DbSecretArn} --region ${Region} --query SecretString --output text)
+    export SECRET_JSON
     export DB_HOST=${DbHost} DB_NAME=${DbName}
     python3 - <<'PY'
 import json, os, secrets
@@ -99,12 +107,18 @@ class Cdk21AutoScalingWordpressStack(Stack):
     def __init__(self, scope: Construct, construct_id: str, **kwargs) -> None:
         super().__init__(scope, construct_id, **kwargs)
 
-        # VPC esistente: le subnet pubbliche ospitano il load balancer, le private (con NAT) i server e il database
-        vpc_id = CfnParameter(self, "vpcid", type="AWS::EC2::VPC::Id", description="VPC esistente").value_as_string
-        public_1 = CfnParameter(self, "publicsubnetids1", type="AWS::EC2::Subnet::Id", description="subnet pubblica 1").value_as_string
-        public_2 = CfnParameter(self, "publicsubnetids2", type="AWS::EC2::Subnet::Id", description="subnet pubblica 2").value_as_string
-        private_1 = CfnParameter(self, "privatesubnetid1", type="AWS::EC2::Subnet::Id", description="subnet privata 1 (con NAT)").value_as_string
-        private_2 = CfnParameter(self, "privatesubnetid2", type="AWS::EC2::Subnet::Id", description="subnet privata 2 (con NAT)").value_as_string
+        # VPC e subnet: per default quelle di default della region (vedi network.py); le subnet "private" per
+        # default sono le stesse subnet pubbliche, con un IP pubblico sulle istanze (nessun NAT gateway)
+        default_vpc = lookup_vpc(self)
+        default_subnets = lookup_subnets(default_vpc, 2)
+        vpc_id = vpc_parameter(self, default_vpc)
+        public_1 = subnet_parameter(self, "publicsubnetids1", default_subnets[0], "subnet pubblica 1 (load balancer)")
+        public_2 = subnet_parameter(self, "publicsubnetids2", default_subnets[1], "subnet pubblica 2 (load balancer)")
+        private_1 = subnet_parameter(self, "privatesubnetid1", default_subnets[0], "subnet 1 di istanze, database ed EFS")
+        private_2 = subnet_parameter(self, "privatesubnetid2", default_subnets[1], "subnet 2 di istanze, database ed EFS")
+        public_ip = CfnParameter(self, "instancespublicip", type="String", default="true", allowed_values=["true", "false"],
+            description="IP pubblico sulle istanze: true nelle subnet pubbliche (VPC di default), false con subnet private e NAT")
+        with_public_ip = CfnCondition(self, "InstancesPublicIp", expression=Fn.condition_equals(public_ip.value_as_string, "true"))
         instance_type = CfnParameter(self, "instancetype", type="String", default="t3.micro",
                                      allowed_values=INSTANCE_TYPES, description="tipo delle istanze EC2").value_as_string
         db_name = CfnParameter(self, "dbname", type="String", default="wordpress", allowed_pattern="[a-zA-Z][a-zA-Z0-9]*",
@@ -160,10 +174,15 @@ class Cdk21AutoScalingWordpressStack(Stack):
             instance_type=ec2.InstanceType(instance_type),
             machine_image=ec2.MachineImage.latest_amazon_linux2023(),
             user_data=user_data, role=role, security_group=web_sg,
+            associate_public_ip_address=True,  # sostituito sotto dalla condizione del parametro instancespublicip
             require_imdsv2=True,
             block_devices=[ec2.BlockDevice(device_name="/dev/xvda", volume=ec2.BlockDeviceVolume.ebs(
                 8, volume_type=ec2.EbsDeviceVolumeType.GP3, encrypted=True, delete_on_termination=True))],
         )
+
+        launch_template.node.default_child.add_property_override(
+            "LaunchTemplateData.NetworkInterfaces.0.AssociatePublicIpAddress",
+            Fn.condition_if(with_public_ip.logical_id, True, False))
 
         # Auto Scaling group: CloudFormation aspetta il segnale di ogni istanza (cfn-signal alla fine dello script)
         self.asg = autoscaling.AutoScalingGroup(self, "WebServerGroup",

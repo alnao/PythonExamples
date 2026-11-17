@@ -29,12 +29,12 @@ Differenze rispetto al template CloudFormation:
 
 ```
 cdk deploy ── zip di app/ (Dockerrun.aws.json) ── bucket alnao-dev-cdk ── versione dell'applicazione
-Elastic Beanstalk <stack>-app
-└── ambiente <stack>-env (VPC di default)
+Elastic Beanstalk aws-py-cdk31-app
+└── ambiente aws-py-cdk31-env (VPC di default)
     ├── Application Load Balancer :80 ── controllo /api/echo/status
     └── Auto Scaling group 1-2 × t3.micro (Docker su AL2023)
             nginx :80 ── container pathsgames/pathsgames :8042
-            log ── CloudWatch /aws/elasticbeanstalk/<stack>-env/... (7 giorni)
+            log ── CloudWatch /aws/elasticbeanstalk/aws-py-cdk31-env/... (7 giorni)
 ```
 
 ```
@@ -43,6 +43,7 @@ Elastic Beanstalk <stack>-app
 ├── docker-compose.yml                  # 🧪 prova in locale della stessa immagine
 ├── cdk31elastic_beanstalk/
 │   ├── cdk31elastic_beanstalk_stack.py # 🏗️ ruoli, applicazione, versione, ambiente
+│   ├── naming.py                       # 🏷️ nomi aws-py-cdk31-<servizio> e tag Name di ogni risorsa
 │   └── tags.py                         # 🏷️ tag standard e apply_tags (usata da app.py e dai test)
 ├── tests/unit/                         # 🧪 test dello stack (sintesi locale, senza AWS)
 └── cdk.json, requirements*.txt
@@ -70,21 +71,24 @@ echo $STACK_NAME
 #../bootstrap/bootstrap.sh create $REGION
 cdk deploy --parameters solutionstack="$STACK_NAME"
 ```
+
+**VPC e subnet**: per default lo stack usa la **VPC di default** della region e le sue subnet: CDK le legge al `cdk synth`/`cdk deploy` (chiamate di sola lettura con le credenziali del deploy) e le salva in `cdk.context.json`, che non va su git. I valori sono i default dei parametri `vpcid`, `subnetid1` e `subnetid2` (istanze e load balancer), che si possono cambiare al deploy (`cdk deploy --parameters vpcid=vpc-xxx --parameters ...`, tutti i parametri della rete insieme); con `cdk deploy -c vpc_id=vpc-xxx` i default vengono presi da un'altra VPC. Se la region non ha più la VPC di default si ricrea con `aws ec2 create-default-vpc`.
+
 Parametro facoltativo: `instancetype` (default `t3.micro`). Il deploy dura circa 10 minuti (creazione dell'ambiente). Al termine `cdk deploy` stampa `ApplicationName`, `EnvironmentName` ed `EnvironmentURL`.
 
 Comandi utili:
 ```bash
-ENV=Cdk31ElasticBeanstalkStack-env
+ENV=aws-py-cdk31-env
 aws elasticbeanstalk describe-environments --environment-names $ENV --query "Environments[0].[Status,Health,HealthStatus,CNAME,VersionLabel]"
 aws elasticbeanstalk describe-environment-health --environment-name $ENV --attribute-names All
 aws elasticbeanstalk describe-events --environment-name $ENV --max-items 20 --query "Events[].[EventDate,Severity,Message]" --output table
-aws elasticbeanstalk describe-application-versions --application-name Cdk31ElasticBeanstalkStack-app --query "ApplicationVersions[].[VersionLabel,DateCreated,Status]" --output table
+aws elasticbeanstalk describe-application-versions --application-name aws-py-cdk31-app --query "ApplicationVersions[].[VersionLabel,DateCreated,Status]" --output table
 aws elasticbeanstalk request-environment-info --environment-name $ENV --info-type tail   # poi retrieve-environment-info
 aws logs describe-log-groups --log-group-name-prefix /aws/elasticbeanstalk/$ENV
 ```
 Con la [EB CLI](https://docs.aws.amazon.com/elasticbeanstalk/latest/dg/eb-cli3.html) (`pip install awsebcli`) si possono anche aprire i log e una sessione sulle istanze, ma l'ambiente resta gestito dallo stack: le modifiche vanno fatte con `cdk deploy`.
 
-**Tag**: l'ambiente e i ruoli hanno i tag standard del repository (`Project=Development.aws.py-CDK.cdk31ElasticBeanstalk`, `ManagedBy=CDK`), ed Elastic Beanstalk li copia sulle risorse che crea (istanze, volumi, Auto Scaling group, load balancer, security group, stack CloudFormation interno `awseb-...`). Non hanno tag l'applicazione, la versione e l'instance profile, che CloudFormation non permette di taggare, e i log group creati da Elastic Beanstalk.
+**Tag**: l'ambiente e i ruoli hanno i tag standard del repository (`Project=Development.aws.py-CDK.cdk31ElasticBeanstalk`, `ManagedBy=CDK`), ed Elastic Beanstalk li copia sulle risorse che crea (istanze, volumi, Auto Scaling group, load balancer, security group, stack CloudFormation interno `awseb-...`). Non hanno tag l'applicazione, la versione e l'instance profile, che CloudFormation non permette di taggare, e i log group creati da Elastic Beanstalk. Il tag `Name` di ogni risorsa è uguale al suo nome (`aws-py-cdk31-<servizio>`, vedi `naming.py`).
 
 
 ## 💰 Analisi dei Costi
@@ -119,8 +123,19 @@ aws resourcegroupstaggingapi get-resources --tag-filters Key=Project,Values=Deve
 ## 🚀 Sviluppi Futuri
 - 🔁 **docker-compose.yml** nel bundle per eseguire più container (per esempio applicazione e Redis)
 - 🔒 **HTTPS** sul load balancer con un certificato ACM e un dominio Route 53
-- 🌐 **VPC dedicata** (opzioni `aws:ec2:vpc`) con istanze in subnet private
+- 🌐 **Subnet private**: istanze in subnet private con NAT (parametri `subnetid1` e `subnetid2` e `AssociatePublicIpAddress=false`), load balancer in quelle pubbliche
 - 🚦 **Deploy immutabili** o **traffic splitting** e **managed platform updates** in una finestra di manutenzione
+
+
+## Changelog
+| Data | Modifica |
+|------|----------|
+| 2026-11-10 | Prima versione dell'esempio, ispirata all'esempio CloudFormation corrispondente |
+| 2026-11-17 | Revisione degli esempi CDK: test eseguiti e tag standard verificati su tutte le risorse del template sintetizzato, nessuna modifica al codice |
+| 2026-11-17 | VPC e subnet per default quelle di default della region (lette da CDK al synth, salvate in cdk.context.json ignorato da git), sempre modificabili con i parametri o con -c vpc_id=... |
+| 2026-11-17 | tags.py: aspect LambdaLogGroups comune a tutti gli esempi (log group dello stack per ogni Lambda); lo stack non ha Lambda, il template non cambia |
+| 2026-11-17 | Nomi delle risorse aws-py-cdk31-<servizio> uguali al tag Name (naming.py comune a tutti gli esempi): stack aws-py-cdk31, bucket S3 con l'account alla fine, ruoli e instance profile IAM con la region, anche le risorse create da CDK; test test_all_resources_named |
+| 2026-11-17 | Tag Name aws-py-cdk31 anche sullo stack CloudFormation (aspect PhysicalNames di naming.py), test test_stack_tags |
 
 
 # &lt; AlNao /&gt;

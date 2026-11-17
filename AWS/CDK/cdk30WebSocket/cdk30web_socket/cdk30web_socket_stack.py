@@ -30,6 +30,8 @@ from aws_cdk import (
 )
 from constructs import Construct
 
+from .naming import nome_risorsa
+
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
 
 HTTP_ROUTES = [
@@ -47,7 +49,7 @@ class Cdk30WebSocketStack(Stack):
         prefix = self.stack_name
 
         def table(name: str, pk: str, sk: str = None, ttl: str = None) -> dynamodb.TableV2:
-            return dynamodb.TableV2(self, f"{name}Table", table_name=f"{prefix}-{name}",
+            return dynamodb.TableV2(self, f"{name}Table", table_name=nome_risorsa(self, name),
                 partition_key=dynamodb.Attribute(name=pk, type=dynamodb.AttributeType.STRING),
                 sort_key=dynamodb.Attribute(name=sk, type=dynamodb.AttributeType.STRING) if sk else None,
                 time_to_live_attribute=ttl, billing=dynamodb.Billing.on_demand(), removal_policy=RemovalPolicy.DESTROY)
@@ -58,13 +60,13 @@ class Cdk30WebSocketStack(Stack):
             "BANS_TABLE": table("Bans", "nickname"),
         }
 
-        admin_key = secretsmanager.Secret(self, "AdminKey", secret_name=f"{prefix}-AdminKey",
+        admin_key = secretsmanager.Secret(self, "AdminKey", secret_name=nome_risorsa(self, "AdminKey"),
             description="chiave delle API di amministrazione del gioco (header X-Admin-Key)",
             generate_secret_string=secretsmanager.SecretStringGenerator(exclude_punctuation=True, password_length=32),
             removal_policy=RemovalPolicy.DESTROY)
 
         # WebSocket API: l'endpoint di gestione (callback) serve alle Lambda per scrivere ai client
-        ws_api = apigw.WebSocketApi(self, "WebSocketApi", api_name=f"{prefix}-ws",
+        ws_api = apigw.WebSocketApi(self, "WebSocketApi", api_name=nome_risorsa(self, "ws"),
                                     description="notifiche in tempo reale del gioco indovina il numero")
         ws_stage = apigw.WebSocketStage(self, "WebSocketStage", web_socket_api=ws_api, stage_name="prod", auto_deploy=True,
                                         throttle=apigw.ThrottleSettings(rate_limit=50, burst_limit=100))
@@ -74,9 +76,9 @@ class Cdk30WebSocketStack(Stack):
                "WS_ENDPOINT": ws_stage.callback_url, "ADMIN_SECRET_ARN": admin_key.secret_arn}
 
         def function(name: str, handler: str, timeout: int = 10) -> lambda_.Function:
-            log_group = logs.LogGroup(self, f"{name}Logs", log_group_name=f"/aws/lambda/{prefix}-{name}",
+            log_group = logs.LogGroup(self, f"{name}Logs", log_group_name=f"/aws/lambda/{nome_risorsa(self, name)}",
                                       retention=logs.RetentionDays.ONE_WEEK, removal_policy=RemovalPolicy.DESTROY)
-            fn = lambda_.Function(self, name, function_name=f"{prefix}-{name}",
+            fn = lambda_.Function(self, name, function_name=nome_risorsa(self, name),
                 runtime=lambda_.Runtime.PYTHON_3_13, architecture=lambda_.Architecture.ARM_64,
                 handler=handler, code=code, environment=env, log_group=log_group,
                 timeout=Duration.seconds(timeout), memory_size=256)
@@ -95,7 +97,7 @@ class Cdk30WebSocketStack(Stack):
             ws_api.add_route(route, integration=ws_integration)
 
         # HTTP API con CORS: le pagine stanno su CloudFront, le API su execute-api
-        http_api = apigw.HttpApi(self, "HttpApi", api_name=f"{prefix}-http", create_default_stage=False,
+        http_api = apigw.HttpApi(self, "HttpApi", api_name=nome_risorsa(self, "http"), create_default_stage=False,
             cors_preflight=apigw.CorsPreflightOptions(allow_origins=["*"], max_age=Duration.hours(1),
                 allow_methods=[apigw.CorsHttpMethod.GET, apigw.CorsHttpMethod.POST, apigw.CorsHttpMethod.OPTIONS],
                 allow_headers=["content-type", "x-admin-key"]))
@@ -106,7 +108,7 @@ class Cdk30WebSocketStack(Stack):
             http_api.add_routes(path=path, methods=[apigw.HttpMethod(method)], integration=http_integration)
 
         # pulizia giornaliera dei giocatori inattivi
-        events.Rule(self, "CleanupSchedule", rule_name=f"{prefix}-Cleanup", schedule=events.Schedule.rate(Duration.days(1)),
+        events.Rule(self, "CleanupSchedule", rule_name=nome_risorsa(self, "Cleanup"), schedule=events.Schedule.rate(Duration.days(1)),
                     targets=[targets.LambdaFunction(cleanup_fn)])
 
         # Pagine web: bucket privato, CloudFront con Origin Access Control

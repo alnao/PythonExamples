@@ -10,7 +10,6 @@ Stack del Pocket RAG serverless (Francoforte):
 
 from aws_cdk import (
     CfnOutput,
-    CfnResource,
     Duration,
     Fn,
     RemovalPolicy,
@@ -31,8 +30,7 @@ from aws_cdk import (
 )
 from constructs import Construct
 
-# Lunghezze massime ammesse da AWS per i nomi assegnati in physical_names
-NAME_LIMITS = {"FunctionName": 64, "RoleName": 64, "PolicyName": 128, "LayerName": 140}
+from .naming import nome_risorsa
 
 # Modelli Bedrock: i profili "eu." instradano le richieste nelle region europee
 MODELS = {
@@ -48,21 +46,6 @@ GEO_PREFIXES = ("eu.", "us.", "apac.", "global.")
 PROFILE_NAMES = {"EMBEDDING_MODEL": "Embedding", "CHAT_MODEL": "Chat", "IMAGE_MODEL": "Image"}
 MAX_UPLOAD_MB = 250
 
-# Nomi fissi delle risorse (al posto dei suffissi casuali di CDK e CloudFormation):
-# Lambda e altre risorse NAME-<nome>, log group /NAME/<nome>, bucket BUCKET_PREFIX-<nome>
-# (i nomi dei bucket devono essere minuscoli), ruoli e policy IAM <nome dello stack>-<nome>Service...
-NAME = "Cdk33BedrockServerless"
-BUCKET_PREFIX = "alnao-dev-cdk-cdk33bedrockserverless"
-# Risorse create internamente da CDK, riconosciute dal percorso del construct
-SUPPORT_OWNERS = (
-    ("/Custom::S3AutoDeleteObjectsCustomResourceProvider/", "AutoDeleteObjects"),
-    ("/BucketNotificationsHandler", "BucketNotifications"),
-    ("/Notifications/HandlerPolicy/", "BucketNotifications"),
-    ("/Custom::CDKBucketDeployment", "BucketDeployment"),
-    ("/SiteContent/AwsCliLayer/", "AwsCli"),
-    ("/Api/", "Api"),
-    ("/Ingest/", "Ingest"),
-)
 
 
 class Cdk33BedrockServerlessStack(Stack):
@@ -73,7 +56,6 @@ class Cdk33BedrockServerlessStack(Stack):
         # Documenti originali e stato dell'indicizzazione (il browser carica con un POST prefirmato)
         documents = s3.Bucket(
             self, "Documents",
-            bucket_name=f"{BUCKET_PREFIX}-documents",
             block_public_access=s3.BlockPublicAccess.BLOCK_ALL,
             encryption=s3.BucketEncryption.S3_MANAGED,
             enforce_ssl=True,
@@ -84,12 +66,12 @@ class Cdk33BedrockServerlessStack(Stack):
         )
 
         # Indice vettoriale: 1024 dimensioni (Titan v2), distanza coseno, testo non filtrabile
-        vector_bucket = s3vectors.CfnVectorBucket(self, "Vectors", vector_bucket_name=f"{BUCKET_PREFIX}-vectors")
+        vector_bucket = s3vectors.CfnVectorBucket(self, "Vectors", vector_bucket_name=nome_risorsa(self, "vectors"))
         vector_bucket.apply_removal_policy(RemovalPolicy.DESTROY)
         index = s3vectors.CfnIndex(
             self, "Index",
             vector_bucket_arn=vector_bucket.attr_vector_bucket_arn,
-            index_name="docs",
+            index_name=nome_risorsa(self, "docs"),
             data_type="float32",
             dimension=1024,
             distance_metric="cosine",
@@ -101,7 +83,7 @@ class Cdk33BedrockServerlessStack(Stack):
         # Chiave delle API generata da Secrets Manager
         api_key = secretsmanager.Secret(
             self, "ApiKey",
-            secret_name=f"{NAME}-ApiKey",
+            secret_name=nome_risorsa(self, "ApiKey"),
             description="Chiave X-API-Key del Pocket RAG serverless",
             generate_secret_string=secretsmanager.SecretStringGenerator(exclude_punctuation=True, password_length=40),
             removal_policy=RemovalPolicy.DESTROY,
@@ -110,7 +92,7 @@ class Cdk33BedrockServerlessStack(Stack):
         # Librerie Python (pypdf, python-docx, ...) create da build_layer.sh
         libraries = _lambda.LayerVersion(
             self, "Libraries",
-            layer_version_name=f"{NAME}-Libraries",
+            layer_version_name=nome_risorsa(self, "Libraries"),
             code=_lambda.Code.from_asset(layer_dir),
             compatible_runtimes=[_lambda.Runtime.PYTHON_3_13],
             compatible_architectures=[_lambda.Architecture.X86_64],
@@ -161,14 +143,13 @@ class Cdk33BedrockServerlessStack(Stack):
                                          s3.NotificationKeyFilter(prefix="uploads/"))
 
         # API: tutte le richieste /api/* alla Lambda Api
-        http_api = apigw.HttpApi(self, "HttpApi", api_name=f"{NAME}-HttpApi", description="API del Pocket RAG serverless")
+        http_api = apigw.HttpApi(self, "HttpApi", api_name=nome_risorsa(self, "HttpApi"), description="API del Pocket RAG serverless")
         http_api.add_routes(path="/api/{proxy+}", methods=[apigw.HttpMethod.ANY],
                             integration=integrations.HttpLambdaIntegration("ApiIntegration", api_fn))
 
         # Sito statico e API sullo stesso dominio CloudFront (niente CORS per le API)
         site = s3.Bucket(
             self, "Site",
-            bucket_name=f"{BUCKET_PREFIX}-site",
             block_public_access=s3.BlockPublicAccess.BLOCK_ALL,
             encryption=s3.BucketEncryption.S3_MANAGED,
             enforce_ssl=True,
@@ -184,7 +165,7 @@ class Cdk33BedrockServerlessStack(Stack):
             default_behavior=cloudfront.BehaviorOptions(
                 origin=origins.S3BucketOrigin.with_origin_access_control(
                     site, origin_access_control=cloudfront.S3OriginAccessControl(
-                        self, "SiteAccessControl", origin_access_control_name=f"{NAME}-Site")),
+                        self, "SiteAccessControl", origin_access_control_name=nome_risorsa(self, "Site"))),
                 viewer_protocol_policy=cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
             ),
             additional_behaviors={
@@ -206,67 +187,14 @@ class Cdk33BedrockServerlessStack(Stack):
             f"--region {self.region} --query SecretString --output text"))
         CfnOutput(self, "DocumentsBucket", value=documents.bucket_name)
 
-        self.physical_names()
-
-    def physical_names(self) -> None:
-        """Nomi fissi per Lambda, ruoli, policy e layer, comprese le risorse create internamente da
-        CDK (svuotamento dei bucket, notifiche S3, deploy del sito). Le Lambda di supporto ricevono
-        anche un log group dello stack (con i tag e cancellato dal destroy) al posto di quello che
-        Lambda creerebbe da sola al primo avvio.
-
-        I ruoli delle Lambda perdono AWSLambdaBasicExecutionRole (logs:CreateLogGroup su tutto) e possono
-        solo scrivere nel proprio log group: al destroy le ultime righe di log delle Lambda chiamate dalle
-        risorse personalizzate arrivano dopo la cancellazione del gruppo, e Lambda lo ricreerebbe senza
-        tag e senza scadenza."""
-        resources = [c for c in self.node.find_all() if isinstance(c, CfnResource)]
-        lambda_owners = {self.owner(r) for r in resources if r.cfn_resource_type == "AWS::Lambda::Function"} - {None}
-        for resource in resources:
-            owner = self.owner(resource)
-            kind = resource.cfn_resource_type
-            if owner is None:
-                continue
-            if kind == "AWS::Lambda::Function":
-                self.set_name(resource, "FunctionName", f"{NAME}-{owner}")
-                if not (isinstance(resource, _lambda.CfnFunction) and resource.logging_config is not None):
-                    log_group = logs.LogGroup(self, f"{resource.node.scope.node.id}Logs", log_group_name=f"/{NAME}/{owner}",
-                                              retention=logs.RetentionDays.ONE_WEEK, removal_policy=RemovalPolicy.DESTROY)
-                    resource.add_property_override("LoggingConfig.LogGroup", log_group.log_group_name)
-            elif kind == "AWS::IAM::Role":
-                self.set_name(resource, "RoleName", f"{self.stack_name}-{owner}ServiceRole")
-                if owner in lambda_owners:
-                    resource.add_property_deletion_override("ManagedPolicyArns")
-                    resource.add_property_override("Policies", [{
-                        "PolicyName": "Logs",
-                        "PolicyDocument": {"Version": "2012-10-17", "Statement": [{
-                            "Effect": "Allow",
-                            "Action": ["logs:CreateLogStream", "logs:PutLogEvents"],
-                            "Resource": f"arn:{self.partition}:logs:{self.region}:{self.account}:log-group:/{NAME}/{owner}:*",
-                        }]},
-                    }])
-            elif kind == "AWS::IAM::Policy":
-                self.set_name(resource, "PolicyName", f"{self.stack_name}-{owner}ServicePolicy")
-            elif kind == "AWS::Lambda::LayerVersion":
-                self.set_name(resource, "LayerName", f"{NAME}-{owner}")
-
-    @staticmethod
-    def owner(resource: CfnResource):
-        """Nome della risorsa da SUPPORT_OWNERS, riconosciuta dal percorso del construct (None se non c'e')."""
-        return next((name for marker, name in SUPPORT_OWNERS if marker in f"/{resource.node.path}/"), None)
-
-    @staticmethod
-    def set_name(resource: CfnResource, prop: str, value: str) -> None:
-        """Assegna un nome fisso controllando la lunghezza: meglio un errore in cdk synth che in deploy."""
-        if len(value) > NAME_LIMITS[prop]:
-            raise ValueError(f"{prop} '{value}' ha {len(value)} caratteri, AWS ne ammette al massimo {NAME_LIMITS[prop]}")
-        resource.add_property_override(prop, value)
 
     def function(self, name: str, handler: str, layer: _lambda.ILayerVersion, environment: dict,
                  timeout: Duration, memory_size: int, retry_attempts: int = None) -> _lambda.Function:
-        log_group = logs.LogGroup(self, f"{name}Logs", log_group_name=f"/{NAME}/{name}",
+        log_group = logs.LogGroup(self, f"{name}Logs", log_group_name=f"/aws/lambda/{nome_risorsa(self, name)}",
                                   retention=logs.RetentionDays.ONE_WEEK, removal_policy=RemovalPolicy.DESTROY)
         return _lambda.Function(
             self, name,
-            function_name=f"{NAME}-{name}",
+            function_name=nome_risorsa(self, name),
             runtime=_lambda.Runtime.PYTHON_3_13,
             architecture=_lambda.Architecture.X86_64,
             handler=handler,
@@ -289,7 +217,7 @@ class Cdk33BedrockServerlessStack(Stack):
         """Profilo di inferenza dell'applicazione copiato dal modello (riceve i tag come ogni risorsa)."""
         return bedrock.CfnApplicationInferenceProfile(
             self, f"{name}Profile",
-            inference_profile_name=f"{NAME}-{name}",
+            inference_profile_name=nome_risorsa(self, name),
             description=f"{name} del Pocket RAG serverless con {model_id}",
             model_source=bedrock.CfnApplicationInferenceProfile.InferenceProfileModelSourceProperty(
                 copy_from=self.model_source(model_id)),

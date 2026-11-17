@@ -5,6 +5,7 @@ import aws_cdk as core
 import aws_cdk.assertions as assertions
 
 from cdk27eks.cdk27eks_stack import Cdk27EksStack
+from cdk27eks.naming import check_template
 from cdk27eks.tags import TAGS, apply_tags
 
 # Tipi che CloudFormation non permette di taggare
@@ -12,12 +13,15 @@ UNTAGGABLE = {"AWS::EC2::SecurityGroupEgress", "AWS::EC2::SecurityGroupIngress"}
 
 # feature flag di cdk.json, come li passa la CLI a cdk synth/deploy
 CDK_CONTEXT = json.loads((Path(__file__).parents[2] / "cdk.json").read_text())["context"]
+STACK_NAME = "aws-py-cdk27"
+# account e region finti: il lookup della VPC di default nei test restituisce una VPC finta
+ENV = core.Environment(account="111111111111", region="eu-central-1")
 
 
 def template():
     app = core.App(context=CDK_CONTEXT)
     apply_tags(app)
-    stack = Cdk27EksStack(app, "cdk27")
+    stack = Cdk27EksStack(app, STACK_NAME, env=ENV)
     return assertions.Template.from_stack(stack)
 
 
@@ -58,7 +62,7 @@ def test_parameters():
 def test_cluster():
     t = template()
     t.has_resource_properties("AWS::EKS::Cluster", {
-        "Name": {"Ref": "clustername"}, "Version": {"Ref": "kubernetesversion"},
+        "Name": "aws-py-cdk27-cluster", "Version": {"Ref": "kubernetesversion"},
         "AccessConfig": {"AuthenticationMode": "API_AND_CONFIG_MAP", "BootstrapClusterCreatorAdminPermissions": True},
         "UpgradePolicy": {"SupportType": "STANDARD"},
         "Logging": {"ClusterLogging": {"EnabledTypes": [{"Type": "api"}, {"Type": "audit"}]}},
@@ -102,6 +106,31 @@ def test_launch_template_tags_instances_volumes_and_network_interfaces():
     for lt in template().find_resources("AWS::EC2::LaunchTemplate").values():
         specs = {s["ResourceType"]: {t["Key"]: t["Value"] for t in s["Tags"]}
                  for s in lt["Properties"]["LaunchTemplateData"]["TagSpecifications"]}
-        assert specs == {"instance": TAGS, "volume": TAGS, "network-interface": TAGS}
+        assert set(specs) == {"instance", "volume", "network-interface"}
+        for tags in specs.values():  # tag standard e Name delle risorse lanciate (aws-py-cdkXX-<servizio>)
+            assert tags == {**TAGS, "Name": specs["instance"]["Name"]} and tags["Name"].startswith(STACK_NAME + "-")
         top = {t["Key"]: t["Value"] for t in lt["Properties"]["TagSpecifications"][0]["Tags"]}
         assert top == {**top, **TAGS}  # il launch template stesso
+
+
+def test_default_vpc_and_subnets():
+    """Per default la VPC di default della region e due sue subnet (nei test la VPC finta di CDK)."""
+    params = template().to_json()["Parameters"]
+    assert params["vpcid"]["Default"] == "vpc-12345"
+    assert params["subnetids"]["Default"] == "s-12345,s-67890"
+
+
+def test_all_resources_named():
+    """Ogni risorsa si chiama aws-py-cdk27-<servizio> (bucket S3 con l'account alla fine, ruoli IAM con la
+    region) e ha il tag Name uguale al nome; le risorse senza nome (EC2, EFS, CloudFront, ...) hanno solo il tag Name."""
+    assert check_template(template().to_json(), STACK_NAME) == []
+
+
+def test_stack_tags(monkeypatch):
+    """Lo stack CloudFormation ha i tag standard e Name uguale al suo nome: CDK li passa allo stack al deploy e
+    CloudFormation li copia sulle risorse che non li hanno gia' (il Name scritto sulla risorsa vince)."""
+    stacks, from_stack = [], assertions.Template.from_stack
+    monkeypatch.setattr(assertions.Template, "from_stack",
+                        staticmethod(lambda stack, *args, **kwargs: stacks.append(stack) or from_stack(stack, *args, **kwargs)))
+    template()
+    assert stacks[0].tags.tag_values() == {**TAGS, "Name": STACK_NAME}

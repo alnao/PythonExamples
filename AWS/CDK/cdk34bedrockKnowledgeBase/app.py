@@ -20,7 +20,7 @@ SYNTHESIZER = cdk.DefaultStackSynthesizer(
     bootstrap_stack_version_ssm_parameter="/cdk-bootstrap/alnao/dev/version",
 )
 
-Cdk34BedrockKnowledgeBaseStack(app, "Cdk34BedrockKnowledgeBaseStack",
+Cdk34BedrockKnowledgeBaseStack(app, "aws-py-cdk34",
     synthesizer=SYNTHESIZER,
     # region fissa: Francoforte
     env=cdk.Environment(account=os.getenv("CDK_DEFAULT_ACCOUNT"), region="eu-central-1"),

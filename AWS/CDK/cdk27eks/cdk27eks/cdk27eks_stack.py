@@ -1,4 +1,4 @@
-"""Cluster Amazon EKS con un node group gestito e un database RDS MySQL, nella VPC di default.
+"""Cluster Amazon EKS con un node group gestito e un database RDS MySQL, per default nella VPC di default.
 
 Come il template CloudFormation l'esempio usa le risorse L1 (CfnCluster, CfnNodegroup): il costrutto L2
 eks.Cluster di CDK creerebbe anche una Lambda con kubectl e diversi custom resource, qui non servono
@@ -25,6 +25,9 @@ from aws_cdk import (
 )
 from constructs import Construct
 
+from .naming import nome_risorsa
+from .network import lookup_subnets, lookup_vpc, vpc_parameter
+
 
 INSTANCE_TYPES = ["t3.small", "t3.medium", "t3.large", "m5.large", "m5.xlarge"]
 
@@ -34,20 +37,23 @@ class Cdk27EksStack(Stack):
     def __init__(self, scope: Construct, construct_id: str, **kwargs) -> None:
         super().__init__(scope, construct_id, **kwargs)
 
-        vpc_id = CfnParameter(self, "vpcid", type="AWS::EC2::VPC::Id", description="VPC (quella di default va bene)").value_as_string
+        # VPC e subnet: per default la VPC di default della region e due sue subnet in zone diverse (vedi network.py)
+        default_vpc = lookup_vpc(self)
+        vpc_id = vpc_parameter(self, default_vpc)
         subnet_ids = CfnParameter(self, "subnetids", type="List<AWS::EC2::Subnet::Id>",
-                                  description="almeno due subnet della VPC in zone diverse").value_as_list
+                                  default=",".join(s.subnet_id for s in lookup_subnets(default_vpc, 2)),
+                                  description="almeno due subnet della VPC in zone diverse (default: due subnet della VPC di default)"
+                                  ).value_as_list
         admin_arn = CfnParameter(self, "adminprincipalarn", type="String", allowed_pattern="arn:aws:iam::[0-9]{12}:(user|role)/.+",
                                  description="utente o ruolo IAM amministratore del cluster (per kubectl)").value_as_string
-        cluster_name = CfnParameter(self, "clustername", type="String", default="cdk27eks-cluster",
-                                    description="nome del cluster EKS").value_as_string
+        cluster_name = nome_risorsa(self, "cluster")
         k8s_version = CfnParameter(self, "kubernetesversion", type="String", default="1.35",
                                    description="versione di Kubernetes (verificare quelle in supporto standard)").value_as_string
         node_type = CfnParameter(self, "nodeinstancetype", type="String", default="t3.small",
                                  allowed_values=INSTANCE_TYPES, description="tipo delle istanze dei nodi").value_as_string
 
         # Log group del control plane: il nome e' fisso (lo decide EKS), creato prima del cluster per avere tag e scadenza
-        log_group = logs.LogGroup(self, "ClusterLogGroup", log_group_name=Fn.sub("/aws/eks/${Name}/cluster", {"Name": cluster_name}),
+        log_group = logs.LogGroup(self, "ClusterLogGroup", log_group_name=f"/aws/eks/{cluster_name}/cluster",
                                   retention=logs.RetentionDays.ONE_WEEK, removal_policy=RemovalPolicy.DESTROY)
 
         cluster_role = iam.Role(self, "ClusterRole", assumed_by=iam.ServicePrincipal("eks.amazonaws.com"),
@@ -85,7 +91,7 @@ class Cdk27EksStack(Stack):
             http_tokens=ec2.LaunchTemplateHttpTokens.REQUIRED,
             http_put_response_hop_limit=2)  # i pod raggiungono i metadati dell'istanza
         nodegroup = eks.CfnNodegroup(self, "Nodegroup",
-            cluster_name=cluster.ref, nodegroup_name=Fn.sub("${Name}-nodes", {"Name": cluster_name}),
+            cluster_name=cluster.ref, nodegroup_name=nome_risorsa(self, "nodes"),
             node_role=node_role.role_arn, subnets=subnet_ids,
             scaling_config=eks.CfnNodegroup.ScalingConfigProperty(min_size=1, desired_size=1, max_size=2),
             instance_types=[node_type], ami_type="AL2023_x86_64_STANDARD", capacity_type="ON_DEMAND",
@@ -107,7 +113,7 @@ class Cdk27EksStack(Stack):
         subnet_group = rds.CfnDBSubnetGroup(self, "DatabaseSubnetGroup", subnet_ids=subnet_ids,
                                             db_subnet_group_description="Subnet del database cdk27")
         database = rds.CfnDBInstance(self, "Database",
-            db_instance_identifier=Fn.sub("${Name}-mysql", {"Name": cluster_name}),
+            db_instance_identifier=nome_risorsa(self, "mysql"),
             db_instance_class="db.t4g.micro", engine="mysql", engine_version="8.4.8",
             master_username="root", manage_master_user_password=True,  # password generata e ruotata da RDS
             allocated_storage="20", storage_type="gp3", storage_encrypted=True,

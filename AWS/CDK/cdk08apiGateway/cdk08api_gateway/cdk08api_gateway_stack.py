@@ -1,159 +1,72 @@
+"""API Gateway REST con due stage (dev e prod) che invocano due alias della stessa Lambda.
+
+- Lambda Python 3.13 (ARM) con due alias, dev e prod, sulla versione corrente del codice
+- API REST con la risorsa GET /stage_info; l'integrazione chiama la funzione con l'alias scritto nella
+  stage variable lambdaAlias: ogni stage invoca il "suo" alias
+- un deployment e due stage (dev, prod) con limiti di richieste; ogni alias da' il permesso solo al suo stage
+- niente log di esecuzione di API Gateway: richiederebbero il ruolo CloudWatch nelle impostazioni dell'account
+
+Dall'esempio aws-samples api-stages-lambda:
+https://github.com/aws-samples/aws-cdk-examples/tree/main/python/api-stages-lambda
+"""
+
+import os
+
 from aws_cdk import (
+    CfnOutput,
+    Duration,
+    RemovalPolicy,
     Stack,
     aws_apigateway as apigw,
-    aws_lambda as _lambda,
     aws_iam as iam,
-    Aws, CfnOutput
+    aws_lambda as _lambda,
+    aws_logs as logs,
 )
 from constructs import Construct
 
-#see https://github.com/aws-samples/aws-cdk-examples/blob/main/python/api-stages-lambda/lambda/lambda-handler.py
+from .naming import nome_risorsa
+
+LAMBDA_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "lambda")
+STAGES = ("dev", "prod")
+PATH = "/stage_info"
+
+
 class Cdk08ApiGatewayStack(Stack):
 
     def __init__(self, scope: Construct, construct_id: str, **kwargs) -> None:
         super().__init__(scope, construct_id, **kwargs)
+        function_name = nome_risorsa(self, "StageInfo")
 
-        # Define AWS Lambda function and aliases
-        function = _lambda.Function(self, "LambdaFunction",
-            runtime=_lambda.Runtime.PYTHON_3_8,
-            handler="function.handler",
-            code=_lambda.Code.from_asset("lambda")
-        )
+        log_group = logs.LogGroup(self, "FunctionLogs", log_group_name=f"/aws/lambda/{function_name}",
+                                  retention=logs.RetentionDays.ONE_WEEK, removal_policy=RemovalPolicy.DESTROY)
+        function = _lambda.Function(self, "LambdaFunction", function_name=function_name,
+            runtime=_lambda.Runtime.PYTHON_3_13, architecture=_lambda.Architecture.ARM_64,
+            handler="function.handler", code=_lambda.Code.from_asset(LAMBDA_DIR, exclude=["__pycache__"]),
+            timeout=Duration.seconds(10), log_group=log_group)
         version = function.current_version
+        aliases = {stage: _lambda.Alias(self, f"{stage.capitalize()}Alias", alias_name=stage, version=version)
+                   for stage in STAGES}
 
-        alias = _lambda.Alias(self, "TestAlias",
-            alias_name="test",
-            version=version
-        )
-        lambda_integration = apigw.LambdaIntegration(function)
+        # API senza deployment automatico: deployment e stage sono dichiarati sotto
+        self.api = apigw.RestApi(self, "Api", rest_api_name=nome_risorsa(self, "MultiStageApi"), deploy=False,
+                                 description="cdk08: uno stage per ogni alias della Lambda")
+        resource = self.api.root.add_resource(PATH.strip("/"))
+        # l'URI dell'integrazione contiene la stage variable: API Gateway la sostituisce a ogni richiesta
+        integration = apigw.AwsIntegration(service="lambda", proxy=True,
+            path=f"2015-03-31/functions/{function.function_arn}:${{stageVariables.lambdaAlias}}/invocations")
+        method = resource.add_method("GET", integration)
 
-        # Define the REST API
-        api = apigw.RestApi(self, "DeploymentStagesAPI",
-            rest_api_name="MultiStageApi",
-            deploy=False
-        )
-        resource = api.root.add_resource("stage_info")
-        method = resource.add_method("GET", lambda_integration)
-        deployment = apigw.Deployment(self, "ApiDeployment", api=api)    
-        stage = apigw.Stage(self, "TestApiStage",
-            deployment=deployment,
-            stage_name="dev",
-            variables={
-                "lambdaAlias": alias.alias_name
-            }
-        )
-        alias.add_permission("TestStageInvokeTestAliasPermission",
-            principal=iam.ServicePrincipal("apigateway.amazonaws.com"),
-            action="lambda:InvokeFunction",
-            source_arn=api.arn_for_execute_api(
-                method=method.http_method,
-                path=resource.path,
-                stage=stage.stage_name
-            )
-        )
+        deployment = apigw.Deployment(self, "Deployment", api=self.api, description="cdk08: dev e prod")
+        deployment.node.add_dependency(method)
 
-        # Define outputs
-        CfnOutput(self, "ApiHostUrl", 
-            value=f"{api.rest_api_id}.execute-api.{Aws.REGION}.amazonaws.com",
-            description="API Host URL"
-        )
-
-    def complete_version(self,api,version):
-
-        # Define GET method for /stage_info
-        stage_info_resource = api.root.add_resource("stage_info")
-        stage_info_get_method = stage_info_resource.add_method("GET",
-            authorization_type=apigw.AuthorizationType.IAM,
-            integration=apigw.AwsIntegration(
-                service="lambda",
-                region=Aws.REGION,
-                proxy=True,
-                path=f"2015-03-31/functions/{function.function_arn}:${{stageVariables.lambdaAlias}}/invocations"
-            )
-        )
-
-        # Define Prod specific resources
-        #prod_alias = _lambda.Alias(self, "ProdAlias",
-        #    alias_name="prod",
-        #    version=version
-        #)
-
-        #prod_deployment = apigw.Deployment(self, "ProdApiDeployment", api=api)    
-        #prod_stage = apigw.Stage(self, "ProdApiStage",
-        #    deployment=prod_deployment,
-        #    stage_name="prod",
-        #    variables={
-        #        "lambdaAlias": prod_alias.alias_name
-        #    }
-        #)
-
-        ## NOTE: We use this method of permissioning to further restrict 
-        ## which API Gateway stage can invoke a specific Lambda Alias.
-        ## This approach is more restrictive than using prod_alias.grant_invoke(api)
-        ## which would give permission to the API Gateway service or a specific
-        ## IAM role that APIGW can assume to invoke the Lambda Alias
-        #prod_alias.add_permission("ProdStageInvokeProdAliasPermission",
-        #    principal=iam.ServicePrincipal("apigateway.amazonaws.com"),
-        #    action="lambda:InvokeFunction",
-        #    source_arn=api.arn_for_execute_api(
-        #        method=stage_info_get_method.http_method,
-        #        path=stage_info_resource.path,
-        #        stage=prod_stage.stage_name
-        #    )
-        #)
-
-        # Define Dev specific resources
-        dev_alias = _lambda.Alias(self, "DevAlias",
-            alias_name="dev",
-            version=version
-        )
-
-        dev_deployment = apigw.Deployment(self, "DevApiDeployment", api=api)    
-        dev_stage = apigw.Stage(self, "DevApiStage",
-            deployment=dev_deployment,
-            stage_name="dev",
-            variables={
-                "lambdaAlias": dev_alias.alias_name
-            }
-        )
-
-        dev_alias.add_permission("DevStageInvokeDevAliasPermission",
-            principal=iam.ServicePrincipal("apigateway.amazonaws.com"),
-            action="lambda:InvokeFunction",
-            source_arn=api.arn_for_execute_api(
-                method=stage_info_get_method.http_method,
-                path=stage_info_resource.path,
-                stage=dev_stage.stage_name
-            )
-        )
-
-        # Define Test specific resources
-        test_alias = _lambda.Alias(self, "TestAlias",
-            alias_name="test",
-            version=version
-        )
-
-        test_deployment = apigw.Deployment(self, "TestApiDeployment", api=api)    
-        test_stage = apigw.Stage(self, "TestApiStage",
-            deployment=test_deployment,
-            stage_name="test",
-            variables={
-                "lambdaAlias": test_alias.alias_name
-            }
-        )
-
-        test_alias.add_permission("TestStageInvokeTestAliasPermission",
-            principal=iam.ServicePrincipal("apigateway.amazonaws.com"),
-            action="lambda:InvokeFunction",
-            source_arn=api.arn_for_execute_api(
-                method=stage_info_get_method.http_method,
-                path=stage_info_resource.path,
-                stage=test_stage.stage_name
-            )
-        )
-
-        # Define outputs
-        CfnOutput(self, "ApiHostUrl", 
-            value=f"{api.rest_api_id}.execute-api.{Aws.REGION}.amazonaws.com",
-            description="API Host URL"
-        )
+        self.stages = {}
+        for stage_name, alias in aliases.items():
+            stage = apigw.Stage(self, f"{stage_name.capitalize()}Stage", deployment=deployment, stage_name=stage_name,
+                                variables={"lambdaAlias": alias.alias_name},
+                                throttling_rate_limit=10, throttling_burst_limit=20, metrics_enabled=True)
+            # il permesso vale solo per questo stage e questo alias
+            alias.add_permission(f"{stage_name.capitalize()}StageInvoke",
+                principal=iam.ServicePrincipal("apigateway.amazonaws.com"), action="lambda:InvokeFunction",
+                source_arn=self.api.arn_for_execute_api(method="GET", path=PATH, stage=stage_name))
+            self.stages[stage_name] = stage
+            CfnOutput(self, f"{stage_name.capitalize()}Url", value=stage.url_for_path(PATH))

@@ -41,6 +41,7 @@ browser ── API Gateway REST, stage dev (CORS, 10 req/s) ──┬── POST
 ├── app.py                              # 🚀 app CDK: tag standard, bootstrap alnao-dev-cdk
 ├── cdk26blockchain_lambda/
 │   ├── cdk26blockchain_lambda_stack.py # 🏗️ tabelle, Lambda, API Gateway, sito su CloudFront
+│   ├── naming.py                       # 🏷️ nomi aws-py-cdk26-<servizio> e tag Name di ogni risorsa
 │   └── tags.py                         # 🏷️ tag standard e apply_tags (usata da app.py e dai test)
 ├── lambda/
 │   ├── api.py                          # ⚡ una funzione per ogni operazione delle API
@@ -53,8 +54,8 @@ browser ── API Gateway REST, stage dev (CORS, 10 req/s) ──┬── POST
 Tabelle (on-demand):
 | Tabella | Chiave | Indice | Contenuto |
 |---------|--------|--------|-----------|
-| `<stack>-Blocks` | `chain` (sempre `main`) + `index` | - | blocco: transazioni, `tx_root`, `previous_hash`, `difficulty`, `nonce`, `hash` |
-| `<stack>-Transactions` | `sender` + `timestamp` | `StatusIndex` (`status` + `timestamp`) | `id`, `recipient`, `amount`, `status`, `block_index` |
+| `aws-py-cdk26-blocks` | `chain` (sempre `main`) + `index` | - | blocco: transazioni, `tx_root`, `previous_hash`, `difficulty`, `nonce`, `hash` |
+| `aws-py-cdk26-transactions` | `sender` + `timestamp` | `StatusIndex` (`status` + `timestamp`) | `id`, `recipient`, `amount`, `status`, `block_index` |
 
 
 ## 🛠️ Deploy
@@ -74,7 +75,7 @@ Al termine `cdk deploy` stampa `ApiUrl`, `SiteUrl` (la prima distribuzione Cloud
 
 Prova con curl:
 ```bash
-API_URL=$(aws cloudformation describe-stacks --stack-name Cdk26BlockchainLambdaStack --query "Stacks[0].Outputs[?OutputKey=='ApiUrl'].OutputValue" --output text)
+API_URL=$(aws cloudformation describe-stacks --stack-name aws-py-cdk26 --query "Stacks[0].Outputs[?OutputKey=='ApiUrl'].OutputValue" --output text)
 curl -X POST ${API_URL}transaction -H "Content-Type: application/json" -d '{"sender": "Root", "recipient": "Nao", "amount": 1984}'
 curl -X POST ${API_URL}transaction -H "Content-Type: application/json" -d '{"sender": "Nao", "recipient": "Alice", "amount": 50}'
 curl -X POST ${API_URL}transaction -H "Content-Type: application/json" -d '{"sender": "Nao", "recipient": "Vale", "amount": 42}'
@@ -89,7 +90,7 @@ Per vedere la verifica in azione si può "falsificare" un blocco già minato dal
 
 **Difficoltà**: la costante `DIFFICULTY` nello stack (default 4). Ogni zero in più moltiplica per 16 i tentativi: con 5 il mining richiede circa un milione di hash (qualche secondo), con 6 rischia di superare i 29 secondi di API Gateway. Il nonce trovato e la durata compaiono nella risposta di `POST /mine` e nel log della Lambda.
 
-**Tag**: tutte le risorse hanno i tag standard del repository (`Project=Development.aws.py-CDK.cdk26blockchainLambda`, `ManagedBy=CDK`), comprese le Lambda di supporto di CDK (copia del sito, svuotamento del bucket). Non hanno tag solo i tipi che CloudFormation non permette di taggare: risorse, metodi e deployment di API Gateway, OAC, layer Lambda, permessi Lambda, policy IAM inline, policy del bucket.
+**Tag**: tutte le risorse hanno i tag standard del repository (`Project=Development.aws.py-CDK.cdk26blockchainLambda`, `ManagedBy=CDK`), comprese le Lambda di supporto di CDK (copia del sito, svuotamento del bucket). Non hanno tag solo i tipi che CloudFormation non permette di taggare: risorse, metodi e deployment di API Gateway, OAC, layer Lambda, permessi Lambda, policy IAM inline, policy del bucket. Il tag `Name` di ogni risorsa è uguale al suo nome (`aws-py-cdk26-<servizio>`, vedi `naming.py`).
 
 
 ## 💰 Analisi dei Costi
@@ -116,7 +117,7 @@ cdk destroy
 aws resourcegroupstaggingapi get-resources --tag-filters Key=Project,Values=Development.aws.py-CDK.cdk26blockchainLambda --query "ResourceTagMappingList[].ResourceARN" --output text
 ```
 - tabelle, Lambda, log group, API, distribuzione CloudFront e bucket (svuotato da CDK) si cancellano con lo stack: la cancellazione della distribuzione CloudFront impiega qualche minuto
-- la Lambda di CDK che svuota il bucket al destroy scrive in un log group creato da Lambda (`/aws/lambda/<stack>-CustomS3AutoDeleteObjects...`), senza tag e non cancellato dallo stack: si toglie con `aws logs delete-log-group --log-group-name <nome>`
+- anche la Lambda di CDK che svuota il bucket al destroy scrive in un log group dello stack (`/aws/lambda/aws-py-cdk26-s3-auto-delete-objects-handler`), cancellato con lo stack
 - il bootstrap resta (condiviso con gli altri progetti CDK): `../bootstrap/bootstrap.sh destroy <region>` quando nella region non ci sono più stack CDK
 
 
@@ -125,6 +126,16 @@ aws resourcegroupstaggingapi get-resources --tag-filters Key=Project,Values=Deve
 - ✍️ **Firme digitali**: transazioni firmate con una chiave privata e verificate dalla Lambda
 - ⏱️ **Mining automatico** con EventBridge Scheduler e **difficoltà adattiva** sul tempo dei blocchi
 - 📊 **Saldi incrementali** salvati a ogni blocco, invece di rileggere tutte le transazioni
+
+
+## Changelog
+| Data | Modifica |
+|------|----------|
+| 2026-11-10 | Prima versione dell'esempio, ispirata all'esempio CloudFormation corrispondente |
+| 2026-11-17 | Revisione degli esempi CDK: test eseguiti e tag standard verificati su tutte le risorse del template sintetizzato, nessuna modifica al codice |
+| 2026-11-17 | Log group dello stack (tag standard, 7 giorni, cancellato al destroy) anche per le Lambda di supporto di CDK, che prima creavano da sole log group senza tag (es. /aws/lambda/<stack>-CustomS3AutoDeleteObjectsCustom-...); i ruoli delle Lambda scrivono solo nel proprio log group (senza AWSLambdaBasicExecutionRole), test dedicato |
+| 2026-11-17 | Nomi delle risorse aws-py-cdk26-<servizio> uguali al tag Name (naming.py comune a tutti gli esempi): stack aws-py-cdk26, bucket S3 con l'account alla fine, ruoli e instance profile IAM con la region, anche le risorse create da CDK; test test_all_resources_named |
+| 2026-11-17 | Tag Name aws-py-cdk26 anche sullo stack CloudFormation (aspect PhysicalNames di naming.py), test test_stack_tags |
 
 
 # &lt; AlNao /&gt;

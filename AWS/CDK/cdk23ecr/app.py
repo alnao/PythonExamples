@@ -18,7 +18,7 @@ SYNTHESIZER = cdk.DefaultStackSynthesizer(
     bootstrap_stack_version_ssm_parameter="/cdk-bootstrap/alnao/dev/version",
 )
 
-Cdk23EcrStack(app, "Cdk23EcrStack",
+Cdk23EcrStack(app, "aws-py-cdk23",
     synthesizer=SYNTHESIZER,
     # stack senza env: account e region sono quelli del profilo AWS usato da cdk deploy
     )

@@ -27,6 +27,8 @@ from aws_cdk import (
 )
 from constructs import Construct
 
+from .naming import nome_risorsa
+
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
 MAX_TESTO = 500
 
@@ -60,7 +62,7 @@ class Cdk29GraphQlStack(Stack):
         super().__init__(scope, construct_id, **kwargs)
         prefix = self.stack_name
 
-        api = appsync.GraphqlApi(self, "Api", name=f"{prefix}-listaNote",
+        api = appsync.GraphqlApi(self, "Api", name=nome_risorsa(self, "listaNote"),
             definition=appsync.Definition.from_file(os.path.join(ROOT, "graphql", "schema.graphql")),
             authorization_config=appsync.AuthorizationConfig(default_authorization=appsync.AuthorizationMode(
                 authorization_type=appsync.AuthorizationType.API_KEY,
@@ -75,10 +77,12 @@ class Cdk29GraphQlStack(Stack):
         logs.LogGroup(self, "ApiLogs", log_group_name=Fn.join("", ["/aws/appsync/apis/", api.api_id]),
                       retention=logs.RetentionDays.ONE_WEEK, removal_policy=RemovalPolicy.DESTROY)
 
-        table = dynamodb.TableV2(self, "NoteTable", table_name=f"{prefix}-listaNote",
+        table = dynamodb.TableV2(self, "NoteTable", table_name=nome_risorsa(self, "listaNote"),
             partition_key=dynamodb.Attribute(name="id", type=dynamodb.AttributeType.STRING),
             billing=dynamodb.Billing.on_demand(), removal_policy=RemovalPolicy.DESTROY)
-        source = api.add_dynamo_db_data_source("NoteTableDataSource", table)
+        # nome scritto nel codice: i resolver citano la data source per nome (solo lettere, numeri e _)
+        source = api.add_dynamo_db_data_source("NoteTableDataSource", table,
+                                               name=nome_risorsa(self, "note-table").replace("-", "_"))
 
         source.create_resolver("GetNoteResolver", type_name="Query", field_name="getNote",
             request_mapping_template=appsync.MappingTemplate.dynamo_db_scan_table(),

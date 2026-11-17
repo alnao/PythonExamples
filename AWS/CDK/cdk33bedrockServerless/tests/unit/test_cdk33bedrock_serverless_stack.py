@@ -5,6 +5,7 @@ import aws_cdk as core
 import aws_cdk.assertions as assertions
 
 from cdk33bedrock_serverless.cdk33bedrock_serverless_stack import Cdk33BedrockServerlessStack
+from cdk33bedrock_serverless.naming import check_template
 from cdk33bedrock_serverless.tags import TAGS, apply_tags
 
 # Tipi che CloudFormation non permette di taggare (le Custom:: sono risorse di CDK, non di AWS)
@@ -15,11 +16,14 @@ UNTAGGABLE = {
 }
 
 
+STACK_NAME = "aws-py-cdk33"
+
+
 def template():
     app = core.App()
     apply_tags(app)
     # cartella vuota al posto del layer creato da build_layer.sh
-    stack = Cdk33BedrockServerlessStack(app, "cdk33-bedrock-serverless", layer_dir=tempfile.mkdtemp(),
+    stack = Cdk33BedrockServerlessStack(app, STACK_NAME, layer_dir=tempfile.mkdtemp(),
                                    env=core.Environment(account="123456789012", region="eu-central-1"))
     return assertions.Template.from_stack(stack)
 
@@ -66,15 +70,18 @@ def test_buckets_are_private():
 
 def test_fixed_names():
     t = template()
-    t.has_resource_properties("AWS::S3::Bucket", {"BucketName": "alnao-dev-cdk-cdk33bedrockserverless-documents"})
-    t.has_resource_properties("AWS::S3::Bucket", {"BucketName": "alnao-dev-cdk-cdk33bedrockserverless-site"})
-    t.has_resource_properties("AWS::S3Vectors::VectorBucket", {"VectorBucketName": "alnao-dev-cdk-cdk33bedrockserverless-vectors"})
-    for name in ("Api", "Ingest", "BucketNotifications", "AutoDeleteObjects", "BucketDeployment"):
-        t.has_resource_properties("AWS::Lambda::Function", {"FunctionName": f"Cdk33BedrockServerless-{name}"})
-        t.has_resource_properties("AWS::Logs::LogGroup", {"LogGroupName": f"/Cdk33BedrockServerless/{name}"})
-        t.has_resource_properties("AWS::IAM::Role", {"RoleName": f"cdk33-bedrock-serverless-{name}ServiceRole"})
-    t.has_resource_properties("AWS::IAM::Policy", {"PolicyName": "cdk33-bedrock-serverless-ApiServicePolicy"})
-    t.has_resource_properties("AWS::SecretsManager::Secret", {"Name": "Cdk33BedrockServerless-ApiKey"})
+    t.has_resource_properties("AWS::S3::Bucket", {"BucketName": "aws-py-cdk33-documents-123456789012"})
+    t.has_resource_properties("AWS::S3::Bucket", {"BucketName": "aws-py-cdk33-site-123456789012"})
+    t.has_resource_properties("AWS::S3Vectors::VectorBucket", {"VectorBucketName": "aws-py-cdk33-vectors"})
+    t.has_resource_properties("AWS::S3Vectors::Index", {"IndexName": "aws-py-cdk33-docs"})
+    names = {f["Properties"]["FunctionName"] for f in t.find_resources("AWS::Lambda::Function").values()}
+    assert names == {"aws-py-cdk33-api", "aws-py-cdk33-ingest", "aws-py-cdk33-bucket-notifications-handler",
+                     "aws-py-cdk33-s3-auto-delete-objects-handler", "aws-py-cdk33-cdk-bucket-deployment"}
+    for name in names:
+        t.has_resource_properties("AWS::Logs::LogGroup", {"LogGroupName": f"/aws/lambda/{name}"})
+    for role in t.find_resources("AWS::IAM::Role").values():
+        assert role["Properties"]["RoleName"].startswith("aws-py-cdk33-") and role["Properties"]["RoleName"].endswith("-eu-central-1")
+    t.has_resource_properties("AWS::SecretsManager::Secret", {"Name": "aws-py-cdk33-api-key"})
 
 
 def test_name_lengths():
@@ -110,9 +117,9 @@ def test_inference_profiles():
     sources = {p["Properties"]["InferenceProfileName"]: p["Properties"]["ModelSource"]["CopyFrom"]
                for p in profiles.values()}
     assert sources == {
-        "Cdk33BedrockServerless-Embedding": "arn:aws:bedrock:eu-central-1::foundation-model/amazon.titan-embed-text-v2:0",
-        "Cdk33BedrockServerless-Chat": "arn:aws:bedrock:eu-central-1:123456789012:inference-profile/eu.amazon.nova-lite-v1:0",
-        "Cdk33BedrockServerless-Image": "arn:aws:bedrock:eu-central-1:123456789012:inference-profile/eu.amazon.nova-lite-v1:0",
+        "aws-py-cdk33-embedding": "arn:aws:bedrock:eu-central-1::foundation-model/amazon.titan-embed-text-v2:0",
+        "aws-py-cdk33-chat": "arn:aws:bedrock:eu-central-1:123456789012:inference-profile/eu.amazon.nova-lite-v1:0",
+        "aws-py-cdk33-image": "arn:aws:bedrock:eu-central-1:123456789012:inference-profile/eu.amazon.nova-lite-v1:0",
     }
     # nome e descrizione accettano solo lettere, numeri, ":" e "." separati da uno spazio, "_" o "-"
     for p in profiles.values():
@@ -144,7 +151,22 @@ def test_lambdas_cannot_create_log_groups():
         statements += [s for p in policies.values() if {"Ref": role_id} in p["Properties"]["Roles"]
                        for s in p["Properties"]["PolicyDocument"]["Statement"]]
         assert not [s for s in statements if "logs:CreateLogGroup" in str(s["Action"]) or s["Action"] in ("logs:*", "*")]
-        name = fn["Properties"]["FunctionName"].split("-", 1)[1]
+        log_group = fn["Properties"]["LoggingConfig"]["LogGroup"]["Ref"]  # il proprio log group, e solo quello
         assert {"Effect": "Allow", "Action": ["logs:CreateLogStream", "logs:PutLogEvents"],
-                "Resource": {"Fn::Join": ["", ["arn:", {"Ref": "AWS::Partition"},
-                                                f":logs:eu-central-1:123456789012:log-group:/Cdk33BedrockServerless/{name}:*"]]}} in statements
+                "Resource": {"Fn::GetAtt": [log_group, "Arn"]}} in statements
+
+
+def test_all_resources_named():
+    """Ogni risorsa si chiama aws-py-cdk33-<servizio> (bucket S3 con l'account alla fine, ruoli IAM con la
+    region) e ha il tag Name uguale al nome; le risorse senza nome (EC2, EFS, CloudFront, ...) hanno solo il tag Name."""
+    assert check_template(template().to_json(), STACK_NAME) == []
+
+
+def test_stack_tags(monkeypatch):
+    """Lo stack CloudFormation ha i tag standard e Name uguale al suo nome: CDK li passa allo stack al deploy e
+    CloudFormation li copia sulle risorse che non li hanno gia' (il Name scritto sulla risorsa vince)."""
+    stacks, from_stack = [], assertions.Template.from_stack
+    monkeypatch.setattr(assertions.Template, "from_stack",
+                        staticmethod(lambda stack, *args, **kwargs: stacks.append(stack) or from_stack(stack, *args, **kwargs)))
+    template()
+    assert stacks[0].tags.tag_values() == {**TAGS, "Name": STACK_NAME}

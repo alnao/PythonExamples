@@ -1,88 +1,69 @@
+"""AWS Step Functions che coordina due Lambda: avvio di un job e controllo periodico del suo stato.
+
+Flusso: Submit Job -> Wait 10 secondi -> Get Status -> Choice
+- status FAILED    -> Fail
+- status SUCCEEDED -> Succeeded
+- altrimenti       -> torna a Wait
+
+Il job e' simulato dalle Lambda (lambda/submit.py e lambda/status.py): termina dopo "steps" controlli e
+fallisce se l'input contiene "fail": true. Log della macchina a stati e delle Lambda in log group dello stack.
+Ispirato all'esempio aws-samples:
+https://github.com/aws-samples/aws-cdk-examples/blob/main/python/stepfunctions/stepfunctions/stepfunctions_stack.py
+"""
+
+import os
+
 from aws_cdk import (
-    aws_stepfunctions as _aws_stepfunctions,
-    aws_stepfunctions_tasks as _aws_stepfunctions_tasks,
+    CfnOutput,
+    Duration,
+    RemovalPolicy,
+    Stack,
     aws_lambda as _lambda,
     aws_logs as logs,
-    App, Duration, Stack
+    aws_stepfunctions as sfn,
+    aws_stepfunctions_tasks as tasks,
 )
 from constructs import Construct
+
+from .naming import nome_risorsa
+
+LAMBDA_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "lambda")
+
 
 class Cdk07StepFunctionStack(Stack):
 
     def __init__(self, scope: Construct, construct_id: str, **kwargs) -> None:
         super().__init__(scope, construct_id, **kwargs)
+        code = _lambda.Code.from_asset(LAMBDA_DIR, exclude=["__pycache__"])
 
-        submit_lambda = _lambda.Function(self, 'submitLambda',
-                                         handler='submit.lambda_handler',
-                                         runtime=_lambda.Runtime.PYTHON_3_9,
-                                         code=_lambda.Code.from_asset('lambda'))
+        def function(name: str, handler: str) -> _lambda.Function:
+            log_group = logs.LogGroup(self, f"{name}Logs", log_group_name=f"/aws/lambda/{nome_risorsa(self, name)}",
+                                      retention=logs.RetentionDays.ONE_WEEK, removal_policy=RemovalPolicy.DESTROY)
+            return _lambda.Function(self, name, function_name=nome_risorsa(self, name),
+                runtime=_lambda.Runtime.PYTHON_3_13, architecture=_lambda.Architecture.ARM_64,
+                handler=handler, code=code, timeout=Duration.seconds(10), log_group=log_group)
 
-        status_lambda = _lambda.Function(self, 'statusLambda',
-                                         handler='status.lambda_handler',
-                                         runtime=_lambda.Runtime.PYTHON_3_9,
-                                         code=_lambda.Code.from_asset('lambda'))
+        submit_lambda = function("Submit", "submit.lambda_handler")
+        status_lambda = function("Status", "status.lambda_handler")
 
-        submit_lambda.node.default_child.add_property_override("FunctionName", f"cdk06submit")
-        deployment_log_group = logs.LogGroup(
-            self, "Cdk07stepFunctionSubmit",
-            log_group_name=f"/aws/lambda/cdk06submit",
-            retention=logs.RetentionDays.TWO_WEEKS,
-        )
-        submit_lambda.node.add_dependency(deployment_log_group)
+        submit_job = tasks.LambdaInvoke(self, "Submit Job", lambda_function=submit_lambda, output_path="$.Payload")
+        wait_job = sfn.Wait(self, "Wait 10 Seconds", time=sfn.WaitTime.duration(Duration.seconds(10)))
+        status_job = tasks.LambdaInvoke(self, "Get Status", lambda_function=status_lambda, output_path="$.Payload")
+        fail_job = sfn.Fail(self, "Fail", cause="Job fallito", error="JobFailed")
+        succeed_job = sfn.Succeed(self, "Succeeded", comment="Job terminato")
 
-        status_lambda.node.default_child.add_property_override("FunctionName", f"cdk06status")
-        deployment_log_group2 = logs.LogGroup(
-            self, "Cdk07stepFunctionStatus",
-            log_group_name=f"/aws/lambda/cdk06status",
-            retention=logs.RetentionDays.TWO_WEEKS,
-        )
-        status_lambda.node.add_dependency(deployment_log_group2)
+        chain = (submit_job.next(wait_job).next(status_job)
+                 .next(sfn.Choice(self, "Job Complete?")
+                       .when(sfn.Condition.string_equals("$.status", "FAILED"), fail_job)
+                       .when(sfn.Condition.string_equals("$.status", "SUCCEEDED"), succeed_job)
+                       .otherwise(wait_job)))
 
+        sm_logs = logs.LogGroup(self, "StateMachineLogs", log_group_name=f"/aws/vendedlogs/states/{nome_risorsa(self, 'Job')}",
+                                retention=logs.RetentionDays.ONE_WEEK, removal_policy=RemovalPolicy.DESTROY)
+        self.state_machine = sfn.StateMachine(self, "StateMachine",
+            state_machine_name=nome_risorsa(self, "Job"),
+            definition_body=sfn.DefinitionBody.from_chainable(chain),
+            timeout=Duration.minutes(10),
+            logs=sfn.LogOptions(destination=sm_logs, level=sfn.LogLevel.ALL))
 
-        # Step functions Definition
-
-        submit_job = _aws_stepfunctions_tasks.LambdaInvoke(
-            self, "Submit Job",
-            lambda_function=submit_lambda,
-            output_path="$.Payload",
-        )
-
-        wait_job = _aws_stepfunctions.Wait(
-            self, "Wait 30 Seconds",
-            time=_aws_stepfunctions.WaitTime.duration(
-                Duration.seconds(30))
-        )
-
-        status_job = _aws_stepfunctions_tasks.LambdaInvoke(
-            self, "Get Status",
-            lambda_function=status_lambda,
-            output_path="$.Payload",
-        )
-
-        fail_job = _aws_stepfunctions.Fail(
-            self, "Fail",
-            cause='AWS Batch Job Failed',
-            error='DescribeJob returned FAILED'
-        )
-
-        succeed_job = _aws_stepfunctions.Succeed(
-            self, "Succeeded",
-            comment='AWS Batch Job succeeded'
-        )
-
-        # Create Chain
-
-        chain = submit_job.next(wait_job)\
-            .next(status_job)\
-            .next(_aws_stepfunctions.Choice(self, 'Job Complete?')
-                  .when(_aws_stepfunctions.Condition.string_equals('$.status', 'FAILED'), fail_job)
-                  .when(_aws_stepfunctions.Condition.string_equals('$.status', 'SUCCEEDED'), succeed_job)
-                  .otherwise(wait_job))
-
-        # Create state machine
-        sm = _aws_stepfunctions.StateMachine(
-            self, "StateMachine",
-            definition_body=_aws_stepfunctions.DefinitionBody.from_chainable(chain),
-            timeout=Duration.minutes(50),
-            state_machine_name= "Cdk07stepFunction",
-        )
+        CfnOutput(self, "StateMachineArn", value=self.state_machine.state_machine_arn)

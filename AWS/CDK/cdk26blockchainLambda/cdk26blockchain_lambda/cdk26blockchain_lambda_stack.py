@@ -25,6 +25,8 @@ from aws_cdk import (
 )
 from constructs import Construct
 
+from .naming import nome_risorsa
+
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
 DIFFICULTY = 4  # zeri esadecimali iniziali dell'hash: in media 65.536 tentativi, meno di un secondo
 
@@ -35,11 +37,11 @@ class Cdk26BlockchainLambdaStack(Stack):
         super().__init__(scope, construct_id, **kwargs)
         prefix = self.stack_name
 
-        blocks = dynamodb.TableV2(self, "BlocksTable", table_name=f"{prefix}-Blocks",
+        blocks = dynamodb.TableV2(self, "BlocksTable", table_name=nome_risorsa(self, "Blocks"),
             partition_key=dynamodb.Attribute(name="chain", type=dynamodb.AttributeType.STRING),
             sort_key=dynamodb.Attribute(name="index", type=dynamodb.AttributeType.NUMBER),
             billing=dynamodb.Billing.on_demand(), removal_policy=RemovalPolicy.DESTROY)
-        transactions = dynamodb.TableV2(self, "TransactionsTable", table_name=f"{prefix}-Transactions",
+        transactions = dynamodb.TableV2(self, "TransactionsTable", table_name=nome_risorsa(self, "Transactions"),
             partition_key=dynamodb.Attribute(name="sender", type=dynamodb.AttributeType.STRING),
             sort_key=dynamodb.Attribute(name="timestamp", type=dynamodb.AttributeType.STRING),
             global_secondary_indexes=[dynamodb.GlobalSecondaryIndexPropsV2(
@@ -53,9 +55,9 @@ class Cdk26BlockchainLambdaStack(Stack):
                "DIFFICULTY": str(DIFFICULTY), "MAX_TX_PER_BLOCK": "50"}
 
         def function(name: str, handler: str, timeout: int = 10, memory: int = 256) -> lambda_.Function:
-            log_group = logs.LogGroup(self, f"{name}Logs", log_group_name=f"/aws/lambda/{prefix}-{name}",
+            log_group = logs.LogGroup(self, f"{name}Logs", log_group_name=f"/aws/lambda/{nome_risorsa(self, name)}",
                                       retention=logs.RetentionDays.ONE_WEEK, removal_policy=RemovalPolicy.DESTROY)
-            return lambda_.Function(self, name, function_name=f"{prefix}-{name}",
+            return lambda_.Function(self, name, function_name=nome_risorsa(self, name),
                 runtime=lambda_.Runtime.PYTHON_3_13, architecture=lambda_.Architecture.ARM_64,
                 handler=f"api.{handler}", code=code, environment=env, log_group=log_group,
                 timeout=Duration.seconds(timeout), memory_size=memory)
@@ -77,7 +79,7 @@ class Cdk26BlockchainLambdaStack(Stack):
         blocks.grant_read_data(get_blocks)
         blocks.grant_read_data(validate)
 
-        api = apigw.RestApi(self, "Api", rest_api_name=f"{prefix}-api",
+        api = apigw.RestApi(self, "Api", rest_api_name=nome_risorsa(self, "api"),
             description="API della blockchain didattica cdk26",
             default_cors_preflight_options=apigw.CorsOptions(allow_origins=apigw.Cors.ALL_ORIGINS,
                                                              allow_methods=["GET", "POST", "OPTIONS"]),

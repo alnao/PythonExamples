@@ -41,6 +41,7 @@ Internet ── Network Load Balancer (creato da Kubernetes, tag ManagedBy=Sh) �
 ├── app.py                 # 🚀 app CDK: tag standard, bootstrap alnao-dev-cdk
 ├── cdk27eks/
 │   ├── cdk27eks_stack.py  # 🏗️ ruoli, cluster, access entry, launch template, node group, add-on, RDS
+│   ├── naming.py          # 🏷️ nomi aws-py-cdk27-<servizio> e tag Name di ogni risorsa
 │   └── tags.py            # 🏷️ tag standard e apply_tags (usata da app.py e dai test)
 ├── k8s/springboot-k8s.yaml  # ☸️ Deployment, Service LoadBalancer, HorizontalPodAutoscaler
 ├── tests/unit/            # 🧪 test dello stack (sintesi locale, senza AWS)
@@ -58,27 +59,22 @@ python3 -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt -r requirements-dev.txt
 pytest tests/unit
 
-# VPC di default (o l'unica presente) e sue subnet recuperate con la CLI (sola lettura) e salvate come variabili d'ambiente
 export REGION=eu-central-1 AWS_REGION=eu-central-1   # AWS_REGION: la usa anche cdk deploy per scegliere la region
-export DEFAULT_VPC=$(aws ec2 describe-vpcs --region $REGION --filters Name=isDefault,Values=true --query "Vpcs[0].VpcId" --output text)
-if [ "$DEFAULT_VPC" = "None" ]; then   # nessuna VPC di default: l'unica presente nella region
-  VPCS=($(aws ec2 describe-vpcs --region $REGION --query "Vpcs[].VpcId" --output text))
-  if [ ${#VPCS[@]} -eq 1 ]; then export DEFAULT_VPC=${VPCS[0]}; else echo "nessuna VPC di default e ${#VPCS[@]} VPC nella region: impostare DEFAULT_VPC a mano"; fi
-fi
-export SUBNETS=$(aws ec2 describe-subnets --region $REGION --filters Name=vpc-id,Values=$DEFAULT_VPC --query "sort_by(Subnets,&AvailabilityZone)[0:3].SubnetId" --output text | tr '\t' ',')
-echo "VPC $DEFAULT_VPC - subnet $SUBNETS"
 # amministratore del cluster: un utente IAM (arn:aws:iam::<account>:user/<nome>) o il ruolo IAM della propria sessione
 #   (con SSO l'ARN di get-caller-identity e' assumed-role/...: serve quello del ruolo, arn:aws:iam::<account>:role/aws-reserved/sso.amazonaws.com/...)
 export ADMIN=$(aws sts get-caller-identity --query Arn --output text)
 
 #../bootstrap/bootstrap.sh create $REGION
-cdk deploy --parameters vpcid=$DEFAULT_VPC --parameters subnetids=$SUBNETS --parameters adminprincipalarn=$ADMIN
+cdk deploy --parameters adminprincipalarn=$ADMIN
 ```
-Parametri facoltativi: `clustername` (default `cdk27eks-cluster`), `kubernetesversion` (default `1.35`), `nodeinstancetype` (default `t3.small`). Il deploy dura circa 20 minuti (cluster 10, node group 5, database 10 in parallelo).
+
+**VPC e subnet**: per default lo stack usa la **VPC di default** della region e le sue subnet: CDK le legge al `cdk synth`/`cdk deploy` (chiamate di sola lettura con le credenziali del deploy) e le salva in `cdk.context.json`, che non va su git. I valori sono i default dei parametri `vpcid` e `subnetids` (due subnet in zone diverse), che si possono cambiare al deploy (`cdk deploy --parameters vpcid=vpc-xxx --parameters ...`, tutti i parametri della rete insieme); con `cdk deploy -c vpc_id=vpc-xxx` i default vengono presi da un'altra VPC. Se la region non ha più la VPC di default si ricrea con `aws ec2 create-default-vpc`.
+
+Il cluster si chiama `aws-py-cdk27-cluster` (node group `aws-py-cdk27-nodes`, database `aws-py-cdk27-mysql`). Parametri facoltativi: `kubernetesversion` (default `1.35`), `nodeinstancetype` (default `t3.small`). Il deploy dura circa 20 minuti (cluster 10, node group 5, database 10 in parallelo).
 
 Al termine `cdk deploy` stampa `ClusterName`, `ClusterEndpoint`, `KubectlCommand`, `MySQLEndpoint` e `MySQLSecretArn`. Installazione del microservizio:
 ```bash
-STACK=Cdk27EksStack
+STACK=aws-py-cdk27
 out() { aws cloudformation describe-stacks --stack-name $STACK --region $REGION --query "Stacks[0].Outputs[?OutputKey=='$1'].OutputValue" --output text; }
 aws eks update-kubeconfig --region $REGION --name $(out ClusterName)
 kubectl get nodes
@@ -96,15 +92,15 @@ RDS ruota la password ogni 7 giorni: dopo una rotazione il Secret di Kubernetes 
 
 Comandi utili:
 ```bash
-aws eks describe-cluster --name cdk27eks-cluster --query "cluster.[status,version,platformVersion]"
-aws eks list-nodegroups --cluster-name cdk27eks-cluster
-aws eks list-access-entries --cluster-name cdk27eks-cluster
-aws eks describe-addon --cluster-name cdk27eks-cluster --addon-name metrics-server --query "addon.[status,addonVersion]"
+aws eks describe-cluster --name aws-py-cdk27-cluster --query "cluster.[status,version,platformVersion]"
+aws eks list-nodegroups --cluster-name aws-py-cdk27-cluster
+aws eks list-access-entries --cluster-name aws-py-cdk27-cluster
+aws eks describe-addon --cluster-name aws-py-cdk27-cluster --addon-name metrics-server --query "addon.[status,addonVersion]"
 kubectl top pods
 kubectl logs deployment/springboot-app --tail 50
 ```
 
-**Tag**: tutte le risorse dello stack hanno i tag standard del repository (`Project=Development.aws.py-CDK.cdk27eks`, `ManagedBy=CDK`), anche istanze e volumi dei nodi (dal launch template). Il Network Load Balancer è creato da Kubernetes, non da CloudFormation: riceve gli stessi tag con `ManagedBy=Sh` dall'annotazione `aws-load-balancer-additional-resource-tags` del manifest. Il segreto creato da RDS per la password non è una risorsa dello stack.
+**Tag**: tutte le risorse dello stack hanno i tag standard del repository (`Project=Development.aws.py-CDK.cdk27eks`, `ManagedBy=CDK`), anche istanze e volumi dei nodi (dal launch template). Il Network Load Balancer è creato da Kubernetes, non da CloudFormation: riceve gli stessi tag con `ManagedBy=Sh` dall'annotazione `aws-load-balancer-additional-resource-tags` del manifest. Il segreto creato da RDS per la password non è una risorsa dello stack. Il tag `Name` di ogni risorsa è uguale al suo nome (`aws-py-cdk27-<servizio>`, vedi `naming.py`).
 
 
 ## 💰 Analisi dei Costi
@@ -148,6 +144,17 @@ aws elbv2 describe-load-balancers --query "LoadBalancers[?VpcId=='$DEFAULT_VPC']
 - ⚖️ **AWS Load Balancer Controller** con un Ingress e un Application Load Balancer, con **EKS Pod Identity** per i permessi
 - 🤖 **EKS Auto Mode** (`compute_config`) al posto del node group gestito
 - 🔐 **Secrets Store CSI Driver** per leggere la password di RDS direttamente da Secrets Manager, senza copiarla in un Secret
+
+
+## Changelog
+| Data | Modifica |
+|------|----------|
+| 2026-11-10 | Prima versione dell'esempio, ispirata all'esempio CloudFormation corrispondente |
+| 2026-11-17 | Revisione degli esempi CDK: test eseguiti e tag standard verificati su tutte le risorse del template sintetizzato, nessuna modifica al codice |
+| 2026-11-17 | VPC e subnet per default quelle di default della region (lette da CDK al synth, salvate in cdk.context.json ignorato da git), sempre modificabili con i parametri o con -c vpc_id=... |
+| 2026-11-17 | tags.py: aspect LambdaLogGroups comune a tutti gli esempi (log group dello stack per ogni Lambda); lo stack non ha Lambda, il template non cambia |
+| 2026-11-17 | Nomi delle risorse aws-py-cdk27-<servizio> uguali al tag Name (naming.py comune a tutti gli esempi): stack aws-py-cdk27, bucket S3 con l'account alla fine, ruoli e instance profile IAM con la region, anche le risorse create da CDK; test test_all_resources_named; tolto il parametro clustername (cluster aws-py-cdk27-cluster, node group aws-py-cdk27-nodes, database aws-py-cdk27-mysql) |
+| 2026-11-17 | Tag Name aws-py-cdk27 anche sullo stack CloudFormation (aspect PhysicalNames di naming.py), test test_stack_tags |
 
 
 # &lt; AlNao /&gt;

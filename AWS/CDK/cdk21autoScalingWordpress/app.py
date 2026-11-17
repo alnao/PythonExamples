@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+import os
+
 import aws_cdk as cdk
 
 from cdk21auto_scaling_wordpress.cdk21auto_scaling_wordpress_stack import Cdk21AutoScalingWordpressStack
@@ -18,9 +20,10 @@ SYNTHESIZER = cdk.DefaultStackSynthesizer(
     bootstrap_stack_version_ssm_parameter="/cdk-bootstrap/alnao/dev/version",
 )
 
-Cdk21AutoScalingWordpressStack(app, "Cdk21AutoScalingWordpressStack",
+Cdk21AutoScalingWordpressStack(app, "aws-py-cdk21",
     synthesizer=SYNTHESIZER,
-    # stack senza env: account e region sono quelli del profilo AWS usato da cdk deploy
+    # account e region del profilo AWS usato da cdk deploy: servono a CDK per leggere la VPC di default
+    env=cdk.Environment(account=os.getenv("CDK_DEFAULT_ACCOUNT"), region=os.getenv("CDK_DEFAULT_REGION")),
     )
 
 app.synth()

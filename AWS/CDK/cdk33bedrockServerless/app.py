@@ -20,7 +20,7 @@ SYNTHESIZER = cdk.DefaultStackSynthesizer(
     bootstrap_stack_version_ssm_parameter="/cdk-bootstrap/alnao/dev/version",
 )
 
-Cdk33BedrockServerlessStack(app, "Cdk33BedrockServerlessStack",
+Cdk33BedrockServerlessStack(app, "aws-py-cdk33",
     synthesizer=SYNTHESIZER,
     # cartella delle librerie delle Lambda creata da build_layer.sh
     layer_dir=app.node.try_get_context("layer_dir") or "layer",
