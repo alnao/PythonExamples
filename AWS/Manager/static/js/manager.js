@@ -1008,6 +1008,8 @@ async function loadList(refresh = false) {
         state.items = [];
         $('itemList').innerHTML = `<div class="alert alert-danger m-2 py-2">${escapeHtml(e.message)}</div>`;
     }
+    // tendina Project della seconda barra (manager_projects.js): dopo l'elenco, cosi' usa la cache dei tag appena letta
+    loadProjects();
 }
 
 function renderList() {
@@ -1017,8 +1019,10 @@ function renderList() {
         .filter(([it]) => !q || `${spec.label(it)} ${spec.sub(it)}`.toLowerCase().includes(q))
         .sort((a, b) => String(spec.label(a[0])).localeCompare(String(spec.label(b[0])), undefined, { sensitivity: 'base' }));
     $('itemsCount').textContent = rows.length;
+    // Project scelto nella seconda barra (manager_projects.js): in grigio le risorse con un altro Project
     $('itemList').innerHTML = rows.map(([it, i]) => `
-        <div class="list-group-item ${i === state.index ? 'active' : ''}" data-i="${i}">
+        <div class="list-group-item ${i === state.index ? 'active' : ''} ${projectOut(it._tags) ? 'svc-empty' : ''}" data-i="${i}"
+             ${projectOut(it._tags) ? `title="Project: ${escapeHtml((it._tags || {}).Project || 'mancante')}"` : ''}>
             <div class="d-flex justify-content-between gap-2">
                 <span class="item-title">${escapeHtml(spec.label(it))}${tagIcon(it._tags)}</span>
                 ${APP.region === ALL && it._region ? regionBadge(it._region) : ''}

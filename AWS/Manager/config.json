@@ -52,6 +52,8 @@
     "_comment": "Risorse di sistema AWS che non devono essere analizzate. Ogni entry ha 'service', 'resource_type' (opzionale), e 'name' (opzionale). Se 'resource_type' o 'name' mancano (null), vengono considerate tutte le risorse di quel servizio/tipo. In 'name' l'asterisco e' un jolly per qualsiasi sequenza di caratteri: 'CDKToolkit*' esclude i nomi che iniziano per CDKToolkit, '*-default' quelli che finiscono per -default. Il name e' la parte dell'ARN dopo il tipo (per uno stack CloudFormation: nome/id).",
     "entries": [
       {"service": "events", "resource_type": "event-bus", "name": "default"},
+      {"service": "events", "resource_type": "rule", "name": "AutoScalingManagedRule"},
+      {"service": "events", "resource_type": "rule", "name": "ecs-managed-capacity-provider-rule"},
       {"service": "apprunner", "resource_type": "autoscalingconfiguration", "name": null},
       {"service": "athena", "resource_type": "datacatalog", "name": "AwsDataCatalog"},
       {"service": "athena", "resource_type": "workgroup", "name": "primary"},
@@ -73,7 +75,7 @@
       {"service": "lambda", "resource_type": "layer/version", "name": null},
       {"service": "elasticache", "resource_type": "user", "name": "default"},
       {"service": "elasticache", "resource_type": "user", "name": "default.iam-user"},
-      {"service": "events", "resource_type": "rule", "name": "AutoScalingManagedRule"},
+      
       {"service": "memorydb", "resource_type": "parametergroup", "name": null},
       {"service": "memorydb", "resource_type": "user", "name": "default"},
       {"service": "memorydb", "resource_type": "acl", "name": null},
@@ -102,11 +104,10 @@
       {"service": "ssm", "resource_type": "document", "name": "SSM-SessionManagerRunShell"},
       {"service": "cloudformation", "resource_type": "stack", "name": "aws-sam-cli-managed-default"},
       {"service": "cloudformation", "resource_type": "stack", "name": "CDKToolkit*"},
-      {"service": "logs", "resource_type": "log-group", "name": "aws-glue/crawlers"},
-      {"service": "logs", "resource_type": "log-group", "name": "aws-glue/jobs/output"},
-      {"service": "logs", "resource_type": "log-group", "name": "aws-glue/jobs/error"},
-      {"service": "logs", "resource_type": "log-group", "name": "aws-glue/jobs/output"},
-      {"service": "logs", "resource_type": "log-group", "name": "aws-glue/jobs/logs-v2"}
+      {"service": "logs", "resource_type": "log-group", "name": "/aws-glue/crawlers"},
+      {"service": "logs", "resource_type": "log-group", "name": "/aws-glue/jobs/error"},
+      {"service": "logs", "resource_type": "log-group", "name": "/aws-glue/jobs/output"},
+      {"service": "logs", "resource_type": "log-group", "name": "/aws-glue/jobs/logs-v2"}
 
     ]
   },

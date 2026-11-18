@@ -12,6 +12,7 @@ L'immagine e' costruita da CDK al deploy (repository ECR del bootstrap); con -c 
 il servizio usa invece l'immagine :latest di un repository esistente, per esempio quello del cdk23ecr.
 """
 
+import json
 import os
 
 from aws_cdk import (
@@ -33,6 +34,7 @@ from constructs import Construct
 
 from .naming import nome_risorsa
 from .network import lookup_subnets, lookup_vpc, subnet_parameter, vpc_parameter
+from .tags import TAGS
 
 # progetto Docker/03ApiPersoneNoDb del repository PythonExamples
 APP_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "..", "..", "Docker", "03ApiPersoneNoDb")
@@ -65,10 +67,17 @@ class Cdk24EcsStack(Stack):
                             iam.ManagedPolicy.from_aws_managed_policy_name("service-role/AmazonEC2ContainerServiceforEC2Role"),
                             iam.ManagedPolicy.from_aws_managed_policy_name("AmazonSSMManagedInstanceCore"),
                         ])
+        # La container instance registrata dall'agente ECS e' una risorsa diversa dall'istanza EC2 e non ne
+        # eredita i tag: l'agente le applica quelli di ECS_CONTAINER_INSTANCE_TAGS (permesso ecs:TagResource
+        # gia' nella policy AmazonEC2ContainerServiceforEC2Role)
+        container_instance_tags = {"Name": nome_risorsa(self, "container-instance"), **TAGS}
+        user_data = ec2.UserData.for_linux()  # CDK aggiunge ECS_CLUSTER=<cluster> in /etc/ecs/ecs.config
+        user_data.add_commands(
+            f"echo 'ECS_CONTAINER_INSTANCE_TAGS={json.dumps(container_instance_tags)}' >> /etc/ecs/ecs.config")
         launch_template = ec2.LaunchTemplate(self, "EcsLaunchTemplate",
             instance_type=ec2.InstanceType("t3.micro"),
             machine_image=ecs.EcsOptimizedImage.amazon_linux2023(),
-            user_data=ec2.UserData.for_linux(),  # CDK aggiunge ECS_CLUSTER=<cluster> in /etc/ecs/ecs.config
+            user_data=user_data,
             role=role,
             security_group=ec2.SecurityGroup(self, "EcsHostSecurityGroup", vpc=vpc, description="Istanze del cluster ECS"),
             associate_public_ip_address=True,  # immagini e agente ECS da Internet senza NAT gateway

@@ -86,7 +86,7 @@ aws ecs update-service --cluster $CLUSTER --service api-persone --desired-count 
 aws logs tail /ecs/aws-py-cdk24-api-persone --follow
 ```
 
-**Tag**: tutte le risorse hanno i tag standard del repository (`Project=Development.aws.py-CDK.cdk24ecs`, `ManagedBy=CDK`); il servizio propaga i tag ai task (`PropagateTags=SERVICE`), l'Auto Scaling group alle istanze. Non hanno tag solo i tipi che CloudFormation non permette di taggare: associazione cluster-capacity provider, listener e regole, instance profile, policy IAM inline, regole dei security group. Il tag `Name` di ogni risorsa è uguale al suo nome (`aws-py-cdk24-<servizio>`, vedi `naming.py`).
+**Tag**: tutte le risorse hanno i tag standard del repository (`Project=Development.aws.py-CDK.cdk24ecs`, `ManagedBy=CDK`); il servizio propaga i tag ai task (`PropagateTags=SERVICE`), l'Auto Scaling group alle istanze. Le container instance registrate dall'agente ECS non ereditano i tag dell'istanza EC2: lo user data scrive in `/etc/ecs/ecs.config` la variabile `ECS_CONTAINER_INSTANCE_TAGS` con i tag standard e `Name=aws-py-cdk24-container-instance`, che l'agente applica alla registrazione. Non hanno tag solo i tipi che CloudFormation non permette di taggare: associazione cluster-capacity provider, listener e regole, instance profile, policy IAM inline, regole dei security group. Il tag `Name` di ogni risorsa è uguale al suo nome (`aws-py-cdk24-<servizio>`, vedi `naming.py`).
 
 
 ## 💰 Analisi dei Costi
@@ -135,6 +135,7 @@ aws resourcegroupstaggingapi get-resources --tag-filters Key=Project,Values=Deve
 | 2026-11-17 | tags.py: aspect LambdaLogGroups comune a tutti gli esempi (log group dello stack per ogni Lambda); lo stack non ha Lambda, il template non cambia |
 | 2026-11-17 | Nomi delle risorse aws-py-cdk24-<servizio> uguali al tag Name (naming.py comune a tutti gli esempi): stack aws-py-cdk24, bucket S3 con l'account alla fine, ruoli e instance profile IAM con la region, anche le risorse create da CDK; test test_all_resources_named; capacity provider cp-aws-py-cdk24-capacity-provider (AWS non accetta nomi che iniziano con aws) |
 | 2026-11-17 | Tag Name aws-py-cdk24 anche sullo stack CloudFormation (aspect PhysicalNames di naming.py), test test_stack_tags |
+| 2026-11-18 | Tag standard sulle container instance ECS via user data |
 
 
 # &lt; AlNao /&gt;

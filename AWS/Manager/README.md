@@ -147,6 +147,16 @@ ricerca, dettaglio, sotto-risorse e azioni. Le proprietà della risorsa si apron
 "mancante" se il tag non c'è; in fondo al dettaglio ci sono tutti i tag della risorsa come
 oggetto JSON.
 
+Nella seconda barra, accanto alla region, la tendina **Project** ha le stesse voci del Panoramic
+(valori di `suggested_tags`, sottovoci trovate nelle risorse, "Altri valori"): scegliendo un
+valore i servizi che nella region scelta non hanno risorse con quel Project diventano grigi
+(nella barra e nelle schede della pagina iniziale), ma restano cliccabili; nell'elenco del
+servizio aperto diventano grigie le risorse con un altro Project o senza Project (restano
+normali quelle di cui non si conoscono i tag). I valori arrivano
+da `/api/manager/projects`, che usa la cache della Tagging API del Tag Manager (letture
+gratuite; i servizi globali S3, CloudFront e Route 53 contano in ogni region); la tendina si
+ricarica dopo ogni lettura dell'elenco e la scelta resta passando da un servizio all'altro.
+
 **DynamoDB**, pensato anche per tabelle molto grandi: aprire una tabella legge solo la
 descrizione (`DescribeTable`, con numero di righe e dimensione stimati da AWS), le righe si
 leggono con **Carica dati**, una pagina alla volta (25-500 righe), e **Carica altre righe**
@@ -321,6 +331,9 @@ Manager/
 | Data | Modifica |
 |------|----------|
 | 2026-11-17 | Aggiunta la sezione Changelog |
+| 2026-11-18 | Manager: tendina Project, servizi senza risorse in grigio |
+| 2026-11-18 | Manager: in grigio anche le risorse di altri Project |
+| 2026-11-18 | Manager: region e Project impilate, badge globale nell'elenco |
 
 
 # &lt; AlNao /&gt;

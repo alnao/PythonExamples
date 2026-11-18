@@ -9,6 +9,7 @@ pagina esegue solo dopo una conferma). L'elenco di un servizio regionale con la 
 dettagli e azioni lavorano sempre sulla region della risorsa.
 
 API:
+    GET  /api/manager/projects                 valori del tag Project per servizio (cache della Tagging API)
     GET  /api/manager/<servizio>/list          elenco (region o '__all__'; refresh=1 rilegge i tag)
     GET  /api/manager/<servizio>/<lettura>     dettaglio (region della risorsa + parametri)
     POST /api/manager/<servizio>/<azione>      azione (JSON con region e parametri)
@@ -17,6 +18,7 @@ API:
 """
 
 import logging
+import re
 
 from flask import Blueprint, abort, jsonify, redirect, render_template, request
 
@@ -40,9 +42,9 @@ from aws.services.sqs import AwsSqs
 from aws.services.ssm import AwsSsmParameters
 from aws.services.stepfunctions import AwsStepFunctions
 from aws.services.vpc import AwsVpc
-from common import (GLOBAL_REGION, api_errors, aws_session, current_profile, current_region,
+from common import (ALL, GLOBAL_REGION, api_errors, aws_session, current_profile, current_region,
                     load_config, region_list, run_parallel)
-from sections.tagmanager import TagLookup
+from sections.tagmanager import TagLookup, region_resources
 
 bp = Blueprint('manager', __name__)
 logger = logging.getLogger(__name__)
@@ -212,6 +214,53 @@ SERVICES = {
 }
 
 
+# Tipo di ARN (servizio, primo pezzo della risorsa) delle risorse elencate da ogni servizio, per la
+# tendina Project; None = tutte le risorse del servizio (gli ARN di API Gateway, SQS e SNS non hanno tipo)
+ARN_KINDS = {
+    's3': ('s3', 'bucket'), 'ec2': ('ec2', 'instance'), 'sg': ('ec2', 'security-group'),
+    'cloudfront': ('cloudfront', 'distribution'), 'ssm': ('ssm', 'parameter'), 'lambda': ('lambda', 'function'),
+    'eventbridge': ('events', 'rule'), 'stepfunctions': ('states', 'stateMachine'), 'apigateway': ('apigateway', None),
+    'dynamodb': ('dynamodb', 'table'), 'rds': ('rds', 'db'), 'glue': ('glue', 'job'), 'sqs': ('sqs', None),
+    'sns': ('sns', None), 'eip': ('ec2', 'elastic-ip'), 'efs': ('elasticfilesystem', 'file-system'),
+    'asg': ('autoscaling', 'autoScalingGroup'), 'alb': ('elasticloadbalancing', 'loadbalancer'),
+    'cw_alarms': ('cloudwatch', 'alarm'), 'cw_logs': ('logs', 'log-group'), 'ecr': ('ecr', 'repository'),
+    'cloudformation': ('cloudformation', 'stack'), 'route53': ('route53', 'hostedzone'),
+    'secrets': ('secretsmanager', 'secret'), 'ecs': ('ecs', 'cluster'), 'vpc': ('ec2', 'vpc'),
+}
+
+
+def service_of_arn(arn):
+    """(chiave del servizio del Manager, region dell'ARN), oppure (None, '') se nessun servizio elenca quella risorsa."""
+    parts = arn.split(':', 5)
+    if len(parts) < 6:
+        return None, ''
+    aws_service, region, resource = parts[2], parts[3], parts[5]
+    if aws_service == 's3':  # bucket: arn:aws:s3:::nome, senza region e senza tipo
+        kind = 'bucket' if not region and '/' not in resource else ''
+    else:
+        kind = re.split(r'[:/]', resource, maxsplit=1)[0]
+    for key, (svc, svc_kind) in ARN_KINDS.items():
+        if svc == aws_service and svc_kind in (None, kind):
+            return key, region
+    return None, ''
+
+
+def projects_by_service(resources, region):
+    """
+    {servizio: [valori di Project]} dalle risorse della Tagging API (con 'arn' e 'tags'): per i
+    servizi regionali solo le risorse della region scelta (tutte con '__all__'), per i globali tutte.
+    """
+    found = {key: set() for key in SERVICES}
+    for risorsa in resources:
+        project = (risorsa.get('tags') or {}).get('Project')
+        if not project:
+            continue
+        key, arn_region = service_of_arn(risorsa['arn'])
+        if key and (SERVICES[key].get('global_') or region == ALL or arn_region == region):
+            found[key].add(project)
+    return {key: sorted(values) for key, values in found.items()}
+
+
 def dynamodb_read(o, a):
     """Una pagina di righe DynamoDB (Query o Scan, vedi AwsDynamoDB.read) dai parametri della pagina."""
     page_size = max(1, min(int(a.get('page_size') or 100), limit()))
@@ -244,9 +293,16 @@ def nav_services():
 # Pagine
 # ----------------------------------------------------------------------
 
+def tag_settings():
+    """Valori suggeriti e chiavi con le sottovoci, per la tendina Project (tag_match.js)."""
+    config = load_config()
+    return dict(suggested_tags=config['suggested_tags'],
+                prefix_match_keys=config['tag_manager']['prefix_match_keys'])
+
+
 @bp.route('/manager')
 def index():
-    return render_template('manager.html', services=nav_services(), service=None, current=None)
+    return render_template('manager.html', services=nav_services(), service=None, current=None, **tag_settings())
 
 
 @bp.route('/manager/<name>')
@@ -255,12 +311,32 @@ def service_page(name):
     services = nav_services()
     return render_template('manager.html', services=services, service=name,
                            current=next(s for s in services if s['id'] == name),
-                           ddb_max_read=limit('dynamodb_max_read'))
+                           ddb_max_read=limit('dynamodb_max_read'), **tag_settings())
 
 
 # ----------------------------------------------------------------------
 # API
 # ----------------------------------------------------------------------
+
+@bp.route('/api/manager/projects')
+@api_errors
+def projects():
+    """
+    Valori del tag Project presenti in ogni servizio, per la tendina della seconda barra.
+    Dalla cache della Tagging API del Tag Manager (la stessa delle icone dei tag, letture
+    gratuite): tutte le region della lista piu' us-east-1, perche' i bucket S3 compaiono
+    nella region del bucket e i servizi globali in us-east-1.
+    """
+    profile = current_profile()
+    regions = list(dict.fromkeys(load_config()['regions'] + [GLOBAL_REGION]))
+    resources, warnings = [], []
+    for r, res, err in run_parallel(regions, lambda r: region_resources(profile, r, 'tagging', False)):
+        if err:
+            warnings.append(f"{r}: {err}")
+            continue
+        resources.extend(res[0]['resources'])
+    return jsonify({'services': projects_by_service(resources, current_region()), 'warnings': warnings})
+
 
 @bp.route('/api/manager/<name>/list')
 @api_errors

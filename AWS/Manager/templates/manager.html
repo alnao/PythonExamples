@@ -9,18 +9,21 @@
         <ul class="nav flex-grow-1">
             {% for s in services %}
             <li class="nav-item">
-                <a class="nav-link {% if s.id == service %}active{% endif %}" href="{{ url_for('manager.service_page', name=s.id) }}" title="{{ s.desc }}">
+                <a class="nav-link {% if s.id == service %}active{% endif %}" href="{{ url_for('manager.service_page', name=s.id) }}"
+                   title="{{ s.desc }}" data-service="{{ s.id }}" data-desc="{{ s.desc }}">
                     <i class="fas {{ s.icon }} me-1"></i>{{ s.title }}
                 </a>
             </li>
             {% endfor %}
         </ul>
-        <div class="d-flex align-items-center gap-2 flex-shrink-0">
-            {% if current and current.global %}
-            <span class="badge text-bg-light border" title="Servizio globale: la region non conta">
-                <i class="fas fa-earth-europe me-1"></i>globale</span>
-            {% endif %}
+        <!-- Region e Project una sotto l'altra, a destra: piu' spazio ai nomi dei servizi -->
+        <div class="d-flex flex-column align-items-end gap-1 flex-shrink-0 subnav-filters">
             {{ region_select('managerRegion', label=false) }}
+            <!-- Filtro Project come nel Panoramic: in grigio i servizi senza risorse di quel Project (manager_projects.js) -->
+            <select class="form-select form-select-sm" id="projectFilter"
+                    title="Project: in grigio i servizi senza risorse con quel valore nella region scelta">
+                <option value="">Tutti i Project</option>
+            </select>
         </div>
     </div>
 </div>
@@ -34,7 +37,7 @@
 <div class="row g-2">
     {% for s in services %}
     <div class="col-6 col-md-4 col-xl-3">
-        <a class="service-card" href="{{ url_for('manager.service_page', name=s.id) }}">
+        <a class="service-card" href="{{ url_for('manager.service_page', name=s.id) }}" data-service="{{ s.id }}" data-desc="">
             <div class="card h-100"><div class="card-body d-flex gap-3 align-items-start">
                 <i class="fas {{ s.icon }} fa-lg mt-1"></i>
                 <div>
@@ -57,7 +60,11 @@
         <div class="card">
             <div class="card-header d-flex justify-content-between align-items-center">
                 <span><i class="fas {{ current.icon }} me-1 text-secondary"></i>{{ current.title }}
-                    <span class="badge text-bg-light border ms-1" id="itemsCount">0</span></span>
+                    <span class="badge text-bg-light border ms-1" id="itemsCount">0</span>
+                    {% if current.global %}
+                    <span class="badge text-bg-light border ms-1" title="Servizio globale: la region non conta">
+                        <i class="fas fa-earth-europe me-1"></i>globale</span>
+                    {% endif %}</span>
                 <button class="btn btn-sm btn-outline-secondary btn-xs" id="btnReload" title="Rilegge l'elenco"><i class="fas fa-rotate"></i></button>
             </div>
             <div class="p-2 border-bottom">
@@ -95,6 +102,13 @@
 {% endblock %}
 
 {% block scripts %}
+<script>
+    Object.assign(window.APP, { prefixMatchKeys: {{ prefix_match_keys|tojson }} });
+    // tag suggeriti con i valori, per la tendina Project (tag_match.js)
+    window.suggestedTags = {{ suggested_tags|tojson }};
+</script>
+<script src="{{ url_for('static', filename='js/tag_match.js') }}"></script>
+<script src="{{ url_for('static', filename='js/manager_projects.js') }}"></script>
 {% if service %}
 <script>
     Object.assign(window.APP, { service: {{ service|tojson }}, serviceGlobal: {{ current.global|tojson }}, ddbMaxRead: {{ ddb_max_read }} });

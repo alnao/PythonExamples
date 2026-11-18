@@ -77,6 +77,15 @@ def test_cluster_with_capacity_provider():
     assert data["ImageId"]["Ref"].startswith("SsmParameterValueawsserviceecsoptimizedamiamazonlinux2023")
 
 
+def test_container_instance_tags():
+    """L'agente ECS tagga la container instance (non eredita i tag dell'istanza EC2) con i tag standard e il suo Name."""
+    lt = next(iter(template().find_resources("AWS::EC2::LaunchTemplate").values()))
+    user_data = json.dumps(lt["Properties"]["LaunchTemplateData"]["UserData"])
+    expected = {"Name": "aws-py-cdk24-container-instance", **TAGS}
+    line = f"echo 'ECS_CONTAINER_INSTANCE_TAGS={json.dumps(expected)}' >> /etc/ecs/ecs.config"
+    assert json.dumps(line)[1:-1] in user_data
+
+
 def test_task_and_service():
     t = template()
     t.has_resource_properties("AWS::ECS::TaskDefinition", {

@@ -117,6 +117,12 @@ body {
     color: var(--text-primary);
 }
 
+/* Manager: region e Project una sotto l'altra, stessa larghezza */
+.subnav-filters .region-picker,
+.subnav-filters .form-select {
+    width: 200px;
+}
+
 .sub-navbar .nav-link.active {
     background-color: #e7f1ff;
     color: #0a58ca;
@@ -339,6 +345,15 @@ pre.log {
 
 .service-card i {
     color: var(--series-1);
+}
+
+/* Manager: servizi senza risorse del Project scelto (restano cliccabili) */
+.svc-empty {
+    opacity: 0.4;
+}
+
+.svc-empty:hover {
+    opacity: 0.75;
 }
 
 /* ------------------------------------------------------------------ Tag Manager */
