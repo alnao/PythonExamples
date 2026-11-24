@@ -53,8 +53,8 @@ retry dnf install -y httpd php php-fpm php-mysqlnd php-json php-gd php-xml php-m
 
 # disco condiviso EFS: il nome DNS del mount target puo' richiedere fino a 90 secondi dopo la creazione
 mkdir -p /mnt/efs
-retry mount -t efs -o tls ${EfsId}:/ /mnt/efs
-echo "${EfsId}:/ /mnt/efs efs _netdev,tls 0 0" >> /etc/fstab
+retry mount -t efs -o tls,iam ${EfsId}:/ /mnt/efs
+echo "${EfsId}:/ /mnt/efs efs _netdev,tls,iam 0 0" >> /etc/fstab
 
 TOKEN=$(curl -s -X PUT http://169.254.169.254/latest/api/token -H "X-aws-ec2-metadata-token-ttl-seconds: 300")
 INSTANCE_ID=$(curl -s -H "X-aws-ec2-metadata-token: $TOKEN" http://169.254.169.254/latest/meta-data/instance-id)
@@ -160,6 +160,11 @@ class Cdk21AutoScalingWordpressStack(Stack):
                         managed_policies=[iam.ManagedPolicy.from_aws_managed_policy_name("AmazonSSMManagedInstanceCore")])
         self.database.secret.grant_read(role)
         self.file_system.grant_read_write(role)
+        self.file_system.add_to_resource_policy(iam.PolicyStatement(
+            actions=["elasticfilesystem:ClientMount", "elasticfilesystem:ClientWrite"],
+            principals=[role],
+            conditions={"Bool": {"elasticfilesystem:AccessedViaMountTarget": "true"}},
+        ))
 
         user_data = ec2.UserData.for_linux()
         user_data.add_commands(Fn.sub(USER_DATA, {

@@ -181,16 +181,21 @@ function rowsTable(rows, columns, empty = 'Nessun elemento') {
  *  - altrimenti: icona tag con i tag standard (le chiavi di suggested_tags)
  * tags null/undefined = tag non noti: nessuna icona. */
 function tagIcon(tags) {
-    if (tags === null || tags === undefined) return '';
+    const s = tagStatus(tags);
+    return s ? `<i class="fas ${s.icon} ${s.cls} ms-1 tag-icon" data-bs-toggle="tooltip" data-bs-title="${escapeHtml(s.text)}"></i>` : '';
+}
+
+/* Stato dei tag secondo le stesse regole di tagIcon: {icon, cls, text} o null se non noti.
+ * text e' il testo del tooltip (usato anche sul nome delle risorse nell'elenco del Manager). */
+function tagStatus(tags) {
+    if (tags === null || tags === undefined) return null;
     const rules = APP.tagRules || { required: [], standard: [], compliant: [], auto: 'aws_auto' };
-    const tip = (icon, cls, text) =>
-        `<i class="fas ${icon} ${cls} ms-1 tag-icon" data-bs-toggle="tooltip" data-bs-title="${escapeHtml(text)}"></i>`;
-    if (Object.values(tags).includes(rules.auto)) return tip('fa-circle-info', 'text-info', 'aws automatic');
+    if (Object.values(tags).includes(rules.auto)) return { icon: 'fa-circle-info', cls: 'text-info', text: 'aws automatic' };
     const compliant = rules.compliant.some(set => Object.entries(set).every(([k, v]) => tags[k] === v));
     const missing = compliant ? [] : rules.required.filter(k => !(k in tags));
-    if (missing.length) return tip('fa-triangle-exclamation', 'text-danger', `Tag mancanti: ${missing.join(', ')}`);
+    if (missing.length) return { icon: 'fa-triangle-exclamation', cls: 'text-danger', text: `Tag mancanti: ${missing.join(', ')}` };
     const standard = rules.standard.map(k => `${k}: ${k in tags ? tags[k] : '–'}`).join('\n');
-    return tip('fa-tag', 'text-success', standard || 'Tag presenti');
+    return { icon: 'fa-tag', cls: 'text-success', text: standard || 'Tag presenti' };
 }
 
 // Tooltip creati al primo passaggio del mouse: funzionano anche sugli elementi aggiunti dopo

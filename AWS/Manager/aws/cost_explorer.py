@@ -41,6 +41,25 @@ METRICS = {
 # Record type esclusi con l'opzione "escludi tasse, crediti e rimborsi"
 EXCLUDED_RECORD_TYPES = ['Tax', 'Credit', 'Refund']
 
+# Le tasse (servizio "Tax" in Cost Explorer e nel Data Export) non si possono taggare:
+# nei raggruppamenti per tag i loro costi prendono questo valore per ogni chiave
+# (Project, CostCenter, Name, Environment, Owner, ManagedBy...) invece di "senza tag"
+TAX_SERVICE = 'Tax'
+TAX_TAG_VALUE = 'Tax'
+
+
+def classify_tax(rows: List[Dict], group: str) -> List[Dict]:
+    """
+    Righe {'keys': [servizio, valore], ...} raggruppate per servizio e per group
+    ('TAG:Project', 'DIM:REGION'...): se group e' un tag, le tasse senza quel tag
+    prendono il valore TAX_TAG_VALUE. Le altre righe restano come sono.
+    """
+    if not (group or '').startswith('TAG:'):
+        return rows
+    return [{**r, 'keys': [r['keys'][0], TAX_TAG_VALUE] + list(r['keys'][2:])}
+            if len(r['keys']) > 1 and r['keys'][0] == TAX_SERVICE and r['keys'][1] == '' else r
+            for r in rows]
+
 
 def month_bounds(start_month: str, end_month: str) -> Dict[str, str]:
     """

@@ -52,6 +52,7 @@
     "_comment": "Risorse di sistema AWS che non devono essere analizzate. Ogni entry ha 'service', 'resource_type' (opzionale), e 'name' (opzionale). Se 'resource_type' o 'name' mancano (null), vengono considerate tutte le risorse di quel servizio/tipo. In 'name' l'asterisco e' un jolly per qualsiasi sequenza di caratteri: 'CDKToolkit*' esclude i nomi che iniziano per CDKToolkit, '*-default' quelli che finiscono per -default. Il name e' la parte dell'ARN dopo il tipo (per uno stack CloudFormation: nome/id).",
     "entries": [
       {"service": "events", "resource_type": "event-bus", "name": "default"},
+      {"service": "scheduler", "resource_type": "schedule-group", "name": "default"},
       {"service": "events", "resource_type": "rule", "name": "AutoScalingManagedRule"},
       {"service": "events", "resource_type": "rule", "name": "ecs-managed-capacity-provider-rule"},
       {"service": "apprunner", "resource_type": "autoscalingconfiguration", "name": null},
@@ -75,7 +76,22 @@
       {"service": "lambda", "resource_type": "layer/version", "name": null},
       {"service": "elasticache", "resource_type": "user", "name": "default"},
       {"service": "elasticache", "resource_type": "user", "name": "default.iam-user"},
-      
+
+      {"service": "cassandra", "resource_type": "keyspace", "name": "keyspace/system_multiregion_info/"},
+      {"service": "cassandra", "resource_type": "keyspace", "name": "keyspace/system_schema_mcs/"},
+      {"service": "cassandra", "resource_type": "keyspace", "name": "keyspace/system_schema/"},
+      {"service": "cassandra", "resource_type": "keyspace", "name": "keyspace/system/"},
+      {"service": "cassandra", "resource_type": "keyspace/table", "name": "keyspace/system_schema/table/aggregates"},
+      {"service": "cassandra", "resource_type": "keyspace/table", "name": "keyspace/system_schema/table/columns"},
+      {"service": "cassandra", "resource_type": "keyspace/table", "name": "keyspace/system_schema/table/dropped_columns"},
+      {"service": "cassandra", "resource_type": "keyspace/table", "name": "keyspace/system_schema/table/functions"},
+      {"service": "cassandra", "resource_type": "keyspace/table", "name": "keyspace/system_schema/table/indexes"},
+      {"service": "cassandra", "resource_type": "keyspace/table", "name": "keyspace/system_schema/table/keyspaces"},
+      {"service": "cassandra", "resource_type": "keyspace/table", "name": "keyspace/system_schema/table/tables"},
+      {"service": "cassandra", "resource_type": "keyspace/table", "name": "keyspace/system_schema/table/triggers"},
+      {"service": "cassandra", "resource_type": "keyspace/table", "name": "keyspace/system_schema/table/types"},
+      {"service": "cassandra", "resource_type": "keyspace/table", "name": "keyspace/system_schema/table/views"},
+
       {"service": "memorydb", "resource_type": "parametergroup", "name": null},
       {"service": "memorydb", "resource_type": "user", "name": "default"},
       {"service": "memorydb", "resource_type": "acl", "name": null},

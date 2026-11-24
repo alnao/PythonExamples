@@ -35,8 +35,9 @@ from functools import wraps
 from flask import Blueprint, jsonify, render_template, request
 
 from aws.cost_cache import KeyedCache, MonthStore, contiguous_runs, migrate_legacy, months_between
-from aws.cost_explorer import (COST_PER_API_CALL, METRICS, CostExplorer, build_filter,
-                               dimension_filter, last_months, month_bounds, tag_filter)
+from aws.cost_explorer import (COST_PER_API_CALL, METRICS, TAX_SERVICE, TAX_TAG_VALUE, CostExplorer,
+                               build_filter, classify_tax, dimension_filter, last_months,
+                               month_bounds, tag_filter)
 from aws.cur_source import DIMENSION_COLUMNS, CurSource
 from common import BASE_DIR, current_profile, load_config
 
@@ -332,7 +333,7 @@ def api_costs():
         if not e:
             continue
         rows += [{'period': r['period'], 'month': m, 'service': r['keys'][0],
-                  'group': r['keys'][1], 'amount': r['amount']} for r in e['rows']]
+                  'group': r['keys'][1], 'amount': r['amount']} for r in classify_tax(e['rows'], group)]
         periods += [{'start': x['start'], 'estimated': x['estimated']} for x in e['periods']]
     return jsonify({
         **p, 'group': group, 'granularity': granularity,
@@ -395,6 +396,9 @@ def api_drilldown():
     group, group_values = request.args.get('group', ''), sorted(request.args.getlist('group_value'))
     if group and group_values:
         g = parse_group(group)
+        if g['Type'] == 'TAG' and service == TAX_SERVICE and TAX_TAG_VALUE in group_values:
+            # le tasse non hanno tag: il valore "Tax" mostrato nella pagina e' il tag assente
+            group_values = sorted({'' if v == TAX_TAG_VALUE else v for v in group_values})
         extra.append(tag_filter(g['Key'], group_values) if g['Type'] == 'TAG'
                      else dimension_filter(g['Key'], group_values))
         cur_filters.append({'tag': g['Key'], 'values': group_values} if g['Type'] == 'TAG'
@@ -469,13 +473,15 @@ def _cached_month(profile, metric, group_by, series, month):
         entry = cur.query(month, profile, 'MONTHLY', metric, group_by)
         if entry is not None:
             g = group_by[1]
-            return entry, f"{'TAG' if g['Type'] == 'TAG' else 'DIM'}:{g['Key']}"
+            group = f"{'TAG' if g['Type'] == 'TAG' else 'DIM'}:{g['Key']}"
+            return {**entry, 'rows': classify_tax(entry['rows'], group)}, group
     except Exception as ex:
         logger.warning(f"Data Export: {month} non utilizzabile: {ex}")
     for dims in series:
         e = MonthStore(CACHE_DIR, 'costs', dims).get(month)
         if e is not None:
-            return {**e, 'source': 'api'}, dims.get('group')
+            group = dims.get('group')
+            return {**e, 'rows': classify_tax(e['rows'], group), 'source': 'api'}, group
     return None, None
 
 

@@ -55,8 +55,8 @@
 </p>
 {% else %}
 <div class="row g-2">
-    <!-- Elenco -->
-    <div class="col-lg-3">
+    <!-- Elenco (stretto), poi dettaglio e terzo livello larghi uguali -->
+    <div class="col-lg-2">
         <div class="card">
             <div class="card-header d-flex justify-content-between align-items-center">
                 <span><i class="fas {{ current.icon }} me-1 text-secondary"></i>{{ current.title }}
@@ -80,7 +80,11 @@
         <div class="card">
             <div class="card-header d-flex justify-content-between align-items-center gap-2">
                 <span class="text-break" id="detailTitle">Dettaglio</span>
-                <div class="d-flex gap-1 flex-shrink-0" id="detailActions"></div>
+                <!-- region della risorsa aperta (o "globale"), poi le azioni -->
+                <div class="d-flex gap-1 flex-shrink-0 align-items-center">
+                    <span id="detailRegion"></span>
+                    <div class="d-flex gap-1" id="detailActions"></div>
+                </div>
             </div>
             <div class="card-body panel-body" id="detailBody">
                 <div class="empty-state">Seleziona un elemento dall'elenco</div>
@@ -88,7 +92,7 @@
         </div>
     </div>
     <!-- Terzo livello: sotto-risorse, azioni, log -->
-    <div class="col-lg-4" id="extraCol">
+    <div class="col-lg-5" id="extraCol">
         <div class="card">
             <div class="card-header d-flex justify-content-between align-items-center gap-2">
                 <span class="text-break" id="extraTitle">&nbsp;</span>

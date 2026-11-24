@@ -317,20 +317,92 @@ pre.log {
     border-color: #cfe2ff;
 }
 
+/* Solo il nome, su una riga: "..." se non ci sta (nome intero e tag nel tooltip) */
 .item-list .item-title {
     font-weight: 600;
-    word-break: break-all;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
-.item-list .item-sub {
+/* In testa al dettaglio: le informazioni dell'elenco che il dettaglio non mostra gia' */
+.item-summary {
     font-size: 0.85rem;
+    color: var(--text-secondary);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+}
+
+.item-summary .sep {
     color: var(--text-muted);
-    word-break: break-all;
 }
 
 .panel-body {
     max-height: calc(100vh - 200px);
     overflow-y: auto;
+}
+
+/* Celle dei pannelli del Manager (enhanceCells in manager.js): mai a capo, "..." se il testo
+   non ci sta (valore intero nel tooltip) e icona per copiare. Le celle lunghe hanno
+   max-width 0: la tabella resta larga quanto il pannello e lo spazio va a loro in proporzione. */
+.panel-body td.cell-copy {
+    white-space: nowrap;
+    word-break: normal;
+}
+
+.panel-body td.cell-long {
+    max-width: 0;
+    min-width: 7rem;
+}
+
+.panel-body .ddb-table td.cell-long {
+    max-width: 240px;   /* la tabella dei dati DynamoDB scorre in orizzontale */
+}
+
+.panel-body .table-kv th {
+    white-space: nowrap;
+}
+
+.cell-wrap {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    min-width: 0;
+}
+
+.cell-text {
+    flex: 0 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.cell-copy-btn {
+    flex: none;
+    border: 0;
+    background: none;
+    padding: 0 0.15rem;
+    font-size: 0.75rem;
+    line-height: 1;
+    color: var(--text-muted);
+    visibility: hidden;
+    cursor: pointer;
+}
+
+td.cell-copy:hover .cell-copy-btn,
+td.cell-long .cell-copy-btn {
+    visibility: visible;
+}
+
+.cell-copy-btn:hover {
+    color: var(--series-1);
+}
+
+.cell-copy-btn.copied {
+    color: var(--delta-good);
+    visibility: visible;
 }
 
 .service-card {

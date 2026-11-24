@@ -2,11 +2,13 @@
  *
  * Tre colonne: elenco delle risorse, dettaglio della risorsa scelta, terzo livello
  * (sotto-risorse, azioni, log). Ogni servizio e' una voce di SERVICES con:
- *   label(item), sub(item)  testo dell'elenco
+ *   label(item), sub(item)  nome nell'elenco (una riga, con "..."; tag e region nel tooltip)
+ *                           e altre informazioni, mostrate in testa al dettaglio se non ci sono gia'
  *   open(item)              riempie dettaglio e terzo livello
- *   wideExtra               (facoltativo) terzo livello piu' largo del dettaglio
  * Con la region "Tutte" ogni risorsa porta la sua region (_region): dettagli e azioni
  * vengono chiesti in quella region. Le azioni che modificano AWS chiedono conferma.
+ * Nei pannelli di dettaglio e terzo livello le celle delle tabelle non vanno mai a capo:
+ * il testo lungo finisce con "..." e ogni cella ha l'icona per copiarne il valore (enhanceCells).
  */
 
 const SVC = APP.service;
@@ -46,8 +48,29 @@ async function mPost(op, body, confirmOpts) {
  * withTags = false per lo spinner di caricamento. */
 function setPanel(which, title, html, actions = '', withTags = true) {
     $(`${which}Title`).innerHTML = title;
-    $(`${which}Body`).innerHTML = which === 'detail' && withTags && item() ? withTagRows(html, item()._tags) + tagsJson(item()._tags) : html;
+    $(`${which}Body`).innerHTML = which === 'detail' && withTags && item()
+        ? subSummary(item(), html) + withTagRows(html, item()._tags) + tagsJson(item()._tags) : html;
     $(`${which}Actions`).innerHTML = actions;
+}
+
+/* Le informazioni che l'elenco mostrava sotto il nome (spec.sub, parti separate da " · "):
+ * in testa al dettaglio solo quelle che il dettaglio non contiene gia'. */
+function subSummary(it, html) {
+    const tmp = document.createElement('div');
+    tmp.innerHTML = html;
+    const text = tmp.textContent.replace(/\s+/g, ' ');
+    const parts = String(SERVICES[SVC].sub(it) || '').split(' · ').map(p => p.trim())
+        .filter(p => p && !text.includes(p.replace(/\s+/g, ' ')));
+    return parts.length
+        ? `<div class="item-summary mb-2">${parts.map(p => `<span>${escapeHtml(p)}</span>`).join('<span class="sep">·</span>')}</div>`
+        : '';
+}
+
+/* Testata del dettaglio: region della risorsa ("globale" per S3, CloudFront...). */
+function setDetailRegion(it) {
+    $('detailRegion').innerHTML = !it ? ''
+        : APP.serviceGlobal ? '<span class="badge text-bg-light border" title="Servizio globale"><i class="fas fa-earth-europe me-1"></i>globale</span>'
+        : regionBadge(regionOf(it));
 }
 
 function panelLoading(which, title) { setPanel(which, title, loadingHtml(), '', false); }
@@ -124,6 +147,62 @@ function tagsTable(tags) {
 
 function h6(text) { return `<h6 class="fw-semibold mt-3 mb-2">${text}</h6>`; }
 
+// ---------------------------------------------------------------- celle: niente a capo, copia del valore
+
+/* Celle che restano come sono: con controlli, JSON o tabelle annidate. */
+const CELL_SKIP = 'button, input, select, textarea, pre, table, .btn';
+// Da questa lunghezza la cella si accorcia con "..." e l'icona di copia e' sempre visibile
+const CELL_LONG = 24;
+
+/* Ogni <td> nuovo del pannello: testo su una riga (con "..." se non ci sta, valore intero nel
+ * tooltip) e icona per copiare il valore. Chiamata dal MutationObserver dei due pannelli,
+ * quindi vale per tutte le tabelle, comprese quelle ridisegnate dopo (S3, DynamoDB, log...). */
+function enhanceCells(root) {
+    root.querySelectorAll('td:not([data-cell])').forEach((td) => {
+        td.dataset.cell = '1';
+        if (td.querySelector(CELL_SKIP)) return;
+        const text = td.textContent.trim();
+        if (!text) return;
+        const span = document.createElement('span');
+        span.className = 'cell-text';
+        span.title = text;
+        span.append(...td.childNodes);
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'cell-copy-btn';
+        btn.title = 'Copia il valore';
+        btn.innerHTML = '<i class="fas fa-copy"></i>';
+        const wrap = document.createElement('div');
+        wrap.className = 'cell-wrap';
+        wrap.append(span, btn);
+        td.append(wrap);
+        td.classList.add('cell-copy');
+        if (text.length >= CELL_LONG) td.classList.add('cell-long');
+    });
+}
+
+/* Click sull'icona di copia (in cattura: non arriva alle righe cliccabili, come in DynamoDB). */
+async function copyCellClick(ev) {
+    const btn = ev.target.closest('.cell-copy-btn');
+    if (!btn) return;
+    ev.preventDefault();
+    ev.stopPropagation();
+    const text = btn.parentElement.querySelector('.cell-text').textContent.trim();
+    try {
+        await navigator.clipboard.writeText(text);
+    } catch (e) {   // pagina non in https/localhost: vecchio metodo
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        document.body.append(ta);
+        ta.select();
+        document.execCommand('copy');
+        ta.remove();
+    }
+    btn.classList.add('copied');
+    btn.innerHTML = '<i class="fas fa-check"></i>';
+    setTimeout(() => { btn.classList.remove('copied'); btn.innerHTML = '<i class="fas fa-copy"></i>'; }, 1200);
+}
+
 // ---------------------------------------------------------------- servizi
 
 const SERVICES = {
@@ -131,7 +210,7 @@ const SERVICES = {
     s3: {
         label: b => b.Name,
         sub: b => fmtDate(b.CreationDate),
-        open: b => s3Browse(b.Name, ''),
+        open: b => s3Open(b),   // al centro titolo, tag e proprieta', a destra cartelle, file e upload
     },
     // ------------------------------------------------ EC2
     ec2: {
@@ -331,7 +410,6 @@ const SERVICES = {
     dynamodb: {
         label: t => t.TableName,
         sub: () => '',
-        wideExtra: true,   // a sinistra le informazioni, a destra (piu' larga) i dati
         // all'apertura solo la descrizione: le righe si leggono con "Carica dati"
         open: async t => {
             panelLoading('detail', escapeHtml(t.TableName));
@@ -717,33 +795,189 @@ function sgRules(perms) {
     ], 'Nessuna regola');
 }
 
-async function s3Browse(bucket, prefix) {
-    panelLoading('detail', escapeHtml(bucket));
-    await guarded('detail', async () => {
-        const data = await mGet('objects', { bucket, prefix });
-        const parts = prefix.split('/').filter(Boolean);
-        const crumbs = [`<a href="#" data-prefix="">${escapeHtml(bucket)}</a>`]
-            .concat(parts.map((p, i) => `<a href="#" data-prefix="${escapeHtml(parts.slice(0, i + 1).join('/') + '/')}">${escapeHtml(p)}</a>`));
-        const folders = data.folders.map(f => `<a href="#" class="list-group-item list-group-item-action py-1" data-prefix="${escapeHtml(f)}">
-            <i class="fas fa-folder text-warning me-2"></i>${escapeHtml(f.slice(prefix.length))}</a>`).join('');
-        setPanel('detail', crumbs.join(' / '),
-            (folders ? `<div class="list-group mb-2">${folders}</div>` : '')
-            + rowsTable(data.objects, [
-                { title: 'File', get: o => `<a href="/api/manager/s3/download?${query({ bucket, key: o.Key })}" target="_blank" title="Scarica (URL firmato, valido un'ora)">
-                    <i class="fas fa-download me-1"></i>${escapeHtml(o.Key.slice(prefix.length))}</a>` },
-                { title: 'Dimensione', cls: 'num', get: o => escapeHtml(fmtBytes(o.Size)) },
-                { title: 'Modificato', get: o => escapeHtml(fmtDate(o.LastModified)) }], folders ? 'Nessun file in questa cartella' : 'Cartella vuota')
-            + (data.truncated ? '<div class="alert alert-warning py-1 mt-2">Elenco troncato (manager.list_limit in config.json)</div>' : ''));
-        $('detailTitle').querySelectorAll('[data-prefix]').forEach(a => a.addEventListener('click', (ev) => { ev.preventDefault(); s3Browse(bucket, a.dataset.prefix); }));
-        $('detailBody').querySelectorAll('[data-prefix]').forEach(a => a.addEventListener('click', (ev) => { ev.preventDefault(); s3Browse(bucket, a.dataset.prefix); }));
+/* Stato della vista S3: bucket aperto, proprieta' (lette una volta per bucket), cartella
+ * corrente e, per i blocchi Cartelle e File, ricerca, ordinamento e pagina. */
+const S3_PAGE_SIZE = 20;
+const s3 = { bucket: null, info: null, prefix: '', data: null, seq: 0, view: {} };
 
-        setPanel('extra', 'Carica un file', `
-            <div class="mb-2">Cartella: <span class="mono">s3://${escapeHtml(bucket)}/${escapeHtml(prefix)}</span></div>
+const S3_SORTS = {
+    folders: [['name', 'Nome A→Z'], ['-name', 'Nome Z→A']],   // le cartelle non hanno data
+    files: [['name', 'Nome A→Z'], ['-name', 'Nome Z→A'], ['-date', 'Modificati di recente'], ['date', 'Modificati da più tempo']],
+};
+
+function s3ResetView() {
+    s3.view = { folders: { q: '', sort: 'name', page: 1 }, files: { q: '', sort: 'name', page: 1 } };
+}
+
+/* Apertura di un bucket: proprieta' e radice in parallelo. */
+async function s3Open(b) {
+    Object.assign(s3, { bucket: b.Name, info: null, prefix: '', data: null });
+    s3ResetView();
+    panelLoading('detail', escapeHtml(b.Name));
+    const info = mGet('info', { bucket: b.Name }).catch(e => ({ _error: e.message }));
+    const objects = s3Load('');
+    const props = await info;
+    if (s3.bucket !== b.Name || item() !== b) return;   // nel frattempo e' stato aperto un altro bucket
+    s3.info = props;
+    s3RenderDetail();
+    await objects;
+}
+
+/* Titolo del dettaglio: bucket e percorso, ogni parte porta alla sua cartella (il bucket alla radice). */
+function s3Crumbs() {
+    const parts = s3.prefix.split('/').filter(Boolean);
+    const root = s3.prefix
+        ? `<a href="#" data-prefix="" title="Torna alla radice del bucket"><i class="fas fa-bucket me-1"></i>${escapeHtml(s3.bucket)}</a>`
+        : `<i class="fas fa-bucket me-1 text-secondary"></i>${escapeHtml(s3.bucket)}`;
+    return [root].concat(parts.map((p, i) => i === parts.length - 1 ? `<strong>${escapeHtml(p)}</strong>`
+        : `<a href="#" data-prefix="${escapeHtml(parts.slice(0, i + 1).join('/') + '/')}">${escapeHtml(p)}</a>`)).join(' / ');
+}
+
+function s3BindPrefixLinks(el) {
+    el.querySelectorAll('[data-prefix]').forEach(a => a.addEventListener('click', (ev) => {
+        ev.preventDefault();
+        s3Load(a.dataset.prefix);
+    }));
+}
+
+/* Centro: titolo con il percorso, tag (aggiunti da setPanel) e proprieta' del bucket. */
+function s3RenderDetail() {
+    const b = item();
+    const info = s3.info || {};
+    const props = info._error
+        ? `<div class="alert alert-warning py-1">Proprietà non leggibili: ${escapeHtml(info._error)}</div>`
+        : '<table class="table table-sm table-kv"><tbody>'
+            + [['Creato', fmtDate(b.CreationDate)], ...Object.entries(info)]
+                .map(([k, v]) => `<tr><th>${escapeHtml(k)}</th><td>${escapeHtml(v)}</td></tr>`).join('')
+            + '</tbody></table>';
+    const here = s3.prefix
+        ? `<div class="mb-2 small">Cartella: <span class="mono">s3://${escapeHtml(s3.bucket)}/${escapeHtml(s3.prefix)}</span>
+            · <a href="#" data-prefix=""><i class="fas fa-turn-up me-1"></i>radice del bucket</a></div>`
+        : '';
+    setPanel('detail', s3Crumbs(), here + h6('<i class="fas fa-sliders me-1 text-secondary"></i>Proprietà del bucket') + props);
+    s3BindPrefixLinks($('detailTitle'));
+    s3BindPrefixLinks($('detailBody'));
+}
+
+/* Legge una cartella e ridisegna centro (percorso) e destra (cartelle, file, upload). */
+async function s3Load(prefix) {
+    const seq = ++s3.seq;
+    if (prefix !== s3.prefix) s3ResetView();
+    s3.prefix = prefix;
+    if (s3.info) s3RenderDetail();
+    panelLoading('extra', 'Cartelle e file');
+    await guarded('extra', async () => {
+        const data = await mGet('objects', { bucket: s3.bucket, prefix });
+        if (seq !== s3.seq) return;
+        s3.data = data;
+        s3RenderExtra();
+    });
+}
+
+function s3Block(kind, icon, title) {
+    return `<div class="border rounded mb-3">
+        <div class="d-flex flex-wrap align-items-center gap-2 px-2 py-1 border-bottom bg-light">
+            <span class="fw-semibold"><i class="fas ${icon} me-1"></i>${title}</span>
+            <span class="badge text-bg-light border" id="s3${kind}Count">0</span>
+            <input type="text" class="form-control form-control-sm ms-auto" style="max-width: 14rem" id="s3${kind}Search"
+                   placeholder="Cerca..." value="${escapeHtml(s3.view[kind].q)}">
+            <select class="form-select form-select-sm w-auto" id="s3${kind}Sort" title="Ordinamento">
+                ${S3_SORTS[kind].map(([v, t]) => `<option value="${v}" ${v === s3.view[kind].sort ? 'selected' : ''}>${t}</option>`).join('')}
+            </select>
+        </div>
+        <div id="s3${kind}List"></div>
+        <div class="d-flex justify-content-between align-items-center px-2 py-1 border-top small" id="s3${kind}Pager"></div>
+    </div>`;
+}
+
+/* Destra: blocco Cartelle, blocco File e, sotto, il caricamento di un file. */
+function s3RenderExtra() {
+    const where = `s3://${s3.bucket}/${s3.prefix}`;
+    setPanel('extra', `<i class="fas fa-folder-open me-1 text-secondary"></i><span class="mono">${escapeHtml(where)}</span>`,
+        (s3.data.truncated ? '<div class="alert alert-warning py-1">Elenco troncato (manager.list_limit in config.json)</div>' : '')
+        + s3Block('folders', 'fa-folder text-warning', 'Cartelle')
+        + s3Block('files', 'fa-file text-secondary', 'File')
+        + `<div class="border rounded p-2">
+            <div class="fw-semibold mb-2"><i class="fas fa-upload me-1"></i>Carica un file</div>
+            <div class="mb-2 small">Cartella: <span class="mono">${escapeHtml(where)}</span></div>
             <input type="file" class="form-control form-control-sm mb-2" id="uploadFile">
             <button class="btn btn-sm btn-primary" id="btnUpload"><i class="fas fa-upload me-1"></i>Carica</button>
-            <div class="footer-note mt-2">Dimensione massima: manager.max_upload_mb in config.json. Un file con lo stesso nome viene sovrascritto.</div>`);
-        $('btnUpload').addEventListener('click', () => s3Upload(bucket, prefix));
+            <div class="footer-note mt-2">Dimensione massima: manager.max_upload_mb in config.json. Un file con lo stesso nome viene sovrascritto.</div>
+        </div>`);
+    ['folders', 'files'].forEach((kind) => {
+        $(`s3${kind}Search`).addEventListener('input', debounce(() => {
+            s3.view[kind].q = $(`s3${kind}Search`).value;
+            s3.view[kind].page = 1;
+            s3RenderBlock(kind);
+        }, 150));
+        $(`s3${kind}Sort`).addEventListener('change', () => {
+            s3.view[kind].sort = $(`s3${kind}Sort`).value;
+            s3.view[kind].page = 1;
+            s3RenderBlock(kind);
+        });
+        s3RenderBlock(kind);
     });
+    $('btnUpload').addEventListener('click', () => s3Upload(s3.bucket, s3.prefix));
+}
+
+/* Righe di un blocco dopo ricerca (sul nome, senza maiuscole) e ordinamento. */
+function s3Rows(kind) {
+    const v = s3.view[kind];
+    const q = v.q.trim().toLowerCase();
+    const rows = (kind === 'folders' ? s3.data.folders : s3.data.objects).map((x) => {
+        const key = kind === 'folders' ? x : x.Key;
+        return { name: key.slice(s3.prefix.length), key, obj: x };
+    }).filter(r => !q || r.name.toLowerCase().includes(q));
+    const desc = v.sort.startsWith('-');
+    const byName = (a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base', numeric: true });
+    const cmp = v.sort.endsWith('date')
+        ? (a, b) => (new Date(a.obj.LastModified) - new Date(b.obj.LastModified)) || byName(a, b)
+        : byName;
+    return rows.sort((a, b) => (desc ? -1 : 1) * cmp(a, b));
+}
+
+function s3RenderBlock(kind) {
+    const v = s3.view[kind];
+    const rows = s3Rows(kind);
+    const pages = Math.max(1, Math.ceil(rows.length / S3_PAGE_SIZE));
+    v.page = Math.min(Math.max(1, v.page), pages);
+    const first = (v.page - 1) * S3_PAGE_SIZE;
+    const page = rows.slice(first, first + S3_PAGE_SIZE);
+    const total = kind === 'folders' ? s3.data.folders.length : s3.data.objects.length;
+    $(`s3${kind}Count`).textContent = v.q.trim() ? `${rows.length} / ${total}` : total;
+
+    const empty = v.q.trim() ? 'Nessun risultato' : (kind === 'folders' ? 'Nessuna sottocartella' : 'Nessun file in questa cartella');
+    $(`s3${kind}List`).innerHTML = kind === 'folders'
+        ? rowsTable(page, [
+            { title: 'Cartella', get: r => `<a href="#" data-prefix="${escapeHtml(r.key)}" title="Apri la cartella">
+                <i class="fas fa-folder text-warning me-2"></i>${escapeHtml(r.name)}</a>` }], empty)
+        : rowsTable(page, [
+            { title: 'File', get: r => `<a href="/api/manager/s3/download?${query({ bucket: s3.bucket, key: r.key })}" target="_blank" title="Scarica (URL firmato, valido un'ora)">
+                <i class="fas fa-download me-1"></i>${escapeHtml(r.name)}</a>` },
+            { title: 'Dimensione', cls: 'num', get: r => escapeHtml(fmtBytes(r.obj.Size)) },
+            { title: 'Modificato', get: r => escapeHtml(fmtDate(r.obj.LastModified)) }], empty);
+    s3BindPrefixLinks($(`s3${kind}List`));
+
+    const pager = $(`s3${kind}Pager`);
+    if (rows.length <= S3_PAGE_SIZE) {
+        pager.classList.add('d-none');
+        return;
+    }
+    pager.classList.remove('d-none');
+    const btn = (p, icon, title, disabled) => `<button class="btn btn-sm btn-outline-secondary btn-xs" data-page="${p}" title="${title}" ${disabled ? 'disabled' : ''}>
+        <i class="fas ${icon}"></i></button>`;
+    pager.innerHTML = `<span class="text-muted">${first + 1}-${first + page.length} di ${rows.length}</span>
+        <span class="d-flex align-items-center gap-1">
+            ${btn(1, 'fa-angles-left', 'Prima pagina', v.page === 1)}
+            ${btn(v.page - 1, 'fa-angle-left', 'Pagina precedente', v.page === 1)}
+            <span class="px-1">${v.page} / ${pages}</span>
+            ${btn(v.page + 1, 'fa-angle-right', 'Pagina successiva', v.page === pages)}
+            ${btn(pages, 'fa-angles-right', 'Ultima pagina', v.page === pages)}
+        </span>`;
+    pager.querySelectorAll('[data-page]').forEach(b => b.addEventListener('click', () => {
+        v.page = Number(b.dataset.page);
+        s3RenderBlock(kind);
+    }));
 }
 
 async function s3Upload(bucket, prefix) {
@@ -765,7 +999,7 @@ async function s3Upload(bucket, prefix) {
         const r = await fetch('/api/manager/s3/upload', { method: 'POST', body: form });
         const d = await parseResponse(r);
         showAlert(d.message, 'success');
-        await s3Browse(bucket, prefix);
+        await s3Load(prefix);
     } catch (e) {
         showAlert('Errore: ' + e.message, 'danger');
     } finally {
@@ -997,6 +1231,7 @@ function ddbShowItem(row) {
 async function loadList(refresh = false) {
     $('itemList').innerHTML = loadingHtml();
     state.index = -1;
+    setDetailRegion(null);
     setPanel('detail', 'Dettaglio', '<div class="empty-state">Seleziona un elemento dall\'elenco</div>');
     setPanel('extra', '&nbsp;', '');
     try {
@@ -1020,20 +1255,25 @@ function renderList() {
         .sort((a, b) => String(spec.label(a[0])).localeCompare(String(spec.label(b[0])), undefined, { sensitivity: 'base' }));
     $('itemsCount').textContent = rows.length;
     // Project scelto nella seconda barra (manager_projects.js): in grigio le risorse con un altro Project
+    // solo il nome, su una riga: nome intero, region (con "Tutte") e tag nel tooltip
     $('itemList').innerHTML = rows.map(([it, i]) => `
-        <div class="list-group-item ${i === state.index ? 'active' : ''} ${projectOut(it._tags) ? 'svc-empty' : ''}" data-i="${i}"
-             ${projectOut(it._tags) ? `title="Project: ${escapeHtml((it._tags || {}).Project || 'mancante')}"` : ''}>
-            <div class="d-flex justify-content-between gap-2">
-                <span class="item-title">${escapeHtml(spec.label(it))}${tagIcon(it._tags)}</span>
-                ${APP.region === ALL && it._region ? regionBadge(it._region) : ''}
-            </div>
-            <div class="item-sub">${escapeHtml(spec.sub(it))}</div>
+        <div class="list-group-item ${i === state.index ? 'active' : ''} ${projectOut(it._tags) ? 'svc-empty' : ''}" data-i="${i}">
+            <div class="item-title" data-bs-toggle="tooltip" data-bs-placement="right" data-bs-title="${escapeHtml(itemTip(spec, it))}">${escapeHtml(spec.label(it))}</div>
         </div>`).join('') || '<div class="empty-state">Nessun elemento</div>';
     $('itemList').querySelectorAll('[data-i]').forEach(el => el.addEventListener('click', () => openItem(Number(el.dataset.i))));
 }
 
+/* Tooltip del nome nell'elenco: nome intero, region se si guardano tutte, stato dei tag. */
+function itemTip(spec, it) {
+    const tags = tagStatus(it._tags);
+    return [String(spec.label(it)),
+        APP.region === ALL && it._region ? `Region: ${it._region}` : '',
+        tags ? `\n${tags.text}` : ''].filter(Boolean).join('\n');
+}
+
 async function openItem(i) {
     state.index = i;
+    setDetailRegion(item());
     $('itemList').querySelectorAll('[data-i]').forEach(el => el.classList.toggle('active', Number(el.dataset.i) === i));
     setPanel('extra', '&nbsp;', '');
     await guarded('detail', () => SERVICES[SVC].open(item()));
@@ -1049,10 +1289,11 @@ function replaceItem(updated) {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-    if (SERVICES[SVC].wideExtra) {
-        $('detailCol').className = 'col-lg-3';
-        $('extraCol').className = 'col-lg-6';
-    }
+    ['detailBody', 'extraBody'].forEach((id) => {
+        const body = $(id);
+        new MutationObserver(() => enhanceCells(body)).observe(body, { childList: true, subtree: true });
+        body.addEventListener('click', copyCellClick, true);
+    });
     loadList();
     $('btnReload').addEventListener('click', () => loadList(true));
     $('itemSearch').addEventListener('input', debounce(renderList, 150));

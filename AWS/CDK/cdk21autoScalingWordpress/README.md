@@ -85,6 +85,9 @@ cdk destroy     # poi si corregge e si rifà il deploy (uno stack in CREATE_FAIL
 ```
 La riga `ERRORE cdk21: comando fallito alla riga N: <comando>` indica il comando che ha fermato lo script. Il mount di EFS, l'installazione dei pacchetti e il download di WordPress vengono già ripetuti fino a 30 volte, perché subito dopo la creazione il nome DNS del disco EFS può richiedere fino a 90 secondi. Se la VPC non ha `enableDnsHostnames` e `enableDnsSupport` attivi, il nome del disco non si risolve mai (nella VPC di default sono attivi).
 
+Se il log mostra `mount.nfs4: access denied by server while mounting`, il problema è l'autorizzazione al mount EFS: lo script usa ora `mount -t efs -o tls,iam` e `/etc/fstab` usa `tls,iam`, perché il ruolo EC2 deve autorizzare sia il mount sia la scrittura tramite IAM.
+
+
 **Verifica dei server** (Session Manager, serve il plugin della CLI):
 ```bash
 ASG=$(aws cloudformation describe-stacks --stack-name aws-py-cdk21 --query "Stacks[0].Outputs[?OutputKey=='AutoScalingGroupName'].OutputValue" --output text)
@@ -146,6 +149,7 @@ aws resourcegroupstaggingapi get-resources --tag-filters Key=Project,Values=Deve
 | 2026-11-17 | tags.py: aspect LambdaLogGroups comune a tutti gli esempi (log group dello stack per ogni Lambda); lo stack non ha Lambda, il template non cambia |
 | 2026-11-17 | Nomi delle risorse aws-py-cdk21-<servizio> uguali al tag Name (naming.py comune a tutti gli esempi): stack aws-py-cdk21, bucket S3 con l'account alla fine, ruoli e instance profile IAM con la region, anche le risorse create da CDK; test test_all_resources_named; il tag Name dell'Auto Scaling group non passa alle istanze (hanno il loro dal launch template) |
 | 2026-11-17 | Tag Name aws-py-cdk21 anche sullo stack CloudFormation (aspect PhysicalNames di naming.py), test test_stack_tags |
+| 2026-11-24 | Mount EFS autorizzato con IAM: tls,iam e policy esplicita |
 
 
 # &lt; AlNao /&gt;

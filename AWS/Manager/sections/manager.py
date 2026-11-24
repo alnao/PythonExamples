@@ -67,9 +67,10 @@ def limit(name='list_limit'):
 SERVICES = {
     's3': dict(
         tags=lambda i: ('arn', f"arn:aws:s3:::{i['Name']}"),
-        title='S3', icon='fa-bucket', desc='Bucket, cartelle, download e upload di file',
+        title='S3', icon='fa-bucket', desc='Bucket, proprieta\', cartelle, download e upload di file',
         global_=True, cls=AwsS3, list=lambda o: o.bucket_list(),
-        get={'objects': lambda o, a: o.object_list(need(a, 'bucket'), a.get('prefix', ''), limit())}),
+        get={'objects': lambda o, a: o.object_list(need(a, 'bucket'), a.get('prefix', ''), limit()),
+             'info': lambda o, a: o.bucket_info(need(a, 'bucket'))}),
     'ec2': dict(
         tags=lambda i: ('inline', i.get('Tags')),
         title='EC2', icon='fa-server', desc='Istanze: dettaglio, avvio e arresto',

@@ -92,7 +92,7 @@ def test_auto_scaling_group_waits_for_signals():
     assert data["MetadataOptions"]["HttpTokens"] == "required"
     script = str(data["UserData"])
     assert "cfn-signal" in script and "flock 9" in script and "set +x" in script
-    assert "retry mount -t efs" in script and "ERRORE cdk21" in script
+    assert "retry mount -t efs" in script and "-o tls,iam" in script and "ERRORE cdk21" in script
 
 
 def test_load_balancer_health_check_and_stickiness():

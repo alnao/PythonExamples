@@ -80,6 +80,10 @@ originale:
 - la **Home** mostra i costi solo da cache e Data Export: per i mesi mancanti rimanda al
   Cost Explorer. Usa la serie col raggruppamento di default (`TAG:Project`) se c'è,
   altrimenti una qualsiasi già in cache per lo stesso profilo e metrica
+- le **tasse** (servizio `Tax`) non si possono taggare: nei raggruppamenti per tag (Cost
+  Explorer e Home) i loro costi hanno il valore `Tax` per ogni chiave (Project, CostCenter,
+  Name, Environment, Owner, ManagedBy...) e non contano tra i costi senza tag
+  (`classify_tax` in `aws/cost_explorer.py`)
 
 La cartella `cache/` e il file `.env` sono stati copiati da `Managers/CostExplorer`: i dati
 già pagati restano disponibili.
@@ -142,10 +146,26 @@ la gestione completa è nella sezione CloudWatch), ECR (immagini) e, in sola let
 CloudFormation (parametri, output, risorse, eventi e template), Route 53 (zone e record), Secrets
 Manager (metadati e versioni; il valore solo con **Mostra valore**), ECS (cluster, servizi e task)
 e VPC (subnet, route table, internet e NAT gateway). Tre colonne: elenco con
-ricerca, dettaglio, sotto-risorse e azioni. Le proprietà della risorsa si aprono con i tag di
+ricerca (stretta), dettaglio e sotto-risorse/azioni (larghe uguali). Nell'elenco c'è solo il
+nome della risorsa, su una riga con "..." se è lungo: passandoci sopra il tooltip mostra il nome
+intero, la region (con "Tutte") e lo stato dei tag. La testata del dettaglio mostra la region
+della risorsa ("globale" per i servizi globali) e in cima al dettaglio compaiono le altre
+informazioni dell'elenco (tipo, stato, date...) che il dettaglio non contiene già. Nelle tabelle di dettaglio
+e terzo livello le celle non vanno mai a capo: il testo lungo (es. gli ARN) finisce con "..."
+(valore intero nel tooltip) e ogni cella ha l'icona per copiarne il valore (visibile sempre
+sulle celle lunghe, al passaggio del mouse sulle altre). Le proprietà della risorsa si aprono con i tag di
 `suggested_tags` (nome in un badge blu con l'icona del tag) e il loro valore, con il badge rosso
 "mancante" se il tag non c'è; in fondo al dettaglio ci sono tutti i tag della risorsa come
 oggetto JSON.
+
+**S3**: al centro il titolo con il percorso (il nome del bucket riporta alla radice quando si è
+in una cartella), i tag e le proprietà del bucket (region, versioning, notifiche a
+EventBridge attive o no, crittografia, blocco
+dell'accesso pubblico, policy, proprietà degli oggetti, lifecycle, replica, Object Lock, sito
+web statico, CORS, log degli accessi: letture della configurazione `s3:GetBucket*`, costo
+trascurabile, "accesso negato" se mancano i permessi). A destra il blocco **Cartelle**, il
+blocco **File** e sotto **Carica un file**: ogni blocco ha la ricerca sul nome, l'ordinamento
+(nome A→Z / Z→A; per i file anche data di modifica) e la paginazione da 20 righe.
 
 Nella seconda barra, accanto alla region, la tendina **Project** ha le stesse voci del Panoramic
 (valori di `suggested_tags`, sottovoci trovate nelle risorse, "Altri valori"): scegliendo un
@@ -334,6 +354,10 @@ Manager/
 | 2026-11-18 | Manager: tendina Project, servizi senza risorse in grigio |
 | 2026-11-18 | Manager: in grigio anche le risorse di altri Project |
 | 2026-11-18 | Manager: region e Project impilate, badge globale nell'elenco |
+| 2026-11-23 | Costi: tasse classificate con tag Tax |
+| 2026-11-23 | Manager S3: proprietà bucket, blocchi cartelle/file paginati |
+| 2026-11-23 | Manager: colonne 2/5/5, celle troncate con copia, S3 EventBridge |
+| 2026-11-23 | Manager: elenco solo nomi, region nel dettaglio |
 
 
 # &lt; AlNao /&gt;
